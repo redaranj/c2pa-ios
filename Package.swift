@@ -16,13 +16,13 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "C2PAC",
-            url: "https://github.com/redaranj/c2pa-mobile/releases/download/v0.0.10/C2PAC.xcframework.zip",
-            checksum: "3a8504ab2cd2c75219b4b63b81846f9aedda182d8c52d6031d3e667fa3e4fb6c"
+            url: "https://github.com/redaranj/c2pa-ios/releases/download/v0.0.1/C2PAC.xcframework.zip",
+            checksum: "0beb730e8aeb652f4fca7da8a3b490c163133f58975825fe03f87a15f493cbcf"
         ),
         .target(
             name: "C2PA",
             dependencies: ["C2PAC"],
-            path: "apple/src/C2PA"
+            path: "src"
         ),
     ]
 )
