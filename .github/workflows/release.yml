@@ -1,0 +1,140 @@
+name: Release iOS Framework
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version for the release (e.g. v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Validate version format
+        run: |
+          if [[ ! "${{ github.event.inputs.version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Version must be in format vX.Y.Z (e.g., v1.0.0)"
+            exit 1
+          fi
+      
+      - name: Display release information
+        run: |
+          echo "Starting release process for version ${{ github.event.inputs.version }}"
+          echo "This workflow will:"
+          echo "1. Download pre-built binaries from GitHub releases"
+          echo "2. Build iOS XCFramework"
+          echo "3. Create and publish Swift Package"
+          echo "4. Create GitHub release with artifacts"
+
+      - name: Select Xcode version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+          xcodebuild -version
+          
+      - name: Run tests before release
+        run: |
+          cd example
+          xcodebuild test \
+            -scheme C2PAExample \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.4' \
+            | xcpretty --test --color
+          
+      - name: Build iOS Framework
+        run: make ios-framework
+
+      - name: Zip XCFramework for distribution
+        run: |
+          cd output
+          zip -r C2PAC.xcframework.zip C2PAC.xcframework
+
+      - name: Compute checksum for XCFramework
+        id: compute-checksum
+        run: |
+          cd output
+          CHECKSUM=$(swift package compute-checksum C2PAC.xcframework.zip)
+          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_ENV
+          echo "Checksum: $CHECKSUM"
+
+      - name: Archive Swift Package
+        run: |
+          cd output
+          zip -r C2PA-Swift-Package.zip C2PA-iOS/
+
+      - name: Copy Package.swift from template to root
+        run: |
+          cp template/Package.swift ./Package.swift
+
+      - name: Update Package.swift with release URL and checksum
+        run: |
+          VERSION="${{ github.event.inputs.version }}"
+          CHECKSUM="${{ env.CHECKSUM }}"
+
+          # Replace the path with URL and checksum (using # as delimiter)
+          sed -i '' 's#            path: "Frameworks/C2PAC.xcframework"#            url: "https://github.com/${{ github.repository }}/releases/download/'${VERSION}'/C2PAC.xcframework.zip",\n            checksum: "'${CHECKSUM}'"#g' ./Package.swift
+
+          # Replace the path to the Swift file
+          sed -i '' 's#            path: "Sources/C2PA"#            path: "src"#g' ./Package.swift
+
+          # Show the updated file
+          cat ./Package.swift
+
+      - name: Configure Git user
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+
+      - name: Commit changes
+        run: |
+          git add ./Package.swift
+          git commit -m "Update Package.swift for release ${{ github.event.inputs.version }}"
+
+      - name: Push changes
+        run: git push origin HEAD:main
+
+      - name: Create tag
+        run: |
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.event.inputs.version }}
+          name: C2PA iOS ${{ github.event.inputs.version }}
+          files: |
+            output/C2PAC.xcframework.zip
+            output/C2PA-Swift-Package.zip
+          body: |
+            # C2PA iOS Release ${{ github.event.inputs.version }}
+
+            ## Swift Package Manager Integration
+
+            To use this release as a Swift Package, you have two options:
+
+            ### Option 1: Use the repository as a package dependency
+
+            ```swift
+            .package(url: "https://github.com/${{ github.repository }}.git", exact: "${{ github.event.inputs.version }}")
+            ```
+
+            ### Option 2: Reference the binary directly
+
+            ```swift
+            .binaryTarget(
+                name: "C2PAC",
+                url: "https://github.com/${{ github.repository }}/releases/download/${{ github.event.inputs.version }}/C2PAC.xcframework.zip",
+                checksum: "${{ env.CHECKSUM }}"
+            )
+            ```
+
+            ## Installation
+
+            See the README.md for detailed integration instructions.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
