@@ -1,0 +1,5 @@
+module C2PAC {
+    header "c2pa.h"
+    link   "c2pa_c"
+    export *
+}

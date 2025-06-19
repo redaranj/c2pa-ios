@@ -1,0 +1,45 @@
+# Build artifacts
+build/
+output/
+.build/
+DerivedData/
+
+# Dependency directories
+Pods/
+
+# Build and external dependencies
+*.a
+*.o
+*.dylib
+
+# C2PA specific
+*.xcframework
+*.xcframework.zip
+C2PA-Swift-Package.zip
+C2PA-iOS/
+
+# OSX
+.DS_Store
+
+# Xcode
+*.pbxuser
+*.mode1v3
+*.mode2v3
+*.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Makefile temp files
+*.bak
+
+# Editor temporary files
+*~
+*.swp
+*.swo

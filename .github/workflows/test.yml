@@ -1,0 +1,76 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  SCHEME: C2PAExample
+
+jobs:
+  test:
+    name: ${{ matrix.device }} Xcode ${{ matrix.xcode }}
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: [ '16.1' ]           #  pin to a known-good build
+        device: [ 'iPhone 16 Pro' ]
+        ios:    [ '18.1' ]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Xcode ${{ matrix.xcode }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode }}
+
+      - name: Boot ${{ matrix.device }} simulator
+        run: |
+          xcodebuild -version          # sanity-check were on 16.1
+          UDID=$(xcrun simctl list devices available | grep -m1 "${{ matrix.device }} (" | awk -F'[()]' '{print $2}')
+          echo "SIMULATOR_UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl bootstatus "$UDID" -b
+
+      - name: Build iOS Framework
+        run: make ios-framework
+
+      - name: List available simulators
+        run: xcrun simctl list devices available
+
+      - name: Build & test
+        run: |
+          set -eo pipefail
+          cd example
+          xcrun xcodebuild test \
+            -project C2PAExample.xcodeproj \
+            -scheme "$SCHEME" \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_UDID" \
+            -resultBundlePath TestResults \
+            -enableCodeCoverage YES \
+            | xcpretty --test --color
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults-${{ matrix.xcode }}
+          path: example/TestResults.xcresult
+
+      - name: Export coverage JSON
+        if: success()
+        run: |
+          xcrun xccov view --report --json example/TestResults.xcresult > coverage-${{ matrix.xcode }}.json
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.xcode }}
+          path: coverage-${{ matrix.xcode }}.json
+
