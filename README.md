@@ -144,7 +144,7 @@ let manifestData = try builder.sign(
 1. Clone this repository:
 
    ```bash
-   git clone https://github.com/redaranj/c2pa-ios.git
+   git clone https://github.com/contentauth/c2pa-ios.git
    cd c2pa-ios
    ```
 
