@@ -1,0 +1,79 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  SCHEME: C2PAExample
+
+jobs:
+  test:
+    name: ${{ matrix.device }} Xcode ${{ matrix.xcode }}
+    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        xcode: ["16.1"]
+        device:
+          [
+            "iPhone 16 Pro",
+            "iPhone 16",
+            "iPhone SE (3rd generation)",
+            "iPad Pro 11-inch (M4)",
+          ]
+        ios: ["18.1"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Xcode ${{ matrix.xcode }}
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ matrix.xcode }}
+
+      - name: Verify Xcode version
+        run: xcodebuild -version
+
+      - name: Build iOS Framework
+        run: make ios-framework
+
+      - name: Build & test
+        run: |
+          set -eo pipefail
+          cd example
+          xcrun xcodebuild test \
+            -project C2PAExample.xcodeproj \
+            -scheme "$SCHEME" \
+            -sdk iphonesimulator \
+            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios }}" \
+            -resultBundlePath TestResults \
+            -enableCodeCoverage YES \
+            | xcpretty --test --color
+
+      - name: Generate test summary
+        run: |
+          cd example
+          xcrun xcresulttool get test-results summary --path TestResults.xcresult || true
+          xcrun xcresulttool get object --path TestResults.xcresult --format json > test-results.json || true
+          xcrun xcresulttool get test-results tests --path TestResults.xcresult || true
+
+      - name: Upload test summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestSummary-${{ matrix.xcode }}-${{ matrix.device }}
+          path: example/test-results.json
+
+      - name: Export coverage JSON
+        if: success()
+        run: |
+          xcrun xccov view --report --json example/TestResults.xcresult > coverage-${{ matrix.xcode }}.json
+
+      - name: Upload coverage report
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.xcode }}-${{ matrix.device }}
+          path: coverage-${{ matrix.xcode }}.json
