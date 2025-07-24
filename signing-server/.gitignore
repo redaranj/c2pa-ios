@@ -1,0 +1,30 @@
+# Xcode
+.DS_Store
+/.build
+/Packages
+/*.xcodeproj
+xcuserdata/
+DerivedData/
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+
+# Vapor
+.env
+.env.development
+.env.production
+
+# Swift Package Manager
+Packages/
+Package.resolved
+.build/
+.swiftpm/
+
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log

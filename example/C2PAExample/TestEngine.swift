@@ -2396,10 +2396,9 @@ public class TestEngine {
             
             if canSign {
                 do {
-                    guard let certPath = Bundle.main.path(forResource: "es256_certs", ofType: "pem"),
-                          let imagePath = Bundle.main.path(forResource: "pexels-asadphoto-457882", ofType: "jpg")
+                    guard let imagePath = Bundle.main.path(forResource: "pexels-asadphoto-457882", ofType: "jpg")
                     else {
-                        testSteps.append("✗ Could not find test files for C2PA signing")
+                        testSteps.append("✗ Could not find test image for C2PA signing")
                         return TestResult(
                             name: "Secure Enclave Signer Creation",
                             success: false,
@@ -2407,9 +2406,22 @@ public class TestEngine {
                             details: "Key tag: \(keyTag)"
                         )
                     }
-                    testSteps.append("✓ Found test files for C2PA signing")
+                    testSteps.append("✓ Found test image for C2PA signing")
 
-                    let certificateChain = try String(contentsOfFile: certPath, encoding: .utf8)
+                    // Generate self-signed certificate chain using the secure enclave public key
+                    let certConfig = CertificateManagerProduction.CertificateConfig(
+                        commonName: "C2PA Signer",
+                        organization: "C2PA Test Signing Cert",
+                        organizationalUnit: "FOR TESTING ONLY",
+                        emailAddress: "test@example.com",
+                        validityDays: 365
+                    )
+                    
+                    let certificateChain = try CertificateManagerProduction.createSelfSignedCertificateChain(
+                        for: publicKey,
+                        config: certConfig
+                    )
+                    testSteps.append("✓ Generated self-signed certificate chain for secure enclave key")
                     let c2paSigner = try Signer(
                         algorithm: .es256,
                         certificateChainPEM: certificateChain,
