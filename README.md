@@ -21,7 +21,7 @@ C2PA iOS offers:
 
 - `/src` - Swift wrapper source code
 - `/template` - Swift package template
-- `/example` - Example iOS application  
+- `/example` - Example iOS application
 - `/output` - Build output artifacts
 - `/build` - Temporary build files and external dependencies
 - `/Makefile` - Build system commands
@@ -153,7 +153,7 @@ let manifestData = try builder.sign(
    ```bash
    # iOS framework (device + simulator)
    make ios-framework
-   
+
    # For faster development on Apple Silicon Macs
    make ios-dev          # Only builds for arm64 simulator
    ```
@@ -163,7 +163,7 @@ let manifestData = try builder.sign(
    ```bash
    # iOS Swift Package
    open output/C2PA-iOS
-   
+
    # Example App
    open example
    ```
@@ -197,6 +197,29 @@ The example iOS application in the `example` directory demonstrates comprehensiv
 - **Custom Signers** - Implement callback-based signing
 
 The app includes 19 comprehensive tests covering all major C2PA operations. Run the app and tap "Run All Tests" to see the library in action.
+
+## Test Signing Server
+
+For testing certificate enrollment and C2PA signing, a simple Swift-based signing server is included:
+
+```bash
+# Start the test server
+make server
+```
+
+The server runs on `http://localhost:8080` and provides:
+
+- **Certificate Authority**: Signs Certificate Signing Requests (CSRs) for testing
+- **C2PA Signing**: Server-side C2PA manifest signing
+- **No Authentication**: Simplified for development/testing only
+
+### Key Endpoints
+
+- `GET /health` - Health check
+- `POST /api/v1/certificates/sign` - Sign a CSR
+- `POST /api/v1/c2pa/sign` - Sign image with C2PA manifest
+
+**⚠️ Testing Only**: This server has no authentication and is intended for development and testing only. For production use, implement proper authentication and security measures.
 
 ## License
 
