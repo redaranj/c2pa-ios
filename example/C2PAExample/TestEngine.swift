@@ -2386,16 +2386,6 @@ public class TestEngine {
                         testSteps.append("✗ Certificate chain has unexpected format: \(beginCertCount) begin markers, \(endCertCount) end markers")
                     }
                     
-                    // Test CSR creation (expected to fail with current implementation)
-                    do {
-                        _ = try CertificateManager.createCSR(for: publicKey, config: certConfig)
-                        testSteps.append("✗ CSR creation unexpectedly succeeded")
-                    } catch CertificateManager.CertificateError.encodingFailed {
-                        testSteps.append("✓ CSR creation properly returns encodingFailed (not yet implemented)")
-                    } catch {
-                        testSteps.append("✗ CSR creation failed with unexpected error: \(error)")
-                    }
-                    
                     let c2paSigner = try Signer(
                         algorithm: .es256,
                         certificateChainPEM: certificateChain,
@@ -2456,7 +2446,7 @@ public class TestEngine {
             testSteps.append("✗ Failed to create Secure Enclave signer: \(error.localizedDescription)")
             _ = Signer.deleteSecureEnclaveKey(keyTag: keyTag)
             return TestResult(
-                name: "Secure Enclave Signer Creation",
+                name: "Secure Enclave Self-Signed Cert Signing",
                 success: false,
                 message: testSteps.joined(separator: "\n"),
                 details: "\(error)"
@@ -2497,7 +2487,7 @@ public class TestEngine {
             )
         }
         
-        let keyTag = "com.example.c2pa.ui.test.csr.\(UUID().uuidString)"
+        let keyTag = "org.contentauth.c2pa.ui.test.csr.\(UUID().uuidString)"
         
         do {
             let config = SecureEnclaveSignerConfig(
@@ -2550,7 +2540,7 @@ public class TestEngine {
             }
             
             // Submit CSR to signing server
-            let csrURL = URL(string: "\(Configuration.signingServerBaseURL)/api/v1/certificates/csr")!
+            let csrURL = URL(string: "\(Configuration.signingServerBaseURL)/api/v1/certificates/sign")!
             var request = URLRequest(url: csrURL)
             request.httpMethod = "POST"
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")

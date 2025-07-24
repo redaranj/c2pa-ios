@@ -21,7 +21,7 @@ func routes(_ app: Application) throws {
     // Certificate endpoints
     let certificates = api.grouped("certificates")
     let certificateController = CertificateController()
-    certificates.post("csr", use: certificateController.signCSR)
+    certificates.post("sign", use: certificateController.signCSR)
     
     // C2PA signing endpoints
     let c2pa = api.grouped("c2pa")

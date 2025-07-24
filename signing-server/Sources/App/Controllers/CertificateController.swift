@@ -2,7 +2,7 @@ import Vapor
 
 struct CertificateController {
     
-    // POST /api/v1/certificates/csr
+    // POST /api/v1/certificates/sign
     func signCSR(req: Request) async throws -> SignedCertificateResponse {
         let csrRequest = try req.content.decode(CertificateSigningRequest.self)
         

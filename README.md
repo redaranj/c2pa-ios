@@ -216,7 +216,7 @@ The server runs on `http://localhost:8080` and provides:
 ### Key Endpoints
 
 - `GET /health` - Health check
-- `POST /api/v1/certificates/csr` - Sign a CSR
+- `POST /api/v1/certificates/sign` - Sign a CSR
 - `POST /api/v1/c2pa/sign` - Sign image with C2PA manifest
 
 **⚠️ Testing Only**: This server has no authentication and is intended for development and testing only. For production use, implement proper authentication and security measures.
