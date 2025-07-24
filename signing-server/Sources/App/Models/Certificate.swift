@@ -21,34 +21,12 @@ struct SignedCertificateResponse: Content {
     let serialNumber: String
 }
 
-struct CACertificateResponse: Content {
-    let rootCertificate: String
-    let intermediateCertificate: String
-}
-
-struct CertificateInfo: Content {
-    let certificateId: String
-    let subject: String
-    let issuer: String
-    let serialNumber: String
-    let notBefore: Date
-    let notAfter: Date
-    let status: CertificateStatus
-}
-
-enum CertificateStatus: String, Content {
-    case active
-    case revoked
-    case expired
-}
 
 // MARK: - C2PA Models
 
 struct C2PASigningRequest: Content {
     let manifestJSON: String
     let format: String  // e.g., "image/jpeg"
-    let certificateId: String?  // Use existing certificate
-    let temporaryCertificate: Bool  // Generate temporary certificate if true
 }
 
 struct C2PASigningResponse: Content {
@@ -62,13 +40,4 @@ struct SignatureInfo: Content {
     let timestamp: Date
 }
 
-struct C2PAVerificationRequest: Content {
-    let format: String
-}
-
-struct C2PAVerificationResponse: Content {
-    let valid: Bool
-    let manifestJSON: String?
-    let validationErrors: [String]?
-}
 

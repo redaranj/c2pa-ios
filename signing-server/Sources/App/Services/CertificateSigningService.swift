@@ -10,16 +10,6 @@ class CertificateSigningService {
     private let intermediateCA: Certificate
     private let intermediateCAPrivateKey: P256.Signing.PrivateKey
     
-    // In-memory certificate store (in production, use a database)
-    private var issuedCertificates: [String: IssuedCertificate] = [:]
-    
-    struct IssuedCertificate {
-        let certificate: Certificate
-        let certificateChain: String
-        let metadata: CSRMetadata?
-        let issuedAt: Date
-        var status: CertificateStatus
-    }
     
     init() {
         // Initialize CA certificates
@@ -149,15 +139,8 @@ class CertificateSigningService {
             rootCA.serializeAsPEM().pemString
         ].joined(separator: "\n")
         
-        // Store the certificate
+        // Generate certificate ID
         let certificateId = UUID().uuidString
-        issuedCertificates[certificateId] = IssuedCertificate(
-            certificate: certificate,
-            certificateChain: certificateChain,
-            metadata: metadata,
-            issuedAt: Date(),
-            status: .active
-        )
         
         return SignedCertificateResponse(
             certificateId: certificateId,
@@ -165,29 +148,6 @@ class CertificateSigningService {
             expiresAt: certificate.notValidAfter,
             serialNumber: String(describing: certificate.serialNumber)
         )
-    }
-    
-    func getCACertificates() -> CACertificateResponse {
-        do {
-            return CACertificateResponse(
-                rootCertificate: try rootCA.serializeAsPEM().pemString,
-                intermediateCertificate: try intermediateCA.serializeAsPEM().pemString
-            )
-        } catch {
-            // This shouldn't happen with properly initialized CAs
-            return CACertificateResponse(rootCertificate: "", intermediateCertificate: "")
-        }
-    }
-    
-    func getCertificate(id: String) -> IssuedCertificate? {
-        return issuedCertificates[id]
-    }
-    
-    func revokeCertificate(id: String) -> Bool {
-        guard var cert = issuedCertificates[id] else { return false }
-        cert.status = .revoked
-        issuedCertificates[id] = cert
-        return true
     }
     
     func generateTemporaryCertificate() throws -> (certificateChain: String, privateKey: P256.Signing.PrivateKey) {

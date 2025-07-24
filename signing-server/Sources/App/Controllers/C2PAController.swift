@@ -28,9 +28,7 @@ struct C2PAController {
         let response = try await req.application.c2paService.signManifest(
             manifestJSON: signingRequest.manifestJSON,
             imageData: imageData,
-            format: signingRequest.format,
-            certificateId: signingRequest.certificateId,
-            useTemporaryCertificate: signingRequest.temporaryCertificate
+            format: signingRequest.format
         )
         
         // Return the signed image with manifest embedded
@@ -38,29 +36,6 @@ struct C2PAController {
         res.headers.contentType = HTTPMediaType(type: contentType.type, subType: contentType.subType)
         res.body = .init(data: response.manifestStore)
         return res
-    }
-    
-    // POST /api/v1/c2pa/verify
-    func verifyManifest(req: Request) async throws -> C2PAVerificationResponse {
-        // Check content type for multipart
-        guard let contentType = req.headers.contentType,
-              contentType.type == "multipart",
-              contentType.subType == "form-data" else {
-            throw Abort(.badRequest, reason: "Content-Type must be multipart/form-data")
-        }
-        
-        // Decode multipart data
-        let data = try req.content.decode(C2PAVerifyMultipart.self)
-        
-        guard let imageData = data.image.data.getData(at: 0, length: data.image.data.readableBytes) else {
-            throw Abort(.badRequest, reason: "Failed to read image data")
-        }
-        
-        // Verify the manifest
-        return try await req.application.c2paService.verifyManifest(
-            imageData: imageData,
-            format: data.format
-        )
     }
 }
 
@@ -71,7 +46,3 @@ struct C2PASignMultipart: Content {
     var image: File    // Image data to sign
 }
 
-struct C2PAVerifyMultipart: Content {
-    var image: File    // Image data to verify
-    var format: String // Image format
-}

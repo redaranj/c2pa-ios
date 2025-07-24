@@ -7,7 +7,9 @@
 
 import Foundation
 import Security
-import CommonCrypto
+import X509
+import SwiftASN1
+import Crypto
 
 @available(iOS 13.0, macOS 10.15, *)
 public class CertificateManager {
@@ -18,6 +20,8 @@ public class CertificateManager {
         case invalidKeyData
         case encodingFailed
         case unsupportedAlgorithm
+        case invalidCertificate
+        case signingFailed(String)
         
         public var errorDescription: String? {
             switch self {
@@ -31,6 +35,10 @@ public class CertificateManager {
                 return "Failed to encode certificate"
             case .unsupportedAlgorithm:
                 return "Unsupported algorithm"
+            case .invalidCertificate:
+                return "Invalid certificate"
+            case .signingFailed(let details):
+                return "Failed to sign: \(details)"
             }
         }
     }
@@ -47,11 +55,11 @@ public class CertificateManager {
         
         public init(
             commonName: String,
-            organization: String = "C2PA Test",
-            organizationalUnit: String = "FOR TESTING ONLY",
-            country: String = "US",
-            state: String = "CA",
-            locality: String = "Somewhere",
+            organization: String,
+            organizationalUnit: String,
+            country: String,
+            state: String,
+            locality: String,
             emailAddress: String? = nil,
             validityDays: Int = 365
         ) {
@@ -66,62 +74,75 @@ public class CertificateManager {
         }
     }
     
-    public struct Certificate {
-        public let certificatePEM: String
-        public let privateKey: SecKey?
+    public struct CertificateChain {
+        public let endEntityCertificate: Certificate
+        public let intermediateCertificate: Certificate
+        public let rootCertificate: Certificate
         
-        init(certificatePEM: String, privateKey: SecKey? = nil) {
-            self.certificatePEM = certificatePEM
-            self.privateKey = privateKey
+        public var pemChain: String {
+            return endEntityCertificate.pemEncoded + "\n" +
+                   intermediateCertificate.pemEncoded + "\n" +
+                   rootCertificate.pemEncoded
         }
     }
     
     // MARK: - Public Methods
     
     /// Creates a self-signed certificate chain suitable for C2PA signing
-    /// Returns the full certificate chain in PEM format
     public static func createSelfSignedCertificateChain(
         for publicKey: SecKey,
         config: CertificateConfig
     ) throws -> String {
+        // Generate key pairs for CA certificates
+        let rootKeyPair = try P256.Signing.PrivateKey()
+        let intermediateKeyPair = try P256.Signing.PrivateKey()
+        
         // Create Root CA
         let rootConfig = CertificateConfig(
-            commonName: "Root CA",
+            commonName: "\(config.organization) Root CA",
             organization: config.organization,
             organizationalUnit: config.organizationalUnit,
             country: config.country,
             state: config.state,
             locality: config.locality,
-            validityDays: config.validityDays * 10 // Root CA valid for 10x longer
+            validityDays: config.validityDays * 10
         )
-        let rootCA = try createRootCA(config: rootConfig)
+        
+        let rootCert = try createRootCA(
+            privateKey: rootKeyPair,
+            config: rootConfig
+        )
         
         // Create Intermediate CA
         let intermediateConfig = CertificateConfig(
-            commonName: "Intermediate CA",
+            commonName: "\(config.organization) Intermediate CA",
             organization: config.organization,
             organizationalUnit: config.organizationalUnit,
             country: config.country,
             state: config.state,
             locality: config.locality,
-            validityDays: config.validityDays * 5 // Intermediate valid for 5x longer
+            validityDays: config.validityDays * 5
         )
-        let intermediateCA = try createIntermediateCA(
+        
+        let intermediateCert = try createIntermediateCA(
+            privateKey: intermediateKeyPair,
             config: intermediateConfig,
-            signingCert: rootCA
+            issuerCertificate: rootCert,
+            issuerPrivateKey: rootKeyPair
         )
         
         // Create End-Entity Certificate
         let endEntityCert = try createEndEntityCertificate(
             publicKey: publicKey,
             config: config,
-            signingCert: intermediateCA
+            issuerCertificate: intermediateCert,
+            issuerPrivateKey: intermediateKeyPair
         )
         
-        // Combine certificates into chain (end-entity first, then intermediate, then root)
-        return endEntityCert.certificatePEM + "\n" + 
-               intermediateCA.certificatePEM + "\n" + 
-               rootCA.certificatePEM
+        // Return PEM chain
+        return try endEntityCert.serializeAsPEM().pemString + "\n" +
+               try intermediateCert.serializeAsPEM().pemString + "\n" +
+               try rootCert.serializeAsPEM().pemString
     }
     
     /// Creates a Certificate Signing Request (CSR) for a secure enclave key
@@ -129,322 +150,311 @@ public class CertificateManager {
         for publicKey: SecKey,
         config: CertificateConfig
     ) throws -> String {
-        // Export public key
+        // Export public key from SecKey
         guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as Data? else {
             throw CertificateError.invalidKeyData
         }
         
-        // Create subject name
-        let subject = createX509Name(from: config)
+        // Parse the public key data to get a P256 public key
+        let p256PublicKey = try parseSecKeyPublicKey(publicKeyData)
         
-        // Build CSR structure
-        let csrData = try buildCSR(
-            publicKeyData: publicKeyData,
-            subject: subject,
-            algorithm: .ecdsaWithSHA256
+        // Create CSR attributes
+        let attributes = try createCSRAttributes(config: config)
+        
+        // Create CSR info (without signature)
+        let csrInfo = CertificateSigningRequestInfo(
+            version: .v1,
+            subject: try createDistinguishedName(from: config),
+            publicKey: Certificate.PublicKey(p256PublicKey),
+            attributes: attributes
         )
         
-        // Convert to PEM
-        let pemCSR = csrData.pemEncoded(withLabel: "CERTIFICATE REQUEST")
-        return pemCSR
+        // Serialize CSR info for signing
+        var serializer = DER.Serializer()
+        try serializer.serialize(csrInfo)
+        let dataToSign = Data(serializer.serializedBytes)
+        
+        // Sign the CSR with the secure enclave key
+        let signature = try signCSRData(dataToSign, with: publicKey)
+        
+        // Create the complete CSR with signature
+        let completeCsr = try createSignedCSR(
+            csrInfo: csrInfo,
+            signature: signature
+        )
+        
+        // Serialize complete CSR
+        var csrSerializer = DER.Serializer()
+        try csrSerializer.serialize(completeCsr)
+        
+        // Convert to PEM format
+        let csrData = Data(csrSerializer.serializedBytes)
+        let base64 = csrData.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
+        return "-----BEGIN CERTIFICATE REQUEST-----\n\(base64)\n-----END CERTIFICATE REQUEST-----"
+    }
+    
+    /// Creates a CSR for a keychain key by tag
+    public static func createCSR(
+        keyTag: String,
+        config: CertificateConfig
+    ) throws -> String {
+        // Retrieve the key from keychain
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: keyTag,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecReturnRef as String: true
+        ]
+        
+        var item: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &item)
+        
+        guard status == errSecSuccess,
+              let privateKey = item as! SecKey? else {
+            throw CertificateError.invalidKeyData
+        }
+        
+        // Get the public key
+        guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
+            throw CertificateError.invalidKeyData
+        }
+        
+        return try createCSR(for: publicKey, config: config)
+    }
+    
+    /// Convenience method for web service CSR creation
+    public static func createCSRForWebService(
+        keyTag: String,
+        organization: String,
+        organizationalUnit: String,
+        country: String,
+        state: String,
+        locality: String,
+        emailAddress: String? = nil
+    ) throws -> String {
+        let config = CertificateConfig(
+            commonName: "C2PA Content Signer",
+            organization: organization,
+            organizationalUnit: organizationalUnit,
+            country: country,
+            state: state,
+            locality: locality,
+            emailAddress: emailAddress
+        )
+        
+        return try createCSR(keyTag: keyTag, config: config)
     }
     
     // MARK: - Private Methods
     
-    private static func createRootCA(config: CertificateConfig) throws -> Certificate {
-        // Generate key pair for Root CA
-        guard let keyPair = generateKeyPair() else {
-            throw CertificateError.keyGenerationFailed
+    private static func createRootCA(
+        privateKey: P256.Signing.PrivateKey,
+        config: CertificateConfig
+    ) throws -> Certificate {
+        let subject = try createDistinguishedName(from: config)
+        
+        let extensions = try Certificate.Extensions {
+            BasicConstraints.isCertificateAuthority(maxPathLength: 1)
+            KeyUsage(keyCertSign: true, cRLSign: true)
+            try SubjectKeyIdentifier(
+                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: privateKey.publicKey.rawRepresentation)),
+                extensions: Extensions()
+            )
         }
         
-        let certData = try createX509Certificate(
-            publicKey: keyPair.publicKey,
-            privateKey: keyPair.privateKey,
-            subject: config,
-            issuer: config, // Self-signed
-            isCA: true,
-            pathLenConstraint: 1,
-            keyUsage: [.keyCertSign, .cRLSign],
-            extendedKeyUsage: nil
+        let certificate = try Certificate(
+            version: .v3,
+            serialNumber: Certificate.SerialNumber(),
+            publicKey: Certificate.PublicKey(privateKey.publicKey),
+            notValidBefore: Date(),
+            notValidAfter: Date().addingTimeInterval(TimeInterval(config.validityDays * 24 * 60 * 60)),
+            issuer: subject,
+            subject: subject,
+            signatureAlgorithm: .ecdsaWithSHA256,
+            extensions: extensions,
+            issuerPrivateKey: Certificate.PrivateKey(privateKey)
         )
         
-        let pemCert = certData.pemEncoded(withLabel: "CERTIFICATE")
-        return Certificate(certificatePEM: pemCert, privateKey: keyPair.privateKey)
+        return certificate
     }
     
     private static func createIntermediateCA(
+        privateKey: P256.Signing.PrivateKey,
         config: CertificateConfig,
-        signingCert: Certificate
+        issuerCertificate: Certificate,
+        issuerPrivateKey: P256.Signing.PrivateKey
     ) throws -> Certificate {
-        // Generate key pair for Intermediate CA
-        guard let keyPair = generateKeyPair() else {
-            throw CertificateError.keyGenerationFailed
+        let subject = try createDistinguishedName(from: config)
+        
+        let extensions = try Certificate.Extensions {
+            BasicConstraints.isCertificateAuthority(maxPathLength: 0)
+            KeyUsage(keyCertSign: true, cRLSign: true)
+            try SubjectKeyIdentifier(
+                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: privateKey.publicKey.rawRepresentation)),
+                extensions: Extensions()
+            )
+            try AuthorityKeyIdentifier(
+                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: issuerPrivateKey.publicKey.rawRepresentation)),
+                extensions: Extensions()
+            )
         }
         
-        guard let signingKey = signingCert.privateKey else {
-            throw CertificateError.invalidKeyData
-        }
-        
-        // Parse issuer certificate to get issuer name
-        let issuerConfig = CertificateConfig(
-            commonName: "Root CA",
-            organization: config.organization,
-            organizationalUnit: config.organizationalUnit,
-            country: config.country,
-            state: config.state,
-            locality: config.locality
+        let certificate = try Certificate(
+            version: .v3,
+            serialNumber: Certificate.SerialNumber(),
+            publicKey: Certificate.PublicKey(privateKey.publicKey),
+            notValidBefore: Date(),
+            notValidAfter: Date().addingTimeInterval(TimeInterval(config.validityDays * 24 * 60 * 60)),
+            issuer: issuerCertificate.subject,
+            subject: subject,
+            signatureAlgorithm: .ecdsaWithSHA256,
+            extensions: extensions,
+            issuerPrivateKey: Certificate.PrivateKey(issuerPrivateKey)
         )
         
-        let certData = try createX509Certificate(
-            publicKey: keyPair.publicKey,
-            privateKey: signingKey, // Signed by root
-            subject: config,
-            issuer: issuerConfig,
-            isCA: true,
-            pathLenConstraint: 0,
-            keyUsage: [.keyCertSign, .cRLSign],
-            extendedKeyUsage: nil
-        )
-        
-        let pemCert = certData.pemEncoded(withLabel: "CERTIFICATE")
-        return Certificate(certificatePEM: pemCert, privateKey: keyPair.privateKey)
+        return certificate
     }
     
     private static func createEndEntityCertificate(
         publicKey: SecKey,
         config: CertificateConfig,
-        signingCert: Certificate
+        issuerCertificate: Certificate,
+        issuerPrivateKey: P256.Signing.PrivateKey
     ) throws -> Certificate {
-        guard let signingKey = signingCert.privateKey else {
-            throw CertificateError.invalidKeyData
-        }
-        
-        // Parse issuer certificate to get issuer name
-        let issuerConfig = CertificateConfig(
-            commonName: "Intermediate CA",
-            organization: config.organization,
-            organizationalUnit: config.organizationalUnit,
-            country: config.country,
-            state: config.state,
-            locality: config.locality
-        )
-        
-        let certData = try createX509Certificate(
-            publicKey: publicKey,
-            privateKey: signingKey, // Signed by intermediate
-            subject: config,
-            issuer: issuerConfig,
-            isCA: false,
-            pathLenConstraint: nil,
-            keyUsage: [.digitalSignature],
-            extendedKeyUsage: [.emailProtection]
-        )
-        
-        let pemCert = certData.pemEncoded(withLabel: "CERTIFICATE")
-        return Certificate(certificatePEM: pemCert, privateKey: nil)
-    }
-    
-    // MARK: - Key Generation
-    
-    private static func generateKeyPair() -> (publicKey: SecKey, privateKey: SecKey)? {
-        let attributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
-            kSecAttrKeySizeInBits as String: 256,
-            kSecPrivateKeyAttrs as String: [
-                kSecAttrIsPermanent as String: false,
-                kSecAttrApplicationTag as String: UUID().uuidString
-            ]
-        ]
-        
-        var error: Unmanaged<CFError>?
-        guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error),
-              let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            return nil
-        }
-        
-        return (publicKey, privateKey)
-    }
-    
-    // MARK: - X.509 Certificate Creation
-    
-    private enum KeyUsage {
-        case digitalSignature
-        case keyCertSign
-        case cRLSign
-    }
-    
-    private enum ExtendedKeyUsage {
-        case emailProtection
-    }
-    
-    private static func createX509Certificate(
-        publicKey: SecKey,
-        privateKey: SecKey,
-        subject: CertificateConfig,
-        issuer: CertificateConfig,
-        isCA: Bool,
-        pathLenConstraint: Int?,
-        keyUsage: [KeyUsage],
-        extendedKeyUsage: [ExtendedKeyUsage]?
-    ) throws -> Data {
-        // This is a simplified implementation that creates a basic certificate structure
-        // In a production implementation, you would use a proper ASN.1 library
-        
-        // For now, we'll create a basic self-signed certificate
-        // Note: This is a placeholder implementation that needs proper ASN.1 encoding
-        
-        // Export public key
+        // Export public key from SecKey
         guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as Data? else {
             throw CertificateError.invalidKeyData
         }
         
-        // Create certificate data (simplified)
-        var certData = Data()
+        // Parse the public key data to get a P256 public key
+        let p256PublicKey = try parseSecKeyPublicKey(publicKeyData)
         
-        // Add certificate version (v3)
-        certData.append(contentsOf: [0x02, 0x01, 0x02]) // version 3
+        let subject = try createDistinguishedName(from: config)
         
-        // Add serial number
-        let serialNumber = Data((0..<20).map { _ in UInt8.random(in: 0...255) })
-        certData.append(contentsOf: [0x02, 0x14]) // INTEGER, length 20
-        certData.append(serialNumber)
+        let extensions = try Certificate.Extensions {
+            BasicConstraints(isCertificateAuthority: false)
+            KeyUsage(digitalSignature: true)
+            ExtendedKeyUsage([.emailProtection])
+            try SubjectKeyIdentifier(
+                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: p256PublicKey.rawRepresentation)),
+                extensions: Extensions()
+            )
+            try AuthorityKeyIdentifier(
+                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: issuerPrivateKey.publicKey.rawRepresentation)),
+                extensions: Extensions()
+            )
+        }
         
-        // Add signature algorithm (ecdsaWithSHA256)
-        certData.append(contentsOf: [0x30, 0x0a, 0x06, 0x08, 0x2a, 0x86, 0x48, 0xce, 0x3d, 0x04, 0x03, 0x02])
-        
-        // Add issuer name
-        let issuerName = createX509Name(from: issuer)
-        certData.append(issuerName)
-        
-        // Add validity period
-        let validity = createValidityPeriod(days: subject.validityDays)
-        certData.append(validity)
-        
-        // Add subject name
-        let subjectName = createX509Name(from: subject)
-        certData.append(subjectName)
-        
-        // Add public key info
-        certData.append(publicKeyData)
-        
-        // Add extensions (basic constraints, key usage, etc.)
-        let extensions = createExtensions(
-            isCA: isCA,
-            pathLenConstraint: pathLenConstraint,
-            keyUsage: keyUsage,
-            extendedKeyUsage: extendedKeyUsage
+        let certificate = try Certificate(
+            version: .v3,
+            serialNumber: Certificate.SerialNumber(),
+            publicKey: Certificate.PublicKey(p256PublicKey),
+            notValidBefore: Date(),
+            notValidAfter: Date().addingTimeInterval(TimeInterval(config.validityDays * 24 * 60 * 60)),
+            issuer: issuerCertificate.subject,
+            subject: subject,
+            signatureAlgorithm: .ecdsaWithSHA256,
+            extensions: extensions,
+            issuerPrivateKey: Certificate.PrivateKey(issuerPrivateKey)
         )
-        certData.append(extensions)
         
-        // Sign the certificate
-        let signature = try signData(certData, with: privateKey)
-        certData.append(signature)
-        
-        return certData
+        return certificate
     }
     
-    private static func createX509Name(from config: CertificateConfig) -> Data {
-        // Create X.509 Distinguished Name
-        // This is a simplified version - proper implementation would use ASN.1 encoding
-        var name = Data()
+    private static func createDistinguishedName(from config: CertificateConfig) throws -> DistinguishedName {
+        var builder = DistinguishedName.Builder()
         
-        // Add country
-        name.append(contentsOf: [0x31, 0x0b, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x06, 0x13, 0x02])
-        name.append(config.country.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.countryName,
+                value: .init(printableString: config.country)
+            )
+        )
         
-        // Add state
-        name.append(contentsOf: [0x31, 0x0b, 0x30, 0x09, 0x06, 0x03, 0x55, 0x04, 0x08, 0x13, 0x02])
-        name.append(config.state.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.stateOrProvinceName,
+                value: .init(utf8String: config.state)
+            )
+        )
         
-        // Add locality
-        name.append(contentsOf: [0x31, 0x12, 0x30, 0x10, 0x06, 0x03, 0x55, 0x04, 0x07, 0x13, 0x09])
-        name.append(config.locality.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.localityName,
+                value: .init(utf8String: config.locality)
+            )
+        )
         
-        // Add organization
-        name.append(contentsOf: [0x31, 0x1a, 0x30, 0x18, 0x06, 0x03, 0x55, 0x04, 0x0a, 0x13, 0x11])
-        name.append(config.organization.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.organizationName,
+                value: .init(utf8String: config.organization)
+            )
+        )
         
-        // Add organizational unit
-        name.append(contentsOf: [0x31, 0x19, 0x30, 0x17, 0x06, 0x03, 0x55, 0x04, 0x0b, 0x13, 0x10])
-        name.append(config.organizationalUnit.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.organizationalUnitName,
+                value: .init(utf8String: config.organizationalUnit)
+            )
+        )
         
-        // Add common name
-        name.append(contentsOf: [0x31, 0x14, 0x30, 0x12, 0x06, 0x03, 0x55, 0x04, 0x03, 0x13, 0x0b])
-        name.append(config.commonName.data(using: .utf8)!)
+        try builder.addAttribute(
+            RelativeDistinguishedName.Attribute(
+                type: .RDNAttributeType.commonName,
+                value: .init(utf8String: config.commonName)
+            )
+        )
         
-        // Add email if present
         if let email = config.emailAddress {
-            name.append(contentsOf: [0x31, 0x1e, 0x30, 0x1c, 0x06, 0x09, 0x2a, 0x86, 0x48, 0x86, 0xf7, 0x0d, 0x01, 0x09, 0x01, 0x13, 0x0f])
-            name.append(email.data(using: .utf8)!)
+            try builder.addAttribute(
+                RelativeDistinguishedName.Attribute(
+                    type: .RDNAttributeType.emailAddress,
+                    value: .init(ia5String: email)
+                )
+            )
         }
         
-        return name
+        return builder.build()
     }
     
-    private static func createValidityPeriod(days: Int) -> Data {
-        var validity = Data()
+    private static func parseSecKeyPublicKey(_ data: Data) throws -> P256.Signing.PublicKey {
+        // SecKey exports P-256 public keys in X9.63 format (65 bytes: 0x04 || x || y)
+        // We need to convert this to a P256.Signing.PublicKey
         
-        let now = Date()
-        let notBefore = now
-        let notAfter = now.addingTimeInterval(TimeInterval(days * 24 * 60 * 60))
-        
-        // Add notBefore (simplified - should be proper ASN.1 time encoding)
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyMMddHHmmss'Z'"
-        formatter.timeZone = TimeZone(identifier: "UTC")
-        
-        let notBeforeString = formatter.string(from: notBefore)
-        validity.append(contentsOf: [0x17, 0x0d]) // UTCTime
-        validity.append(notBeforeString.data(using: .ascii)!)
-        
-        let notAfterString = formatter.string(from: notAfter)
-        validity.append(contentsOf: [0x17, 0x0d]) // UTCTime
-        validity.append(notAfterString.data(using: .ascii)!)
-        
-        return validity
-    }
-    
-    private static func createExtensions(
-        isCA: Bool,
-        pathLenConstraint: Int?,
-        keyUsage: [KeyUsage],
-        extendedKeyUsage: [ExtendedKeyUsage]?
-    ) -> Data {
-        var extensions = Data()
-        
-        // Basic Constraints
-        if isCA {
-            // Add basic constraints extension for CA
-            extensions.append(contentsOf: [0x30, 0x0f, 0x06, 0x03, 0x55, 0x1d, 0x13, 0x01, 0x01, 0xff, 0x04, 0x05, 0x30, 0x03, 0x01, 0x01, 0xff])
+        if data.count == 65 && data[0] == 0x04 {
+            // It's an uncompressed point, which is what we expect
+            return try P256.Signing.PublicKey(x963Representation: data)
         } else {
-            // Add basic constraints extension for end-entity
-            extensions.append(contentsOf: [0x30, 0x0c, 0x06, 0x03, 0x55, 0x1d, 0x13, 0x01, 0x01, 0xff, 0x04, 0x02, 0x30, 0x00])
-        }
-        
-        // Key Usage
-        var keyUsageBits: UInt8 = 0
-        for usage in keyUsage {
-            switch usage {
-            case .digitalSignature:
-                keyUsageBits |= 0x80
-            case .keyCertSign:
-                keyUsageBits |= 0x04
-            case .cRLSign:
-                keyUsageBits |= 0x02
+            // Try to parse as DER-encoded SubjectPublicKeyInfo
+            var parser = DER.Parser(derEncoded: Array(data))
+            let spki = try SubjectPublicKeyInfo(derEncoded: &parser)
+            
+            // Extract the public key bits
+            guard spki.algorithmIdentifier.algorithm == .AlgorithmIdentifier.ecPublicKey else {
+                throw CertificateError.unsupportedAlgorithm
             }
+            
+            // The key should be in the subjectPublicKey field
+            return try P256.Signing.PublicKey(x963Representation: spki.subjectPublicKey.bytes)
         }
-        extensions.append(contentsOf: [0x30, 0x0e, 0x06, 0x03, 0x55, 0x1d, 0x0f, 0x01, 0x01, 0xff, 0x04, 0x04, 0x03, 0x02, keyUsageBits])
-        
-        // Extended Key Usage
-        if let extKeyUsage = extendedKeyUsage {
-            // Add extended key usage for email protection
-            extensions.append(contentsOf: [0x30, 0x16, 0x06, 0x03, 0x55, 0x1d, 0x25, 0x01, 0x01, 0xff, 0x04, 0x0c, 0x30, 0x0a, 0x06, 0x08, 0x2b, 0x06, 0x01, 0x05, 0x05, 0x07, 0x03, 0x04])
-        }
-        
-        return extensions
     }
     
-    private static func signData(_ data: Data, with privateKey: SecKey) throws -> Data {
+    private static func createCSRAttributes(config: CertificateConfig) throws -> CertificateSigningRequest.Attributes {
+        // For now, return empty attributes
+        // In a full implementation, you might add challenge password, unstructured name, etc.
+        return CertificateSigningRequest.Attributes()
+    }
+    
+    /// Signs CSR data with the private key corresponding to the public key
+    private static func signCSRData(_ data: Data, with publicKey: SecKey) throws -> Data {
+        // Find the corresponding private key in the keychain
+        // This assumes the private key is stored with the same tag as the public key
+        guard let privateKey = try findPrivateKey(for: publicKey) else {
+            throw CertificateError.invalidKeyData
+        }
+        
+        // Sign the data
         let algorithm = SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
         
         guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
@@ -459,48 +469,142 @@ public class CertificateManager {
             &error
         ) as Data? else {
             if let error = error?.takeRetainedValue() {
-                throw CertificateError.certificateCreationFailed(error.localizedDescription)
+                throw CertificateError.signingFailed(error.localizedDescription)
             }
-            throw CertificateError.certificateCreationFailed("Unknown error")
+            throw CertificateError.signingFailed("Unknown signing error")
         }
         
         return signature
     }
     
-    private static func buildCSR(
-        publicKeyData: Data,
-        subject: Data,
-        algorithm: SignatureAlgorithm
-    ) throws -> Data {
-        // This is a simplified CSR structure
-        // In production, use proper ASN.1 encoding
-        var csr = Data()
+    /// Finds the private key corresponding to a public key
+    private static func findPrivateKey(for publicKey: SecKey) throws -> SecKey? {
+        // Export the public key to get its data for comparison
+        guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as Data? else {
+            throw CertificateError.invalidKeyData
+        }
         
-        // Add version
-        csr.append(contentsOf: [0x02, 0x01, 0x00]) // version 0
+        // Query all private keys and find the matching one
+        let query: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecReturnRef as String: true,
+            kSecMatchLimit as String: kSecMatchLimitAll
+        ]
         
-        // Add subject
-        csr.append(subject)
+        var items: CFTypeRef?
+        let status = SecItemCopyMatching(query as CFDictionary, &items)
         
-        // Add public key
-        csr.append(publicKeyData)
+        guard status == errSecSuccess,
+              let keys = items as? [SecKey] else {
+            return nil
+        }
         
-        // Add attributes (empty for now)
-        csr.append(contentsOf: [0xa0, 0x00])
+        // Find the private key whose public key matches
+        for privateKey in keys {
+            if let candidatePublicKey = SecKeyCopyPublicKey(privateKey),
+               let candidatePublicKeyData = SecKeyCopyExternalRepresentation(candidatePublicKey, nil) as Data?,
+               candidatePublicKeyData == publicKeyData {
+                return privateKey
+            }
+        }
         
-        return csr
+        return nil
     }
     
-    private enum SignatureAlgorithm {
-        case ecdsaWithSHA256
+    /// Creates a complete signed CSR structure
+    private static func createSignedCSR(
+        csrInfo: CertificateSigningRequestInfo,
+        signature: Data
+    ) throws -> SignedCertificateSigningRequest {
+        return SignedCertificateSigningRequest(
+            csrInfo: csrInfo,
+            signatureAlgorithm: AlgorithmIdentifier(
+                algorithm: .AlgorithmIdentifier.ecdsaWithSHA256,
+                parameters: nil
+            ),
+            signature: ASN1BitString(bytes: ArraySlice(signature))
+        )
     }
 }
 
-// MARK: - Data Extension for PEM Encoding
+// MARK: - CSR Support Types
 
-extension Data {
-    func pemEncoded(withLabel label: String) -> String {
-        let base64 = self.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
-        return "-----BEGIN \(label)-----\n\(base64)\n-----END \(label)-----"
+@available(iOS 13.0, macOS 10.15, *)
+extension CertificateManager {
+    
+    struct CertificateSigningRequest {
+        enum Version: Int {
+            case v1 = 0
+        }
+        
+        let version: Version
+        let subject: DistinguishedName
+        let publicKey: Certificate.PublicKey
+        let attributes: Attributes
+        let signatureAlgorithm: Certificate.SignatureAlgorithm
+        
+        struct Attributes {
+            // Placeholder for CSR attributes
+        }
+    }
+    
+    struct CertificateSigningRequestInfo {
+        let version: CertificateSigningRequest.Version
+        let subject: DistinguishedName
+        let publicKey: Certificate.PublicKey
+        let attributes: CertificateSigningRequest.Attributes
+    }
+    
+    struct SignedCertificateSigningRequest {
+        let csrInfo: CertificateSigningRequestInfo
+        let signatureAlgorithm: AlgorithmIdentifier
+        let signature: ASN1BitString
+    }
+}
+
+// MARK: - DER Serialization for CSR
+
+@available(iOS 13.0, macOS 10.15, *)
+extension CertificateManager.CertificateSigningRequestInfo: DERSerializable {
+    func serialize(into coder: inout DER.Serializer) throws {
+        try coder.appendConstructedNode(identifier: .sequence) { coder in
+            try coder.serialize(self.version.rawValue)
+            try coder.serialize(self.subject)
+            
+            // Serialize public key as SubjectPublicKeyInfo
+            let algorithmIdentifier = AlgorithmIdentifier(
+                algorithm: .AlgorithmIdentifier.ecPublicKey,
+                parameters: try .init(erasing: ASN1ObjectIdentifier.NamedCurves.secp256r1)
+            )
+            
+            let spki = SubjectPublicKeyInfo(
+                algorithmIdentifier: algorithmIdentifier,
+                subjectPublicKey: ASN1BitString(
+                    bytes: ArraySlice(self.publicKey.rawRepresentation)
+                )
+            )
+            try coder.serialize(spki)
+            
+            // Serialize attributes (empty for now)
+            try coder.appendConstructedNode(identifier: .init(
+                tagClass: .contextDefinedTag(0),
+                tagNumber: 0,
+                constructed: true
+            )) { _ in
+                // Empty attributes
+            }
+        }
+    }
+}
+
+@available(iOS 13.0, macOS 10.15, *)
+extension CertificateManager.SignedCertificateSigningRequest: DERSerializable {
+    func serialize(into coder: inout DER.Serializer) throws {
+        try coder.appendConstructedNode(identifier: .sequence) { coder in
+            try coder.serialize(self.csrInfo)
+            try coder.serialize(self.signatureAlgorithm)
+            try coder.serialize(self.signature)
+        }
     }
 }

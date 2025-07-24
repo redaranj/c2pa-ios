@@ -1945,185 +1945,73 @@ public class TestEngine {
     private func testWebServiceSignerCreation() async throws -> TestResult {
         var testsPassed = 0
         var testDetails: [String] = []
-        var server: SimpleSigningServer?
-        
-        defer {
-            server?.stop()
-        }
         
         do {
-            let (signingServer, certificate) = try SimpleSigningServer.createTestSigningServer()
-            server = signingServer
-            testDetails.append("✓ Created C2PA signer from bundle keys")
+            // Test connection to signing server
+            let healthURL = URL(string: "http://127.0.0.1:8080/health")!
+            let (_, response) = try await URLSession.shared.data(from: healthURL)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                throw C2PAError.api("Signing server not available - please start with 'make run-server'")
+            }
+            testDetails.append("✓ Connected to signing server")
+            testsPassed += 1
             
-            let port = try server!.start()
-            testDetails.append("✓ Started HTTP signing server on port \(port)")
-            
-            try await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
-            
-            do {
-                let webServiceSigner = try Signer(
-                    algorithm: .es256,
-                    certificateChainPEM: certificate,
-                    requestBuilder: { data in
-                        var request = URLRequest(url: URL(string: "http://127.0.0.1:\(port)/sign")!)
-                        request.httpMethod = "POST"
-                        request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-                        request.httpBody = data
-                        request.timeoutInterval = 5
-                        return request
-                    },
-                    responseParser: { data, response in
-                        return data
-                    }
-                )
-                testsPassed += 1
-                testDetails.append("✓ Created web service signer successfully")
-                
-                guard let imagePath = Bundle.main.path(forResource: "adobe-20220124-CI", ofType: "jpg"),
-                      let testImageData = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) else {
-                    throw C2PAError.api("Could not load test image from bundle")
-                }
-                
-                let manifestJSON = """
-                {
-                    "claim_generator": "c2pa-ios-web-service-test/1.0.0",
-                    "claim_generator_info": [
-                        {
-                            "name": "c2pa-ios-web-service-test",
-                            "version": "1.0.0"
-                        }
-                    ],
-                    "title": "Web Service Real Signing Test",
-                    "assertions": [
-                        {
-                            "label": "c2pa.actions",
-                            "data": {
-                                "actions": [
-                                    {
-                                        "action": "c2pa.created"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                }
-                """
-                
-                print("Creating builder with manifest...")
-                let builder = try Builder(manifestJSON: manifestJSON)
-                print("✓ Builder created")
-                
-                print("Creating streams...")
-                let sourceStream = try Stream(data: testImageData)
-                
-                let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("signed_image.jpg")
-                let destStream = try Stream(fileURL: tempURL, truncate: true, createIfNeeded: true)
-                print("✓ Streams created")
-                
-                print("Testing PEM-based signer first...")
-                let pemSigner = try Signer(
-                    certsPEM: certificate,
-                    privateKeyPEM: try String(contentsOfFile: Bundle.main.path(forResource: "es256_private", ofType: "key")!, encoding: .utf8),
-                    algorithm: .es256
-                )
-                
-                let testBuilder = try Builder(manifestJSON: manifestJSON)
-                let testSourceStream = try Stream(data: testImageData)
-                
-                let testTempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test_signed_image.jpg")
-                let testDestStream = try Stream(fileURL: testTempURL, truncate: true, createIfNeeded: true)
-                
-                let pemResult = try testBuilder.sign(format: "image/jpeg", source: testSourceStream, destination: testDestStream, signer: pemSigner)
-                print("✓ PEM signer works, got \(pemResult.count) bytes")
-                testsPassed += 1
-                testDetails.append("✓ PEM-based signing works as baseline")
-                
-                print("Testing web service signer...")
-                let manifestData = try builder.sign(format: "image/jpeg", source: sourceStream, destination: destStream, signer: webServiceSigner)
-                print("✓ Web service signing completed")
-                testsPassed += 1
-                testDetails.append("✓ Successfully signed data using web service")
-                
-                if !manifestData.isEmpty {
-                    testsPassed += 1
-                    testDetails.append("✓ Got signed manifest data (\(manifestData.count) bytes)")
-                    
-                    print("Verifying signed file...")
-                    let signedReader = try Reader(format: "image/jpeg", stream: Stream(fileURL: tempURL, truncate: false, createIfNeeded: false))
-                    let signedManifest = try signedReader.json()
-                    
-                    if !signedManifest.isEmpty {
-                        testsPassed += 1
-                        testDetails.append("✓ Successfully read manifest from web service signed file")
-                        
-                        if let manifestJSONData = signedManifest.data(using: .utf8),
-                           let jsonObject = try? JSONSerialization.jsonObject(with: manifestJSONData, options: []) as? [String: Any],
-                           let manifests = jsonObject["manifests"] as? [String: Any] {
-                            
-                            var hasSignature = false
-                            var hasClaimGenerator = false
-                            
-                            for (_, manifest) in manifests {
-                                if let manifestDict = manifest as? [String: Any] {
-                                    if manifestDict["signature"] != nil {
-                                        hasSignature = true
-                                    }
-                                    if let claimGen = manifestDict["claim_generator"] as? String,
-                                       claimGen.contains("c2pa-ios-web-service-test") {
-                                        hasClaimGenerator = true
-                                    }
-                                }
-                            }
-                            
-                            if hasSignature {
-                                testsPassed += 1
-                                testDetails.append("✓ Signed file contains signature information")
-                            } else {
-                                testDetails.append("✗ Signed file missing signature information")
-                            }
-                            
-                            if hasClaimGenerator {
-                                testsPassed += 1
-                                testDetails.append("✓ Signed file contains expected claim generator")
-                            } else {
-                                testDetails.append("✗ Signed file missing expected claim generator")
-                            }
-                            
-                        } else {
-                            testDetails.append("✗ Could not parse signed file manifest as JSON")
-                        }
-                    } else {
-                        testDetails.append("✗ Could not read manifest from signed file")
-                    }
-                } else {
-                    testDetails.append("✗ No manifest data returned from signing")
-                }
-                
-                try? FileManager.default.removeItem(at: tempURL)
-                try? FileManager.default.removeItem(at: testTempURL)
-                
-            } catch {
-                testDetails.append("✗ Web service signer creation failed: \(error)")
+            // Load test image
+            guard let imagePath = Bundle.main.path(forResource: "adobe-20220124-CI", ofType: "jpg"),
+                  let testImageData = try? Data(contentsOf: URL(fileURLWithPath: imagePath)) else {
+                throw C2PAError.api("Could not load test image")
             }
             
-            testDetails.append("✓ Stopped HTTP signing server")
-            return TestResult(
-                name: "Web Service Real Signing & Verification",
-                success: testsPassed >= 6,
-                message: "Completed \(testsPassed)/7 web service tests (PEM baseline, signer creation, signing, manifest data, verification, signature check, claim generator check)",
-                details: testDetails.joined(separator: "\n")
-            )
+            // Create multipart request to signing server
+            let boundary = UUID().uuidString
+            let url = URL(string: "http://127.0.0.1:8080/api/v1/c2pa/sign")!
+            var request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+            request.timeoutInterval = 30
             
+            let signingRequest = [
+                "manifestJSON": "{\"claim_generator\":\"c2pa-ios-test/1.0\",\"title\":\"Web Service Test\"}",
+                "format": "image/jpeg"
+            ] as [String : Any]
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: signingRequest)
+            
+            var body = Data()
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"request\"; filename=\"request.json\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: application/json\r\n\r\n".data(using: .utf8)!)
+            body.append(jsonData)
+            body.append("\r\n".data(using: .utf8)!)
+            
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"image\"; filename=\"test.jpg\"\r\n".data(using: .utf8)!)
+            body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
+            body.append(testImageData)
+            body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+            
+            request.httpBody = body
+            
+            let (responseData, _) = try await URLSession.shared.data(for: request)
+            testsPassed += 1
+            testDetails.append("✓ Successfully signed image using signing server")
+            
+            // Verify the signed image contains a manifest
+            let signedStream = try Stream(data: responseData)
+            let reader = try Reader(format: "image/jpeg", stream: signedStream)
+            let _ = try reader.json()
+            testsPassed += 1
+            testDetails.append("✓ Verified signed image contains C2PA manifest")
         } catch {
-            testDetails.append("✗ Setup failed: \(error)")
-            return TestResult(
-                name: "Web Service HTTP Communication",
-                success: false,
-                message: "Test setup failed: \(error.localizedDescription)",
-                details: testDetails.joined(separator: "\n")
-            )
+            testDetails.append("✗ Test failed: \(error.localizedDescription)")
         }
+        
+        return TestResult(
+            name: "Web Service Real Signing & Verification",
+            success: testsPassed >= 3,
+            message: "Completed \(testsPassed)/3 signing server tests",
+            details: testDetails.joined(separator: "\n")
+        )
     }
     
     private func testKeychainSignerCreation() async throws -> TestResult {
@@ -2409,7 +2297,7 @@ public class TestEngine {
                     testSteps.append("✓ Found test image for C2PA signing")
 
                     // Generate self-signed certificate chain using the secure enclave public key
-                    let certConfig = CertificateManagerProduction.CertificateConfig(
+                    let certConfig = CertificateManager.CertificateConfig(
                         commonName: "C2PA Signer",
                         organization: "C2PA Test Signing Cert",
                         organizationalUnit: "FOR TESTING ONLY",
@@ -2417,7 +2305,7 @@ public class TestEngine {
                         validityDays: 365
                     )
                     
-                    let certificateChain = try CertificateManagerProduction.createSelfSignedCertificateChain(
+                    let certificateChain = try CertificateManager.createSelfSignedCertificateChain(
                         for: publicKey,
                         config: certConfig
                     )

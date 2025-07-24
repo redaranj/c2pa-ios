@@ -73,9 +73,7 @@ Form fields:
 Request JSON structure:
 {
   "manifestJSON": "{...}",
-  "format": "image/jpeg",
-  "certificateId": "optional-cert-id",
-  "temporaryCertificate": true
+  "format": "image/jpeg"
 }
 ```
 
@@ -133,8 +131,7 @@ curl -X POST http://localhost:8080/api/v1/certificates/csr \
 curl -X POST http://localhost:8080/api/v1/c2pa/sign \
   -F 'request={
     "manifestJSON":"{\"claim_generator\":\"Test/1.0\",\"title\":\"Test Image\"}",
-    "format":"image/jpeg",
-    "temporaryCertificate":true
+    "format":"image/jpeg"
   }' \
   -F 'image=@test-image.jpg' \
   -o signed-image.jpg
@@ -174,7 +171,14 @@ The iOS app can use this server for testing certificate enrollment and signing:
 
 ```swift
 // 1. Generate CSR on device
-let csr = try CSRManager.createCSRForWebService(keyTag: "secure-enclave-key")
+let csr = try CertificateManager.createCSRForWebService(
+    keyTag: "secure-enclave-key",
+    organization: "Your Company Name",
+    organizationalUnit: "Content Authentication",
+    country: "US",
+    state: "CA",
+    locality: "Your City"
+)
 
 // 2. Submit to test server (no auth required)
 let request = URLRequest(url: URL(string: "http://localhost:8080/api/v1/certificates/csr")!)

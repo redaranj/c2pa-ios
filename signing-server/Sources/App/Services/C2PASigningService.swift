@@ -12,9 +12,7 @@ class C2PASigningService {
     func signManifest(
         manifestJSON: String,
         imageData: Data,
-        format: String,
-        certificateId: String?,
-        useTemporaryCertificate: Bool
+        format: String
     ) async throws -> C2PASigningResponse {
         
         // Always use the test certificates from Resources
@@ -63,13 +61,6 @@ class C2PASigningService {
             try? FileManager.default.removeItem(at: destinationURL)
         }
         
-        // Create SignerInfo
-        let signerInfo = SignerInfo(
-            algorithm: .es256,
-            certificatePEM: certificateChain,
-            privateKeyPEM: privateKeyPEM,
-            tsaURL: nil
-        )
         
         // Try using Builder/Stream API directly for better error handling
         do {
@@ -124,62 +115,6 @@ class C2PASigningService {
             manifestStore: signedImageData,
             signatureInfo: signatureInfo
         )
-    }
-    
-    func verifyManifest(
-        imageData: Data,
-        format: String
-    ) async throws -> C2PAVerificationResponse {
-        // Use real C2PA verification
-        do {
-            // Create stream from image data
-            let stream = try Stream(data: imageData)
-            
-            // Create reader to read the manifest
-            let reader = try Reader(format: format, stream: stream)
-            
-            // Get manifest as JSON
-            let manifestJSON = try reader.json()
-            
-            // Parse JSON to check for validation errors
-            if let jsonData = manifestJSON.data(using: .utf8),
-               let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
-               let manifests = json["manifests"] as? [[String: Any]],
-               let activeManifest = manifests.first(where: { ($0["is_active"] as? Bool) == true }) ?? manifests.first {
-                
-                // Check validation status
-                var validationErrors: [String] = []
-                if let validationStatus = activeManifest["validation_status"] as? [[String: Any]] {
-                    validationErrors = validationStatus.compactMap { status in
-                        if let code = status["code"] as? String, code != "ok" {
-                            let message = status["message"] as? String ?? "Unknown error"
-                            return "\(code): \(message)"
-                        }
-                        return nil
-                    }
-                }
-                
-                return C2PAVerificationResponse(
-                    valid: validationErrors.isEmpty,
-                    manifestJSON: manifestJSON,
-                    validationErrors: validationErrors.isEmpty ? nil : validationErrors
-                )
-            } else {
-                // Couldn't parse validation status, but manifest exists
-                return C2PAVerificationResponse(
-                    valid: true,
-                    manifestJSON: manifestJSON,
-                    validationErrors: nil
-                )
-            }
-        } catch {
-            // If we can't read the manifest, it's not a valid C2PA image
-            return C2PAVerificationResponse(
-                valid: false,
-                manifestJSON: nil,
-                validationErrors: ["No C2PA manifest found in image: \(error.localizedDescription)"]
-            )
-        }
     }
 }
 
