@@ -59,6 +59,7 @@ public class TestEngine {
         
         if #available(iOS 13.0, macOS 10.15, *) {
             results.append(await runTest("Secure Enclave Signer Creation", test: testSecureEnclaveSignerCreation))
+            results.append(await runTest("Secure Enclave CSR Signing", test: testSecureEnclaveCSRSigning))
         }
         
         results.append(await runTest("Signing Algorithm Tests", test: testSigningAlgorithmTests))
@@ -158,6 +159,11 @@ public class TestEngine {
     @available(iOS 13.0, macOS 10.15, *)
     public func runSecureEnclaveSignerCreationTest() async -> TestResult {
         return await runTest("Secure Enclave Signer Creation", test: testSecureEnclaveSignerCreation)
+    }
+    
+    @available(iOS 13.0, macOS 10.15, *)
+    public func runSecureEnclaveCSRSigningTest() async -> TestResult {
+        return await runTest("Secure Enclave CSR Signing", test: testSecureEnclaveCSRSigning)
     }
     
     public func runSigningAlgorithmTests() async -> TestResult {
@@ -2456,6 +2462,216 @@ public class TestEngine {
                 details: "\(error)"
             )
         }
+    }
+    
+    @available(iOS 13.0, macOS 10.15, *)
+    private func testSecureEnclaveCSRSigning() async throws -> TestResult {
+        var testSteps: [String] = []
+        
+        guard isSecureEnclaveAvailable() else {
+            testSteps.append("⚠️ Secure Enclave not available on this device (simulator)")
+            return TestResult(
+                name: "Secure Enclave CSR Signing",
+                success: true,
+                message: testSteps.joined(separator: "\n"),
+                details: "Test skipped - Secure Enclave only available on physical devices"
+            )
+        }
+        testSteps.append("✓ Secure Enclave is available on this device")
+        
+        // Check signing server availability
+        do {
+            let healthURL = Configuration.signingServerHealthURL
+            let (_, response) = try await URLSession.shared.data(from: healthURL)
+            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+                throw C2PAError.api("Signing server not available")
+            }
+            testSteps.append("✓ Signing server is available")
+        } catch {
+            testSteps.append("✗ Signing server not available: \(error.localizedDescription)")
+            return TestResult(
+                name: "Secure Enclave CSR Signing",
+                success: false,
+                message: testSteps.joined(separator: "\n"),
+                details: "Please ensure signing server is running"
+            )
+        }
+        
+        let keyTag = "com.example.c2pa.ui.test.csr.\(UUID().uuidString)"
+        
+        do {
+            let config = SecureEnclaveSignerConfig(
+                keyTag: keyTag,
+                accessControl: [.privateKeyUsage]
+            )
+            testSteps.append("✓ Created Secure Enclave configuration")
+            
+            defer {
+                _ = Signer.deleteSecureEnclaveKey(keyTag: keyTag)
+            }
+            
+            // Create Secure Enclave key
+            let secureEnclaveKey = try Signer.createSecureEnclaveKey(config: config)
+            testSteps.append("✓ Created Secure Enclave key successfully")
+            
+            // Extract public key
+            guard let publicKey = SecKeyCopyPublicKey(secureEnclaveKey) else {
+                throw C2PAError.api("Failed to extract public key from Secure Enclave")
+            }
+            testSteps.append("✓ Extracted public key from Secure Enclave key")
+            
+            // Create CSR configuration
+            let certConfig = CertificateManager.CertificateConfig(
+                commonName: "C2PA Content Signer",
+                organization: "Test Organization",
+                organizationalUnit: "iOS App Development",
+                country: "US",
+                state: "California",
+                locality: "San Francisco",
+                emailAddress: "test@example.com"
+            )
+            
+            // Generate CSR
+            let csr: String
+            do {
+                csr = try CertificateManager.createCSR(for: publicKey, config: certConfig)
+                testSteps.append("✓ Successfully generated CSR for Secure Enclave key")
+                
+                // Verify CSR format
+                if csr.contains("-----BEGIN CERTIFICATE REQUEST-----") &&
+                   csr.contains("-----END CERTIFICATE REQUEST-----") {
+                    testSteps.append("✓ CSR has valid PEM format")
+                } else {
+                    testSteps.append("✗ CSR has invalid PEM format")
+                }
+            } catch {
+                testSteps.append("✗ CSR generation failed: \(error.localizedDescription)")
+                throw error
+            }
+            
+            // Submit CSR to signing server
+            let csrURL = URL(string: "\(Configuration.signingServerBaseURL)/api/v1/certificates/csr")!
+            var request = URLRequest(url: csrURL)
+            request.httpMethod = "POST"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            
+            let csrRequest = [
+                "csr": csr,
+                "metadata": [
+                    "deviceId": "test-device",
+                    "appVersion": "1.0.0",
+                    "purpose": "secure-enclave-test"
+                ]
+            ] as [String : Any]
+            
+            request.httpBody = try JSONSerialization.data(withJSONObject: csrRequest)
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200...299).contains(httpResponse.statusCode) else {
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                testSteps.append("✗ CSR submission failed with status: \(statusCode)")
+                return TestResult(
+                    name: "Secure Enclave CSR Signing",
+                    success: false,
+                    message: testSteps.joined(separator: "\n"),
+                    details: String(data: data, encoding: .utf8) ?? "Unknown error"
+                )
+            }
+            
+            testSteps.append("✓ CSR submitted successfully to signing server")
+            
+            // Parse response
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let csrResponse = try decoder.decode(SignedCertificateResponse.self, from: data)
+            testSteps.append("✓ Received signed certificate from server")
+            testSteps.append("✓ Certificate ID: \(csrResponse.certificateId)")
+            testSteps.append("✓ Serial Number: \(csrResponse.serialNumber)")
+            
+            // Verify certificate chain
+            let certLines = csrResponse.certificateChain.components(separatedBy: "\n")
+            let beginCertCount = certLines.filter { $0.contains("-----BEGIN CERTIFICATE-----") }.count
+            
+            if beginCertCount >= 1 {
+                testSteps.append("✓ Certificate chain contains \(beginCertCount) certificate(s)")
+            } else {
+                testSteps.append("✗ Invalid certificate chain format")
+            }
+            
+            // Test signing with the certificate from CSR
+            var signingWorked = false
+            do {
+                guard let imagePath = Bundle.main.path(forResource: "pexels-asadphoto-457882", ofType: "jpg") else {
+                    throw C2PAError.api("Test image not found")
+                }
+                
+                let c2paSigner = try Signer(
+                    algorithm: .es256,
+                    certificateChainPEM: csrResponse.certificateChain,
+                    secureEnclaveConfig: config
+                )
+                testSteps.append("✓ Created C2PA signer with CSR-issued certificate")
+                
+                let manifestJSON = """
+                {
+                    "claim_generator": "TestApp/1.0 SecureEnclaveCSR",
+                    "title": "Secure Enclave CSR Test",
+                    "format": "image/jpeg"
+                }
+                """
+                
+                let builder = try Builder(manifestJSON: manifestJSON)
+                let imageData = try Data(contentsOf: URL(fileURLWithPath: imagePath))
+                let sourceStream = try Stream(data: imageData)
+                
+                let tempURL = FileManager.default.temporaryDirectory
+                    .appendingPathComponent("se_csr_signed_\(UUID().uuidString).jpg")
+                let destStream = try Stream(fileURL: tempURL, truncate: true, createIfNeeded: true)
+                
+                let manifestData = try builder.sign(
+                    format: "image/jpeg",
+                    source: sourceStream,
+                    destination: destStream,
+                    signer: c2paSigner
+                )
+                
+                signingWorked = manifestData.count > 0
+                testSteps.append("✓ C2PA signing with CSR-issued certificate succeeded")
+                
+                try? FileManager.default.removeItem(at: tempURL)
+            } catch {
+                testSteps.append("✗ C2PA signing with CSR-issued certificate failed: \(error.localizedDescription)")
+            }
+            
+            let success = beginCertCount >= 1 && signingWorked
+            
+            return TestResult(
+                name: "Secure Enclave CSR Signing",
+                success: success,
+                message: testSteps.joined(separator: "\n"),
+                details: "Key tag: \(keyTag)\nCertificate ID: \(csrResponse.certificateId)"
+            )
+            
+        } catch {
+            testSteps.append("✗ Test failed: \(error.localizedDescription)")
+            _ = Signer.deleteSecureEnclaveKey(keyTag: keyTag)
+            return TestResult(
+                name: "Secure Enclave CSR Signing", 
+                success: false,
+                message: testSteps.joined(separator: "\n"),
+                details: "\(error)"
+            )
+        }
+    }
+    
+    // Response model for CSR signing
+    struct SignedCertificateResponse: Codable {
+        let certificateId: String
+        let certificateChain: String
+        let expiresAt: Date
+        let serialNumber: String
     }
     
     private func testSigningAlgorithmTests() async throws -> TestResult {

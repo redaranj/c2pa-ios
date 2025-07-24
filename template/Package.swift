@@ -15,7 +15,8 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/apple/swift-certificates.git", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-asn1.git", .upToNextMajor(from: "1.0.0")),
-        .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "3.0.0"))
+        .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "3.0.0")),
+        .package(url: "https://github.com/cbaker6/CertificateSigningRequest.git", from: "1.0.0")
     ],
     targets: [
         .binaryTarget(
@@ -28,7 +29,8 @@ let package = Package(
                 "C2PAC",
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
-                .product(name: "Crypto", package: "swift-crypto")
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "CertificateSigningRequest", package: "CertificateSigningRequest")
             ],
             path: "Sources/C2PA"
         ),

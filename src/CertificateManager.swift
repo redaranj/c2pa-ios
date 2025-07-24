@@ -10,6 +10,7 @@ import Security
 import X509
 import SwiftASN1
 import Crypto
+import class CertificateSigningRequest.CertificateSigningRequest
 
 @available(iOS 13.0, macOS 10.15, *)
 public class CertificateManager {
@@ -98,8 +99,8 @@ public class CertificateManager {
         config: CertificateConfig
     ) throws -> String {
         // Generate key pairs for CA certificates
-        let rootKeyPair = try P256.Signing.PrivateKey()
-        let intermediateKeyPair = try P256.Signing.PrivateKey()
+        let rootKeyPair = P256.Signing.PrivateKey()
+        let intermediateKeyPair = P256.Signing.PrivateKey()
         
         // Create Root CA
         let rootConfig = CertificateConfig(
@@ -151,25 +152,41 @@ public class CertificateManager {
     }
     
     /// Creates a Certificate Signing Request (CSR) for a secure enclave key
+    /// 
+    /// Uses the CertificateSigningRequest library which supports SecKey and Secure Enclave
     public static func createCSR(
         for publicKey: SecKey,
         config: CertificateConfig
     ) throws -> String {
-        // Export public key from SecKey
+        // Find the corresponding private key
+        guard let privateKey = try findPrivateKey(for: publicKey) else {
+            throw CertificateError.invalidKeyData
+        }
+        
+        // Get public key data for the CSR library
         guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, nil) as Data? else {
             throw CertificateError.invalidKeyData
         }
         
-        // Parse the public key data to get a P256 public key
-        let p256PublicKey = try parseSecKeyPublicKey(publicKeyData)
+        // Create the CSR using the CertificateSigningRequest library
+        let csr = CertificateSigningRequest(
+            commonName: config.commonName,
+            organizationName: config.organization,
+            organizationUnitName: config.organizationalUnit,
+            countryName: config.country,
+            stateOrProvinceName: config.state,
+            localityName: config.locality,
+            emailAddress: config.emailAddress,
+            keyAlgorithm: .ec(signatureType: .sha256)
+        )
         
-        // Create CSR attributes
-        let attributes = try createCSRAttributes(config: config)
+        // Build the CSR with our keys
+        // The library expects public key bits and private key
+        guard let csrString = csr.buildCSRAndReturnString(publicKeyData, privateKey: privateKey) else {
+            throw CertificateError.signingFailed("Failed to build CSR")
+        }
         
-        // Create CSR info (without signature)
-        // CSR creation requires complex ASN.1 encoding that is not fully implemented
-        // For now, this method is not supported
-        throw CertificateError.encodingFailed
+        return csrString
     }
     
     /// Creates a CSR for a keychain key by tag
@@ -222,6 +239,49 @@ public class CertificateManager {
         )
         
         return try createCSR(keyTag: keyTag, config: config)
+    }
+    
+    /// Creates a CSR using a regular P256 private key (the simple way, like in your example)
+    /// This is for when you have a standard P256 key, not a Secure Enclave key
+    public static func createCSRSimple(
+        privateKey: P256.Signing.PrivateKey,
+        config: CertificateConfig,
+        subjectAlternativeNames: [String] = []
+    ) throws -> String {
+        // Create the subject distinguished name
+        let subject = try createDistinguishedName(from: config)
+        
+        // Create the private key wrapper
+        let privateKeyCertificate = Certificate.PrivateKey(privateKey)
+        
+        // Create attributes
+        var attributes = X509.CertificateSigningRequest.Attributes()
+        
+        // Add Subject Alternative Names if provided
+        if !subjectAlternativeNames.isEmpty {
+            let extensions = try Certificate.Extensions {
+                SubjectAlternativeNames(subjectAlternativeNames.map { .dnsName($0) })
+            }
+            let extensionRequest = ExtensionRequest(extensions: extensions)
+            attributes = try X509.CertificateSigningRequest.Attributes([.init(extensionRequest)])
+        }
+        
+        // Create the CSR - this is the simple way!
+        let csr = try X509.CertificateSigningRequest(
+            version: .v1,
+            subject: subject,
+            privateKey: privateKeyCertificate,
+            attributes: attributes,
+            signatureAlgorithm: .ecdsaWithSHA256
+        )
+        
+        // Verify the signature
+        if !csr.publicKey.isValidSignature(csr.signature, for: csr) {
+            throw CertificateError.signingFailed("CSR signature verification failed")
+        }
+        
+        // Serialize to PEM
+        return try csr.serializeAsPEM().pemString
     }
     
     // MARK: - Private Methods
@@ -361,10 +421,11 @@ public class CertificateManager {
         }
     }
     
-    private static func createCSRAttributes(config: CertificateConfig) throws -> CertificateSigningRequest.Attributes {
+    
+    private static func createCSRAttributes(config: CertificateConfig) throws -> X509.CertificateSigningRequest.Attributes {
         // For now, return empty attributes
         // In a full implementation, you might add challenge password, unstructured name, etc.
-        return CertificateSigningRequest.Attributes()
+        return X509.CertificateSigningRequest.Attributes()
     }
     
     /// Signs CSR data with the private key corresponding to the public key
@@ -436,45 +497,4 @@ public class CertificateManager {
     // CSR helper methods removed - would need proper ASN.1 implementation
 }
 
-// MARK: - CSR Support Types
 
-@available(iOS 13.0, macOS 10.15, *)
-extension CertificateManager {
-    
-    struct CertificateSigningRequest {
-        enum Version: Int {
-            case v1 = 0
-        }
-        
-        let version: Version
-        let subject: DistinguishedName
-        let publicKey: Certificate.PublicKey
-        let attributes: Attributes
-        let signatureAlgorithm: Certificate.SignatureAlgorithm
-        
-        struct Attributes {
-            // Placeholder for CSR attributes
-        }
-    }
-    
-    struct CertificateSigningRequestInfo {
-        let version: CertificateSigningRequest.Version
-        let subject: DistinguishedName
-        let publicKey: Certificate.PublicKey
-        let attributes: CertificateSigningRequest.Attributes
-    }
-    
-    struct SignedCertificateSigningRequest {
-        let csrInfo: CertificateSigningRequestInfo
-        let signatureAlgorithm: Certificate.SignatureAlgorithm
-        let signature: ASN1BitString
-    }
-}
-
-// MARK: - DER Serialization for CSR
-
-// Note: Manual DER serialization removed for now - would need proper ASN.1 structure
-// The CSR functionality works through the main createCSR method which uses proper Certificate API
-
-// Note: Manual DER serialization removed for now - would need proper ASN.1 structure
-// This can be implemented later when the exact ASN.1 encoding is needed

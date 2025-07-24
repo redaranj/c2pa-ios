@@ -27,7 +27,7 @@ class CertificateSigningService {
             
             let rootPublicKeyData = rootCAPrivateKey.publicKey.rawRepresentation
             let rootExtensions = try Certificate.Extensions {
-                BasicConstraints.isCertificateAuthority(maxPathLength: 2)
+                BasicConstraints.isCertificateAuthority(maxPathLength: 1)
                 KeyUsage(keyCertSign: true, cRLSign: true)
                 SubjectKeyIdentifier(
                     keyIdentifier: ArraySlice(SHA256.hash(data: rootPublicKeyData))
@@ -90,21 +90,41 @@ class CertificateSigningService {
     
     func signCSR(_ csrPEM: String, metadata: CSRMetadata?) async throws -> SignedCertificateResponse {
         // Parse the CSR
-        let _ = try pemToData(csrPEM, type: "CERTIFICATE REQUEST")
+        let csrData = try pemToData(csrPEM, type: "CERTIFICATE REQUEST")
         
-        // In production, properly parse and validate the CSR
-        // For now, we'll create a test certificate
-        let endEntityPrivateKey = P256.Signing.PrivateKey()
+        // Parse the CSR from DER data
+        let csr = try parseCertificateSigningRequest(from: csrData)
         
-        // Extract subject from CSR (simplified - in production, parse the actual CSR)
-        let subject = try DistinguishedName {
-            CommonName("C2PA Content Signer")
-            OrganizationName("Test Organization")
-            OrganizationalUnitName("Content Authentication")
-            CountryName("US")
-            StateOrProvinceName("California")
-            LocalityName("San Francisco")
-            EmailAddress("signer@example.com")
+        // Extract the public key and subject from the CSR
+        let publicKey = csr.publicKey
+        let subject = csr.subject
+        
+        // Create extensions for the end-entity certificate
+        // For SubjectKeyIdentifier, we need to match the calculation in CertificateManager
+        // which uses the raw key representation (65 bytes for P256)
+        // Since Certificate.PublicKey doesn't expose the raw key directly,
+        // we'll extract it from the serialized SubjectPublicKeyInfo
+        
+        // First, serialize the public key to get the SubjectPublicKeyInfo
+        var spkiSerializer = DER.Serializer()
+        try publicKey.serialize(into: &spkiSerializer)
+        let spkiData = Data(spkiSerializer.serializedBytes)
+        
+        // For P256 keys in X.509, the public key is the last 65 bytes (0x04 + 32 bytes X + 32 bytes Y)
+        // This is a bit hacky but matches what CertificateManager does
+        let publicKeyData: Data
+        if spkiData.count >= 65 {
+            // Extract the last 65 bytes which should be the raw public key
+            let keyStart = spkiData.count - 65
+            if spkiData[keyStart] == 0x04 { // Uncompressed point indicator
+                publicKeyData = spkiData[keyStart..<spkiData.count]
+            } else {
+                // Fallback to full SPKI hash
+                publicKeyData = spkiData
+            }
+        } else {
+            // Fallback to full SPKI hash
+            publicKeyData = spkiData
         }
         
         let extensions = try Certificate.Extensions {
@@ -112,7 +132,7 @@ class CertificateSigningService {
             KeyUsage(digitalSignature: true)
             try ExtendedKeyUsage([.emailProtection])
             SubjectKeyIdentifier(
-                keyIdentifier: ArraySlice(SHA256.hash(data: endEntityPrivateKey.publicKey.rawRepresentation))
+                keyIdentifier: ArraySlice(SHA256.hash(data: publicKeyData))
             )
             AuthorityKeyIdentifier(
                 keyIdentifier: ArraySlice(SHA256.hash(data: intermediateCAPrivateKey.publicKey.rawRepresentation))
@@ -122,7 +142,7 @@ class CertificateSigningService {
         let certificate = try Certificate(
             version: .v3,
             serialNumber: Certificate.SerialNumber(),
-            publicKey: Certificate.PublicKey(endEntityPrivateKey.publicKey),
+            publicKey: publicKey,
             notValidBefore: Date().addingTimeInterval(-60), // 1 minute ago
             notValidAfter: Date().addingTimeInterval(365 * 24 * 60 * 60), // 1 year
             issuer: intermediateCA.subject,
@@ -195,6 +215,11 @@ class CertificateSigningService {
     }
     
     // MARK: - Helper Methods
+    
+    private func parseCertificateSigningRequest(from data: Data) throws -> X509.CertificateSigningRequest {
+        let parsed = try X509.CertificateSigningRequest(derEncoded: Array(data))
+        return parsed
+    }
     
     private func pemToData(_ pem: String, type: String) throws -> Data {
         let lines = pem.components(separatedBy: .newlines)
