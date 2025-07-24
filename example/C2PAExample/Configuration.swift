@@ -11,22 +11,19 @@ struct Configuration {
     // MARK: - Signing Server Configuration
     
     // IMPORTANT: iOS App Transport Security requires HTTPS connections
-    // When testing on physical devices, use Tailscale with HTTPS:
-    // tailscale serve --bg --https 8081 http://localhost:8080
+    // When testing on physical devices, you may need to use a tunnel or proxy service
     
     /// The base URL for the C2PA signing server
     /// Update this to match your signing server location
     /// Examples:
     /// - Local development: "http://127.0.0.1:8080"
-    /// - Tailscale network (HTTPS): "https://air.tiger-agama.ts.net:8081"
     /// - Production server: "https://your-signing-server.com"
     /// 
-    /// To test on a physical device:
-    /// 1. Run: tailscale serve --bg --https 8081 http://localhost:8080
-    /// 2. Update the URL below to your Tailscale URL (use HTTPS)
-    /// 3. Make sure your device is on the same Tailscale network
-    // static let signingServerBaseURL = "http://127.0.0.1:8080"
-    static let signingServerBaseURL = "https://air.tiger-agama.ts.net:8081"
+    /// Note: When testing on physical devices, you may need to:
+    /// 1. Use a tunneling service to expose your local server with HTTPS
+    /// 2. Update the URL below to your server's public URL
+    /// 3. Ensure the device can reach the server
+    static let signingServerBaseURL = "http://127.0.0.1:8080"
     /// Health check endpoint
     static var signingServerHealthURL: URL {
         URL(string: "\(signingServerBaseURL)/health")!

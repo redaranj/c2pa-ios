@@ -1,4 +1,4 @@
-.PHONY: all clean setup download-binaries ios-framework setup-server run-server server clean-server
+.PHONY: all clean setup download-binaries ios-framework setup-server server clean-server
 
 # GitHub Release Configuration
 GITHUB_ORG := contentauth
@@ -183,10 +183,6 @@ setup-server:
 	@cd signing-server && swift package resolve
 	@echo "Server setup complete!"
 
-run-server: setup-server
-	@echo "Starting signing server..."
-	@cd signing-server && DYLD_LIBRARY_PATH=libs swift run
-
 server: setup-server
 	@echo "Building server..."
 	@cd signing-server && swift build
@@ -216,7 +212,6 @@ help:
 	@echo ""
 	@echo "Test Server:"
 	@echo "  setup-server          - Set up the C2PA signing server (downloads libs, copies files)"
-	@echo "  run-server            - Run the signing server (port 8080)"
 	@echo "  server                - Build and run the signing server (port 8080)"
 	@echo "  clean-server          - Clean server build artifacts"
 	@echo ""
