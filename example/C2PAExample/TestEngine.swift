@@ -1948,7 +1948,7 @@ public class TestEngine {
         
         do {
             // Test connection to signing server
-            let healthURL = URL(string: "http://127.0.0.1:8080/health")!
+            let healthURL = Configuration.signingServerHealthURL
             let (_, response) = try await URLSession.shared.data(from: healthURL)
             guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
                 throw C2PAError.api("Signing server not available - please start with 'make run-server'")
@@ -1964,7 +1964,7 @@ public class TestEngine {
             
             // Create multipart request to signing server
             let boundary = UUID().uuidString
-            let url = URL(string: "http://127.0.0.1:8080/api/v1/c2pa/sign")!
+            let url = Configuration.signingServerSignURL
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
             request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
@@ -2019,10 +2019,9 @@ public class TestEngine {
         let keyTag = "com.example.c2pa.ui.test.key.\(UUID().uuidString)"
 
         do {
-            guard let certPath = Bundle.main.path(forResource: "es256_certs", ofType: "pem"),
-                  let imagePath = Bundle.main.path(forResource: "pexels-asadphoto-457882", ofType: "jpg")
+            guard let imagePath = Bundle.main.path(forResource: "pexels-asadphoto-457882", ofType: "jpg")
             else {
-                testSteps.append("✗ Could not find required test files")
+                testSteps.append("✗ Could not find required test image")
                 return TestResult(
                     name: "Keychain Signer Creation",
                     success: false,
@@ -2030,11 +2029,9 @@ public class TestEngine {
                     details: nil
                 )
             }
-            testSteps.append("✓ Found required test files")
+            testSteps.append("✓ Found test image")
 
-            let certificateChain = try String(contentsOfFile: certPath, encoding: .utf8)
             let keyCreated = createTestKeychainKey(keyTag: keyTag)
-            testSteps.append("✓ Loaded certificate chain from bundle")
 
             defer {
                 deleteTestKeychainKey(keyTag: keyTag)
@@ -2050,6 +2047,48 @@ public class TestEngine {
                 )
             }
             testSteps.append("✓ Created test key in keychain")
+            
+            // Get the public key to create matching certificate
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassKey,
+                kSecAttrApplicationTag as String: keyTag,
+                kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+                kSecReturnRef as String: true
+            ]
+            
+            var item: CFTypeRef?
+            let status = SecItemCopyMatching(query as CFDictionary, &item)
+            
+            guard status == errSecSuccess,
+                  let privateKey = item as! SecKey?,
+                  let publicKey = SecKeyCopyPublicKey(privateKey) else {
+                testSteps.append("✗ Failed to retrieve key from keychain")
+                return TestResult(
+                    name: "Keychain Signer Creation",
+                    success: false,
+                    message: testSteps.joined(separator: "\n"),
+                    details: "Could not retrieve EC key for certificate generation"
+                )
+            }
+            testSteps.append("✓ Retrieved keychain key for certificate generation")
+            
+            // Generate self-signed certificate chain matching the keychain key
+            let certConfig = CertificateManager.CertificateConfig(
+                commonName: "C2PA Keychain Test Signer",
+                organization: "C2PA Test Organization",
+                organizationalUnit: "Keychain Testing Unit",
+                country: "US",
+                state: "California",
+                locality: "San Francisco",
+                emailAddress: "keychain-test@example.com",
+                validityDays: 365
+            )
+            
+            let certificateChain = try CertificateManager.createSelfSignedCertificateChain(
+                for: publicKey,
+                config: certConfig
+            )
+            testSteps.append("✓ Generated self-signed certificate chain for keychain key")
 
             let keychainSigner = try Signer(
                 algorithm: .es256,
@@ -2126,14 +2165,28 @@ public class TestEngine {
 
             try? FileManager.default.removeItem(at: tempURL)
 
-            // For keychain signer creation test, we verify the signer can be created and basic operations work
-            // Full signing verification would require matching certificate to the random keychain key
-            let success = hasValidPEM && reserveSize > 0
+            // For keychain signer creation test, we verify the signer can be created and signing works
+            // Now that we generate a matching certificate, signing should succeed
+            let signerCreated = hasValidPEM && reserveSize > 0
+            
+            let success = signerCreated && signingWorked && verificationWorked
 
-            if success {
+            if signerCreated {
                 testSteps.append("✓ Keychain signer creation and basic functionality verified")
             } else {
                 testSteps.append("✗ Keychain signer creation or basic functionality failed")
+            }
+            
+            if signingWorked {
+                testSteps.append("✓ Signing succeeded with matching certificate/key")
+            } else {
+                testSteps.append("✗ Signing failed: \(signingError)")
+            }
+            
+            if verificationWorked {
+                testSteps.append("✓ Signed manifest verification succeeded")
+            } else {
+                testSteps.append("✗ Signed manifest verification failed")
             }
 
             return TestResult(
@@ -2298,18 +2351,45 @@ public class TestEngine {
 
                     // Generate self-signed certificate chain using the secure enclave public key
                     let certConfig = CertificateManager.CertificateConfig(
-                        commonName: "C2PA Signer",
-                        organization: "C2PA Test Signing Cert",
-                        organizationalUnit: "FOR TESTING ONLY",
-                        emailAddress: "test@example.com",
+                        commonName: "C2PA Secure Enclave Test Signer",
+                        organization: "C2PA Test Organization",
+                        organizationalUnit: "Secure Enclave Testing Unit",
+                        country: "US",
+                        state: "California",
+                        locality: "San Francisco",
+                        emailAddress: "secure-enclave-test@example.com",
                         validityDays: 365
                     )
+                    
+                    testSteps.append("✓ Created certificate configuration for secure enclave key")
                     
                     let certificateChain = try CertificateManager.createSelfSignedCertificateChain(
                         for: publicKey,
                         config: certConfig
                     )
                     testSteps.append("✓ Generated self-signed certificate chain for secure enclave key")
+                    
+                    // Verify the certificate chain contains all three certificates
+                    let certLines = certificateChain.components(separatedBy: "\n")
+                    let beginCertCount = certLines.filter { $0.contains("-----BEGIN CERTIFICATE-----") }.count
+                    let endCertCount = certLines.filter { $0.contains("-----END CERTIFICATE-----") }.count
+                    
+                    if beginCertCount == 3 && endCertCount == 3 {
+                        testSteps.append("✓ Certificate chain contains 3 certificates (end-entity, intermediate, root)")
+                    } else {
+                        testSteps.append("✗ Certificate chain has unexpected format: \(beginCertCount) begin markers, \(endCertCount) end markers")
+                    }
+                    
+                    // Test CSR creation (expected to fail with current implementation)
+                    do {
+                        _ = try CertificateManager.createCSR(for: publicKey, config: certConfig)
+                        testSteps.append("✗ CSR creation unexpectedly succeeded")
+                    } catch CertificateManager.CertificateError.encodingFailed {
+                        testSteps.append("✓ CSR creation properly returns encodingFailed (not yet implemented)")
+                    } catch {
+                        testSteps.append("✗ CSR creation failed with unexpected error: \(error)")
+                    }
+                    
                     let c2paSigner = try Signer(
                         algorithm: .es256,
                         certificateChainPEM: certificateChain,

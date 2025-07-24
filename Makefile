@@ -110,8 +110,9 @@ define setup_swift_package
 	@mkdir -p $(1)/Sources/C2PA
 	@mkdir -p $(1)/Frameworks
 
-	# Copy Swift wrapper and patch c2pa.h
+	# Copy Swift wrapper files
 	@cp $(APPLE_DIR)/src/C2PA.swift $(1)/Sources/C2PA/
+	@cp $(APPLE_DIR)/src/CertificateManager.swift $(1)/Sources/C2PA/
 	@cp $(APPLE_DIR)/template/Package.swift $(1)/
 
 	# Copy XCFramework
@@ -170,6 +171,7 @@ setup-server:
 	
 	# Copy Swift files and module map
 	@cp src/C2PA.swift signing-server/Sources/C2PA/
+	@cp src/CertificateManager.swift signing-server/Sources/C2PA/
 	@cp template/module.modulemap signing-server/Sources/C2PA/
 	# Update header path in module map for server structure
 	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' signing-server/Sources/C2PA/module.modulemap
