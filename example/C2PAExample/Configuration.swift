@@ -22,7 +22,8 @@ struct Configuration {
     /// 1. Use a tunneling service to expose your local server with HTTPS
     /// 2. Update the URL below to your server's public URL
     /// 3. Ensure the device can reach the server
-    static let signingServerBaseURL = "https://your-test-domain:8080"
+    // static let signingServerBaseURL = "https://your-test-domain:8080"
+    static let signingServerBaseURL = "https://air.tiger-agama.ts.net:8081"
    
     /// Health check endpoint
     static var signingServerHealthURL: URL {

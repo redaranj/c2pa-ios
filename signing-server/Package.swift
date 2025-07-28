@@ -17,7 +17,6 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-asn1.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
-        .package(url: "https://github.com/cbaker6/CertificateSigningRequest.git", from: "1.0.0"),
         
         // C2PA library (local) - commented out until macOS support is added
         // .package(path: "../output/C2PA-iOS")
@@ -36,7 +35,6 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "Crypto", package: "swift-crypto"),
-                .product(name: "CertificateSigningRequest", package: "CertificateSigningRequest"),
                 .target(name: "C2PA")
             ],
             linkerSettings: [
@@ -49,7 +47,6 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "Crypto", package: "swift-crypto"),
-                .product(name: "CertificateSigningRequest", package: "CertificateSigningRequest"),
                 "C2PAC"
             ],
             path: "Sources/C2PA",
