@@ -66,14 +66,45 @@ jobs:
           name: TestSummary-${{ matrix.xcode }}-${{ matrix.device }}
           path: example/test-results.json
 
-      - name: Export coverage JSON
+      - name: Export coverage LCOV
         if: success()
         run: |
-          xcrun xccov view --report --json example/TestResults.xcresult > coverage-${{ matrix.xcode }}.json
+          cd example
+          
+          # Export coverage data from xcresult bundle
+          xcrun xcresulttool export coverage \
+            --path TestResults.xcresult \
+            --output-path coverage-export
+          
+          # Find the exported Coverage.profdata
+          PROFDATA_PATH=$(find coverage-export -name "Coverage.profdata" -type f | head -1)
+          echo "Coverage.profdata path: $PROFDATA_PATH"
+          
+          # Find the binary - could be in the export or in the xcresult bundle
+          BINARY_PATH=$(find TestResults.xcresult coverage-export -name "C2PAExample" -type f | grep -v "dSYM" | head -1)
+          echo "Binary path: $BINARY_PATH"
+          
+          if [ -n "$PROFDATA_PATH" ] && [ -n "$BINARY_PATH" ]; then
+            # Export to LCOV format
+            xcrun llvm-cov export \
+              -format=lcov \
+              -instr-profile="$PROFDATA_PATH" \
+              "$BINARY_PATH" \
+              > ../coverage-${{ matrix.xcode }}-${{ matrix.device }}.lcov
+            echo "LCOV coverage report generated successfully"
+          else
+            echo "ERROR: Could not generate LCOV report - missing profdata or binary"
+            echo "PROFDATA_PATH: $PROFDATA_PATH"
+            echo "BINARY_PATH: $BINARY_PATH"
+            exit 1
+          fi
+          
+          # Clean up temporary export directory
+          rm -rf coverage-export
 
       - name: Upload coverage report
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.xcode }}-${{ matrix.device }}
-          path: coverage-${{ matrix.xcode }}.json
+          path: coverage-${{ matrix.xcode }}-${{ matrix.device }}.lcov
