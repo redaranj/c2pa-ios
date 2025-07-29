@@ -71,36 +71,123 @@ jobs:
         run: |
           cd example
           
-          # Export coverage data from xcresult bundle
-          xcrun xcresulttool export coverage \
-            --path TestResults.xcresult \
-            --output-path coverage-export
+          echo "=== Starting coverage export ==="
+          echo "Current directory: $(pwd)"
+          echo "Contents of current directory:"
+          ls -la
           
-          # Find the exported Coverage.profdata
-          PROFDATA_PATH=$(find coverage-export -name "Coverage.profdata" -type f | head -1)
+          # Use xcrun xccov to work with the xcresult bundle directly
+          # First, let's use xccov to export data in a format we can work with
+          echo "\n=== Exporting coverage JSON from xcresult ==="
+          xcrun xccov view --report --json TestResults.xcresult > coverage.json
+          echo "Coverage JSON size: $(wc -c < coverage.json) bytes"
+          
+          # Extract the path to the archive from the JSON
+          ARCHIVE_PATH=$(python3 -c "import json; data=json.load(open('coverage.json')); print(data.get('archivePath', ''))" || echo "")
+          echo "Archive path from JSON: $ARCHIVE_PATH"
+          
+          # Try multiple methods to find coverage data
+          # Method 1: Look in the standard DerivedData location
+          echo "\n=== Finding DerivedData path ==="
+          DERIVED_DATA=$(xcodebuild -showBuildSettings -project C2PAExample.xcodeproj -scheme C2PAExample -sdk iphonesimulator | grep -m 1 " BUILD_DIR " | sed 's/.*= //' | sed 's|/Build/Products||')
+          echo "Derived data path: $DERIVED_DATA"
+          
+          # Debug: Show the structure of DerivedData
+          if [ -n "$DERIVED_DATA" ] && [ -d "$DERIVED_DATA" ]; then
+            echo "\n=== DerivedData structure ==="
+            echo "Contents of $DERIVED_DATA:"
+            ls -la "$DERIVED_DATA" || true
+            echo "\nContents of $DERIVED_DATA/Build:"
+            ls -la "$DERIVED_DATA/Build" || true
+            echo "\nLooking for ProfileData:"
+            find "$DERIVED_DATA" -type d -name "ProfileData" | head -5 || true
+          fi
+          
+          # Find Coverage.profdata
+          PROFDATA_PATH=""
+          if [ -n "$DERIVED_DATA" ]; then
+            PROFDATA_PATH=$(find "$DERIVED_DATA/Build/ProfileData" -name "Coverage.profdata" -type f 2>/dev/null | head -1 || true)
+          fi
+          
+          # Method 2: If not found, look in common CI locations
+          if [ -z "$PROFDATA_PATH" ]; then
+            PROFDATA_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
+          fi
+          
           echo "Coverage.profdata path: $PROFDATA_PATH"
           
-          # Find the binary - could be in the export or in the xcresult bundle
-          BINARY_PATH=$(find TestResults.xcresult coverage-export -name "C2PAExample" -type f | grep -v "dSYM" | head -1)
-          echo "Binary path: $BINARY_PATH"
+          # Debug: If we didn't find it, show what we're looking at
+          if [ -z "$PROFDATA_PATH" ]; then
+            echo "\n=== Debug: Coverage.profdata not found ==="
+            echo "Searching in ~/Library/Developer/Xcode/DerivedData for any Coverage.profdata:"
+            find ~/Library/Developer/Xcode/DerivedData -name "Coverage.profdata" -type f | head -10 || true
+          fi
           
-          if [ -n "$PROFDATA_PATH" ] && [ -n "$BINARY_PATH" ]; then
+          # Find the test binary
+          echo "\n=== Finding test binary ==="
+          TEST_BINARY_PATH=""
+          if [ -n "$DERIVED_DATA" ]; then
+            TEST_BINARY_PATH=$(find "$DERIVED_DATA/Build/Products" -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | head -1 || true)
+          fi
+          
+          # If not found, search more broadly
+          if [ -z "$TEST_BINARY_PATH" ]; then
+            echo "Test binary not found in derived data, searching more broadly..."
+            TEST_BINARY_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
+          fi
+          
+          echo "Test binary path: $TEST_BINARY_PATH"
+          
+          # Debug: Show test bundle structure
+          if [ -z "$TEST_BINARY_PATH" ] && [ -n "$DERIVED_DATA" ]; then
+            echo "\n=== Debug: Test binary not found ==="
+            echo "Looking for .xctest bundles:"
+            find "$DERIVED_DATA/Build/Products" -name "*.xctest" -type d | head -10 || true
+            echo "\nContents of first .xctest bundle found:"
+            FIRST_XCTEST=$(find "$DERIVED_DATA/Build/Products" -name "*.xctest" -type d | head -1)
+            if [ -n "$FIRST_XCTEST" ]; then
+              ls -la "$FIRST_XCTEST" || true
+            fi
+          fi
+          
+          # Try to generate LCOV if we have both files
+          echo "\n=== Generating LCOV coverage report ==="
+          if [ -n "$PROFDATA_PATH" ] && [ -n "$TEST_BINARY_PATH" ]; then
+            echo "Found both required files:"
+            echo "  PROFDATA_PATH: $PROFDATA_PATH"
+            echo "  TEST_BINARY_PATH: $TEST_BINARY_PATH"
+            echo "\nRunning llvm-cov export..."
+            
             # Export to LCOV format
             xcrun llvm-cov export \
               -format=lcov \
               -instr-profile="$PROFDATA_PATH" \
-              "$BINARY_PATH" \
+              "$TEST_BINARY_PATH" \
               > ../coverage-${{ matrix.xcode }}-${{ matrix.device }}.lcov
+            
             echo "LCOV coverage report generated successfully"
+            echo "LCOV file size: $(wc -c < ../coverage-${{ matrix.xcode }}-${{ matrix.device }}.lcov) bytes"
+            echo "First 5 lines of LCOV:"
+            head -5 ../coverage-${{ matrix.xcode }}-${{ matrix.device }}.lcov || true
           else
-            echo "ERROR: Could not generate LCOV report - missing profdata or binary"
-            echo "PROFDATA_PATH: $PROFDATA_PATH"
-            echo "BINARY_PATH: $BINARY_PATH"
+            echo "\n=== ERROR: Could not generate LCOV report ==="
+            echo "Missing required files:"
+            echo "  PROFDATA_PATH: ${PROFDATA_PATH:-'NOT FOUND'}"
+            echo "  TEST_BINARY_PATH: ${TEST_BINARY_PATH:-'NOT FOUND'}"
+            
+            # Additional debugging for CI
+            echo "\n=== Additional debugging information ==="
+            echo "Home directory: $HOME"
+            echo "Looking for any DerivedData:"
+            find ~ -maxdepth 3 -type d -name "DerivedData" 2>/dev/null || true
+            echo "\nEnvironment variables:"
+            env | grep -E "(RUNNER|GITHUB|XCODE)" | sort || true
+            
             exit 1
           fi
           
-          # Clean up temporary export directory
-          rm -rf coverage-export
+          # Clean up
+          rm -f coverage.json
 
       - name: Upload coverage report
         if: success()
