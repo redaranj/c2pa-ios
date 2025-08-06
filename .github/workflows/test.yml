@@ -70,50 +70,50 @@ jobs:
         if: success()
         run: |
           cd example
-          
+
           # Get DerivedData path from xcodebuild
           DERIVED_DATA=$(xcodebuild -showBuildSettings -project C2PAExample.xcodeproj -scheme C2PAExample -sdk iphonesimulator | grep -m 1 " BUILD_DIR " | sed 's/.*= //' | sed 's|/Build/Products||')
           echo "Derived data path: $DERIVED_DATA"
-          
+
           # Find Coverage.profdata
           PROFDATA_PATH=""
           if [ -n "$DERIVED_DATA" ]; then
             PROFDATA_PATH=$(find "$DERIVED_DATA/Build/ProfileData" -name "Coverage.profdata" -type f 2>/dev/null | head -1 || true)
           fi
-          
+
           # Method 2: If not found, look in common CI locations
           if [ -z "$PROFDATA_PATH" ]; then
             PROFDATA_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
           fi
-          
+
           echo "Coverage.profdata path: $PROFDATA_PATH"
-          
+
           # Find the test binary
           TEST_BINARY_PATH=""
           if [ -n "$DERIVED_DATA" ]; then
             TEST_BINARY_PATH=$(find "$DERIVED_DATA/Build/Products" -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | head -1 || true)
           fi
-          
+
           # If not found, search more broadly
           if [ -z "$TEST_BINARY_PATH" ]; then
             TEST_BINARY_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
           fi
-          
+
           echo "Test binary path: $TEST_BINARY_PATH"
-          
+
           # Try to generate LCOV if we have both files
           if [ -n "$PROFDATA_PATH" ] && [ -n "$TEST_BINARY_PATH" ]; then
             # Export to LCOV format
             # Use a sanitized filename to avoid shell issues with special characters
             DEVICE_NAME="${{ matrix.device }}"
             SANITIZED_DEVICE=$(echo "$DEVICE_NAME" | tr ' ()' '---')
-            
+
             xcrun llvm-cov export \
               -format=lcov \
               -instr-profile="$PROFDATA_PATH" \
               "$TEST_BINARY_PATH" \
               > "../coverage-${{ matrix.xcode }}-${SANITIZED_DEVICE}.lcov"
-            
+
             echo "LCOV coverage report generated successfully"
           else
             echo "ERROR: Could not generate LCOV report - missing profdata or binary"
@@ -122,9 +122,16 @@ jobs:
             exit 1
           fi
 
-      - name: Upload coverage report
+      - name: Upload coverage report to GitHub
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.xcode }}-${{ matrix.device }}
           path: coverage-*.lcov
+
+      - name: Upload coverage report to Codecov
+        if: success()
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: redaranj/c2pa-ios
