@@ -134,4 +134,4 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: redaranj/c2pa-ios
+          slug: contentauth/c2pa-ios
