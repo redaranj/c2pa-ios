@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		953EDE002DF6DA2E0095F9EF /* C2PA in Frameworks */ = {isa = PBXBuildFile; productRef = 953EDDFF2DF6DA2E0095F9EF /* C2PA */; };
-		95D65F862E017D22009D5F10 /* C2PA in Frameworks */ = {isa = PBXBuildFile; productRef = 95D65F852E017D22009D5F10 /* C2PA */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,7 +67,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				95D65F862E017D22009D5F10 /* C2PA in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -484,11 +482,6 @@
 
 /* Begin XCSwiftPackageProductDependency section */
 		953EDDFF2DF6DA2E0095F9EF /* C2PA */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 953EDDFE2DF6DA2E0095F9EF /* XCLocalSwiftPackageReference "../output/C2PA-iOS" */;
-			productName = C2PA;
-		};
-		95D65F852E017D22009D5F10 /* C2PA */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 953EDDFE2DF6DA2E0095F9EF /* XCLocalSwiftPackageReference "../output/C2PA-iOS" */;
 			productName = C2PA;
