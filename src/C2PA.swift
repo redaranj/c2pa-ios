@@ -825,7 +825,7 @@ public extension Signer {
             ]
 
             var item: CFTypeRef?
-            var status = SecItemCopyMatching(query as CFDictionary, &item)
+            let status = SecItemCopyMatching(query as CFDictionary, &item)
 
             let privateKey: SecKey
             if status == errSecItemNotFound {

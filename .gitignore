@@ -43,3 +43,7 @@ Package.resolved
 *~
 *.swp
 *.swo
+
+# Signing server
+signing-server/Resources/*
+signing-server/Sources/C2PA/*

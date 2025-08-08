@@ -40,11 +40,68 @@ jobs:
       - name: Build iOS Framework
         run: make ios-framework
 
-      - name: Build & test
+      - name: Setup Signing Server
         run: |
-          set -eo pipefail
+          echo "Setting up C2PA signing server..."
+          make setup-server
+
+      - name: Build Signing Server
+        run: |
+          cd signing-server
+          swift build
+
+      - name: Start Signing Server
+        run: |
+          cd signing-server
+          DYLD_LIBRARY_PATH=libs:$DYLD_LIBRARY_PATH .build/debug/Run serve --env development --hostname 127.0.0.1 --port 8080 &
+          echo $! > ../server.pid
+          echo "Server started with PID $(cat ../server.pid)"
+
+      - name: Wait for Server to be Ready
+        run: |
+          echo "Waiting for signing server to be ready..."
+          max_attempts=30
+          attempt=0
+          while [ $attempt -lt $max_attempts ]; do
+            if curl -s http://127.0.0.1:8080/health > /dev/null 2>&1; then
+              echo "✓ Signing server is ready"
+              break
+            fi
+            echo "Waiting for server... (attempt $((attempt + 1))/$max_attempts)"
+            sleep 2
+            attempt=$((attempt + 1))
+          done
+
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Server failed to start after $max_attempts attempts"
+            exit 1
+          fi
+
+      - name: Verify Server Endpoints
+        run: |
+          echo "Testing server endpoints..."
+          curl -v http://127.0.0.1:8080/health || echo "Health check failed"
+          echo ""
+          echo "Server is listening on:"
+          lsof -i :8080 || echo "No process on port 8080"
+
+      - name: Clean Build Directory
+        run: |
           cd example
-          xcrun xcodebuild test \
+          xcodebuild clean -project C2PAExample.xcodeproj -scheme "$SCHEME"
+
+      - name: Resolve Package Dependencies
+        run: |
+          cd example
+          xcodebuild -resolvePackageDependencies -project C2PAExample.xcodeproj -scheme "$SCHEME"
+
+      - name: Build & Test
+        run: |
+          set -o pipefail
+          cd example
+          echo "CI environment variable: true"
+          echo "Testing with server at http://127.0.0.1:8080"
+          TEST_RUNNER_CI=true xcrun xcodebuild test \
             -project C2PAExample.xcodeproj \
             -scheme "$SCHEME" \
             -sdk iphonesimulator \
@@ -54,17 +111,36 @@ jobs:
             | xcpretty --test --color
 
       - name: Generate test summary
+        if: always()
         run: |
           cd example
-          xcrun xcresulttool get test-results summary --path TestResults.xcresult || true
-          xcrun xcresulttool get object --path TestResults.xcresult --format json > test-results.json || true
-          xcrun xcresulttool get test-results tests --path TestResults.xcresult || true
+          if [ -d TestResults.xcresult ]; then
+            echo "=== Test Summary ==="
+            xcrun xcresulttool get test-results summary --path TestResults.xcresult || true
+            echo ""
+            echo "=== Test Results ==="
+            xcrun xcresulttool get test-results tests --path TestResults.xcresult || true
+            echo ""
+            echo "=== Exporting JSON ==="
+            # Use the legacy flag as required by newer versions
+            xcrun xcresulttool get --legacy --path TestResults.xcresult --format json > test-results.json 2>&1 || echo "Failed to export JSON"
+            if [ -s test-results.json ]; then
+              echo "Successfully exported test results to JSON ($(wc -c < test-results.json) bytes)"
+            else
+              echo "Warning: test-results.json is empty or not created"
+            fi
+          else
+            echo "TestResults.xcresult not found"
+          fi
 
       - name: Upload test summary
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: TestSummary-${{ matrix.xcode }}-${{ matrix.device }}
-          path: example/test-results.json
+          path: |
+            example/test-results.json
+            example/TestResults.xcresult
 
       - name: Export coverage LCOV
         if: success()
@@ -75,29 +151,13 @@ jobs:
           DERIVED_DATA=$(xcodebuild -showBuildSettings -project C2PAExample.xcodeproj -scheme C2PAExample -sdk iphonesimulator | grep -m 1 " BUILD_DIR " | sed 's/.*= //' | sed 's|/Build/Products||')
           echo "Derived data path: $DERIVED_DATA"
 
-          # Find Coverage.profdata
-          PROFDATA_PATH=""
-          if [ -n "$DERIVED_DATA" ]; then
-            PROFDATA_PATH=$(find "$DERIVED_DATA/Build/ProfileData" -name "Coverage.profdata" -type f 2>/dev/null | head -1 || true)
-          fi
-
-          # Method 2: If not found, look in common CI locations
-          if [ -z "$PROFDATA_PATH" ]; then
-            PROFDATA_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
-          fi
+          # Find Coverage.profdata - search in common locations
+          PROFDATA_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
 
           echo "Coverage.profdata path: $PROFDATA_PATH"
 
           # Find the test binary
-          TEST_BINARY_PATH=""
-          if [ -n "$DERIVED_DATA" ]; then
-            TEST_BINARY_PATH=$(find "$DERIVED_DATA/Build/Products" -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | head -1 || true)
-          fi
-
-          # If not found, search more broadly
-          if [ -z "$TEST_BINARY_PATH" ]; then
-            TEST_BINARY_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
-          fi
+          TEST_BINARY_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
 
           echo "Test binary path: $TEST_BINARY_PATH"
 
@@ -135,3 +195,20 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: contentauth/c2pa-ios
+
+      - name: Stop Signing Server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            SERVER_PID=$(cat server.pid)
+            echo "Stopping signing server (PID: $SERVER_PID)..."
+            kill $SERVER_PID || true
+            rm server.pid
+          fi
+
+      - name: Upload Server Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs-${{ matrix.xcode }}-${{ matrix.device }}
+          path: signing-server/.build/debug/*.log
