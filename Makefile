@@ -1,4 +1,6 @@
-.PHONY: all clean setup download-binaries ios-framework setup-server server clean-server
+.PHONY: all clean setup download-binaries library publish tests coverage help run-test-app run-example-app \
+        signing-server-start signing-server-stop signing-server-status signing-server-build \
+        tests-with-server workspace-build xcframework
 
 # GitHub Release Configuration
 GITHUB_ORG := contentauth
@@ -8,8 +10,7 @@ C2PA_VERSION := v0.58.0
 ROOT_DIR := $(shell pwd)
 BUILD_DIR := $(ROOT_DIR)/build
 DOWNLOAD_DIR := $(BUILD_DIR)/downloads
-APPLE_DIR := $(ROOT_DIR)
-OUTPUT_DIR := $(ROOT_DIR)/output
+OUTPUT_DIR := $(ROOT_DIR)/Library/output
 
 # Apple targets
 IOS_FRAMEWORK_NAME := C2PAC
@@ -21,8 +22,13 @@ IOS_ARM64_TARGET := aarch64-apple-ios
 IOS_X86_64_TARGET := x86_64-apple-ios
 IOS_ARM64_SIM_TARGET := aarch64-apple-ios-sim
 
+# Build configuration
+CONFIGURATION := Release
+SDK := iphoneos
+DESTINATION := platform=iOS Simulator,name=iPhone 15
+
 # Default target
-all: ios-framework
+all: library
 
 # Setup directories
 setup:
@@ -44,6 +50,14 @@ define download_library
 	$(if $(4),@cp $(DOWNLOAD_DIR)/$(3)/include/c2pa.h $(BUILD_DIR)/patched_headers/c2pa.h.orig)
 endef
 
+# Function to download macOS library (for server)
+# Args: 1=architecture name for display, 2=release filename suffix, 3=target directory name
+define download_macos_library
+	@echo "Downloading macOS $(1) library..."
+	@curl -sL https://github.com/$(GITHUB_ORG)/c2pa-rs/releases/download/c2pa-$(C2PA_VERSION)/c2pa-$(C2PA_VERSION)-$(2).zip -o $(DOWNLOAD_DIR)/$(3).zip
+	@unzip -q -o $(DOWNLOAD_DIR)/$(3).zip -d $(DOWNLOAD_DIR)/$(3)
+endef
+
 # Download pre-built binaries from GitHub releases
 download-binaries: setup
 	@echo "Downloading pre-built binaries from $(GITHUB_ORG)/c2pa-rs release c2pa-$(C2PA_VERSION)..."
@@ -60,7 +74,13 @@ download-binaries: setup
 	
 	@echo "Pre-built binaries downloaded successfully."
 
-ios-framework: download-binaries
+# Complete library build: setup, download binaries, and build framework
+library: setup download-binaries xcframework
+	@echo "Building library Swift package..."
+	@cd library && swift build -c release
+	@echo "Library build completed."
+
+xcframework: download-binaries
 	@echo "Creating XCFramework..."
 	@mkdir -p $(OUTPUT_DIR)
 
@@ -78,77 +98,108 @@ ios-framework: download-binaries
 	# First, make sure the output directory doesn't exist (to avoid conflicts)
 	@rm -rf $(IOS_XCFRAMEWORK_PATH)
 
-	# Create XCFramework and Swift package
-	$(call create_xcframework,$(IOS_XCFRAMEWORK_PATH),$(BUILD_DIR)/ios/device/lib/libc2pa_c.a,$(BUILD_DIR)/ios/simulator/lib/libc2pa_c.a)
-
-	# Clear the output package directory to avoid conflicts
-	@rm -rf $(OUTPUT_DIR)/C2PA-iOS
-	$(call setup_swift_package,$(OUTPUT_DIR)/C2PA-iOS,$(IOS_XCFRAMEWORK_PATH))
-
-	@echo "XCFramework created at $(IOS_XCFRAMEWORK_PATH)"
-	@echo "Swift package ready at $(OUTPUT_DIR)/C2PA-iOS"
-
-# Function to create an XCFramework with device and simulator libraries
-# Args: 1=output path, 2=device lib path, 3=simulator lib path
-define create_xcframework
-	@xcodebuild -create-xcframework \
-		-library $(2) \
+	# Create XCFramework
+	xcodebuild -create-xcframework \
+		-library $(BUILD_DIR)/ios/device/lib/libc2pa_c.a \
 		-headers $(BUILD_DIR)/patched_headers \
-		-library $(3) \
+		-library $(BUILD_DIR)/ios/simulator/lib/libc2pa_c.a \
 		-headers $(BUILD_DIR)/patched_headers \
-		-output $(1)
+		-output $(IOS_XCFRAMEWORK_PATH)
 
-	@echo "Copying module.modulemap and ensuring patched c2pa.h is in XCFramework headers..."
-	@find $(1) -type d -path "*/Headers" | while read headers_dir; do \
-		cp $(APPLE_DIR)/template/module.modulemap "$$headers_dir/"; \
-		cp $(BUILD_DIR)/patched_headers/c2pa.h "$$headers_dir/"; \
-	done
-endef
+	# Create module map for the XCFramework
+	@echo 'module C2PAC {' > $(BUILD_DIR)/module.modulemap
+	@echo '    header "c2pa.h"' >> $(BUILD_DIR)/module.modulemap
+	@echo '    export *' >> $(BUILD_DIR)/module.modulemap
+	@echo '}' >> $(BUILD_DIR)/module.modulemap
 
-# Function to create and setup Swift package
-# Args: 1=output dir, 2=xcframework source path
-define setup_swift_package
-	@mkdir -p $(1)/Sources/C2PA
-	@mkdir -p $(1)/Frameworks
+	# Copy module map to each platform in XCFramework
+	# For static libraries, we need to create the module map in Headers directory
+	@cp $(BUILD_DIR)/module.modulemap $(IOS_XCFRAMEWORK_PATH)/ios-arm64/Headers/module.modulemap || true
+	@cp $(BUILD_DIR)/module.modulemap $(IOS_XCFRAMEWORK_PATH)/ios-arm64_x86_64-simulator/Headers/module.modulemap || true
 
-	# Copy Swift wrapper files
-	@cp $(APPLE_DIR)/src/C2PA.swift $(1)/Sources/C2PA/
-	@cp $(APPLE_DIR)/src/CertificateManager.swift $(1)/Sources/C2PA/
-	@cp $(APPLE_DIR)/template/Package.swift $(1)/
+	@echo "XCFramework created successfully at $(IOS_XCFRAMEWORK_PATH)"
 
-	# Copy XCFramework
-	@cp -r $(2) $(1)/Frameworks/
-
-	@echo "Swift package ready at $(1)"
-endef
-
-# iOS simulator-only quick build - optimized for Apple Silicon Macs (arm64 only)
-ios-dev: setup download-binaries
-	@echo "Building for iOS arm64 simulator only (optimized for Apple Silicon)..."
+# Build iOS development version (arm64 simulator only - optimized for Apple Silicon Macs)
+ios-dev: setup
+	@echo "Building iOS development version (arm64 simulator only)..."
+	
+	# Download only the arm64 simulator library
+	$(call download_library,arm64 simulator,aarch64-apple-ios-sim,arm64-simulator,true)
+	
+	# Patch the header file
+	@echo "Patching c2pa.h header..."
+	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' $(BUILD_DIR)/patched_headers/c2pa.h.orig > $(BUILD_DIR)/patched_headers/c2pa.h
+	
+	# Create simulator directory
+	@mkdir -p $(BUILD_DIR)/ios/simulator/lib
+	@cp $(BUILD_DIR)/ios/arm64-simulator/lib/libc2pa_c.a $(BUILD_DIR)/ios/simulator/lib/
+	
+	# Create XCFramework with only arm64 simulator
 	@rm -rf $(IOS_XCFRAMEWORK_PATH)
-	$(call create_xcframework,$(IOS_XCFRAMEWORK_PATH),$(BUILD_DIR)/ios/arm64-simulator/lib/libc2pa_c.a,$(BUILD_DIR)/ios/arm64-simulator/lib/libc2pa_c.a)
-	@rm -rf $(OUTPUT_DIR)/C2PA-iOS
-	$(call setup_swift_package,$(OUTPUT_DIR)/C2PA-iOS,$(IOS_XCFRAMEWORK_PATH))
-	@echo "iOS simulator-only XCFramework built at $(IOS_XCFRAMEWORK_PATH)"
+	xcodebuild -create-xcframework \
+		-library $(BUILD_DIR)/ios/simulator/lib/libc2pa_c.a \
+		-headers $(BUILD_DIR)/patched_headers \
+		-output $(IOS_XCFRAMEWORK_PATH)
+	
+	# Create module map
+	@echo 'module C2PAC {' > $(BUILD_DIR)/module.modulemap
+	@echo '    header "c2pa.h"' >> $(BUILD_DIR)/module.modulemap
+	@echo '    export *' >> $(BUILD_DIR)/module.modulemap
+	@echo '}' >> $(BUILD_DIR)/module.modulemap
+	
+	# Copy module map to XCFramework
+	@cp $(BUILD_DIR)/module.modulemap $(IOS_XCFRAMEWORK_PATH)/ios-arm64-simulator/C2PAC.framework/Modules/module.modulemap
+	
+	@echo "iOS development build complete (arm64 simulator only)"
 
-# Clean target
-clean:
-	@echo "Cleaning build artifacts..."
-	@rm -rf $(BUILD_DIR)
-	@rm -rf $(OUTPUT_DIR)
-	@echo "Clean completed."
+# Build entire workspace
+workspace-build: library
+	@echo "Building workspace..."
+	@xcodebuild -workspace C2PA.xcworkspace -scheme TestApp -configuration $(CONFIGURATION) build
+	@xcodebuild -workspace C2PA.xcworkspace -scheme ExampleApp -configuration $(CONFIGURATION) build
+	@echo "Workspace build completed."
 
-# Function to download and extract macOS library for server
-# Args: 1=architecture name for display, 2=release filename suffix, 3=target directory name
-define download_macos_library
-	@echo "Downloading macOS $(1) library..."
-	@mkdir -p $(DOWNLOAD_DIR)
-	@curl -sL https://github.com/$(GITHUB_ORG)/c2pa-rs/releases/download/c2pa-$(C2PA_VERSION)/c2pa-$(C2PA_VERSION)-$(2).zip -o $(DOWNLOAD_DIR)/$(3).zip
-	@unzip -q -o $(DOWNLOAD_DIR)/$(3).zip -d $(DOWNLOAD_DIR)/$(3)
-endef
+# Run all tests including unit and UI tests
+tests: library
+	@echo "Running library unit tests..."
+	@cd library && swift test
+	@echo "Running test app UI tests..."
+	@xcodebuild test -workspace C2PA.xcworkspace -scheme TestApp -destination '$(DESTINATION)'
 
-# Server targets
-setup-server:
+# Generate code coverage report
+coverage: library
+	@echo "Running tests with coverage..."
+	@cd library && swift test --enable-code-coverage
+	@echo "Coverage report generated."
+
+# Run test app
+run-test-app: library
+	@echo "Building and running test app..."
+	@xcodebuild -workspace C2PA.xcworkspace -scheme TestApp -configuration Debug -destination '$(DESTINATION)' -derivedDataPath $(BUILD_DIR)/DerivedData build
+	@xcrun simctl boot "iPhone 15" || true
+	@xcrun simctl install "iPhone 15" "$(BUILD_DIR)/DerivedData/Build/Products/Debug-iphonesimulator/TestApp.app"
+	@xcrun simctl launch "iPhone 15" org.contentauth.c2pa.testapp
+
+# Run example app
+run-example-app: library
+	@echo "Building and running example app..."
+	@xcodebuild -workspace C2PA.xcworkspace -scheme ExampleApp -configuration Debug -destination '$(DESTINATION)' -derivedDataPath $(BUILD_DIR)/DerivedData build
+	@xcrun simctl boot "iPhone 15" || true
+	@xcrun simctl install "iPhone 15" "$(BUILD_DIR)/DerivedData/Build/Products/Debug-iphonesimulator/ExampleApp.app"
+	@xcrun simctl launch "iPhone 15" org.contentauth.c2pa.exampleapp
+
+# Publish library to GitHub packages or CocoaPods
+publish: library
+	@echo "Publishing library..."
+	@cd library && swift package update
+	@echo "Ready to publish. Add pod push or GitHub release commands here."
+
+# Tests with signing server
+tests-with-server: signing-server-start tests signing-server-stop
+	@echo "Tests with server completed."
+
+# Setup local test server with signing capabilities
+signing-server-build:
 	@echo "Setting up C2PA signing server..."
 	@command -v swift >/dev/null 2>&1 || { echo "Error: Swift is required but not installed."; exit 1; }
 	
@@ -172,8 +223,8 @@ setup-server:
 	@rm -f signing-server/Sources/C2PA/include/c2pa.h.orig
 	
 	# Copy Swift files and module map
-	@cp src/C2PA.swift signing-server/Sources/C2PA/
-	@cp src/CertificateManager.swift signing-server/Sources/C2PA/
+	@cp library/Sources/C2PA/C2PA.swift signing-server/Sources/C2PA/
+	@cp library/Sources/C2PA/CertificateManager.swift signing-server/Sources/C2PA/
 	@cp template/module.modulemap signing-server/Sources/C2PA/
 	# Update header path in module map for server structure
 	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' signing-server/Sources/C2PA/module.modulemap
@@ -185,36 +236,56 @@ setup-server:
 	@cd signing-server && swift package resolve
 	@echo "Server setup complete!"
 
-server: setup-server
+signing-server-start: signing-server-build
 	@echo "Building server..."
 	@cd signing-server && swift build
-	@echo "Starting C2PA signing server in development mode..."
-	@cd signing-server && DYLD_LIBRARY_PATH=libs:$$DYLD_LIBRARY_PATH .build/debug/Run serve --env development --hostname 127.0.0.1 --port 8080
+	@echo "Starting signing server..."
+	@cd signing-server && swift run Run > ../signing-server.log 2>&1 &
+	@echo "Signing server started. Check signing-server.log for details."
+	@echo "Server running at http://localhost:8080"
+	@echo "Server is now running. Use 'make signing-server-stop' to stop it."
 
-clean-server:
-	@echo "Cleaning server build artifacts and copied files..."
-	@cd signing-server && swift package clean
-	@cd signing-server && rm -rf .build
+# Stop the signing server
+signing-server-stop:
+	@echo "Stopping signing server..."
+	@pkill -f "Run serve" || true
+	@pkill -f ".build/debug/Run" || true
+	@echo "Server stopped."
+
+# Check signing server status
+signing-server-status:
+	@echo "Checking signing server status..."
+	@ps aux | grep -v grep | grep "Run" | grep "signing-server" || echo "Server is not running"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning build artifacts..."
+	@rm -rf $(BUILD_DIR)
+	@rm -rf $(OUTPUT_DIR)
+	@rm -rf library/.build
+	@rm -rf test-app/build
+	@rm -rf example-app/build
+	@rm -rf signing-server/.build
 	@rm -rf signing-server/libs
 	@rm -rf signing-server/Sources/C2PA
 	@rm -rf signing-server/Resources
-	@echo "Server clean completed."
+	@echo "Clean complete."
 
-# Helper to show available targets
+# Help target
 help:
 	@echo "Available targets:"
-	@echo ""
-	@echo "iOS Framework:"
-	@echo "  setup                 - Create necessary directories"
-	@echo "  download-binaries     - Download pre-built binaries from GitHub releases"
-	@echo "  ios-dev               - Build iOS library for arm64 simulator only (optimized for Apple Silicon)"
-	@echo "  ios-framework         - Create iOS XCFramework"
-	@echo "  all                   - Build iOS framework (default)"
-	@echo "  clean                 - Remove build artifacts"
-	@echo ""
-	@echo "Test Server:"
-	@echo "  setup-server          - Set up the C2PA signing server (downloads libs, copies files)"
-	@echo "  server                - Build and run the signing server (port 8080)"
-	@echo "  clean-server          - Clean server build artifacts"
-	@echo ""
-	@echo "  help                  - Show this help message"
+	@echo "  make              - Build the library (default)"
+	@echo "  make library      - Build the C2PA library and framework"
+	@echo "  make tests        - Run all tests"
+	@echo "  make coverage     - Generate test coverage report"
+	@echo "  make run-test-app - Build and run the test app in simulator"
+	@echo "  make run-example-app - Build and run the example app in simulator"
+	@echo "  make workspace-build - Build entire workspace"
+	@echo "  make ios-dev      - Build for development (arm64 simulator only)"
+	@echo "  make publish      - Prepare library for publishing"
+	@echo "  make signing-server-start - Start the signing server"
+	@echo "  make signing-server-stop  - Stop the signing server"
+	@echo "  make signing-server-status - Check server status"
+	@echo "  make tests-with-server - Run tests with signing server"
+	@echo "  make clean        - Clean all build artifacts"
+	@echo "  make help         - Show this help message"
