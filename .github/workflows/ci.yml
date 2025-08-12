@@ -1,0 +1,232 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ created ]
+
+env:
+  XCODE_VERSION: '15.2'
+  IOS_DESTINATION: 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
+  MACOS_DESTINATION: 'platform=macOS'
+  C2PA_VERSION: 'v0.58.0'
+
+jobs:
+  # Lint and Format Check
+  lint:
+    name: Lint and Format
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Install SwiftLint
+        run: brew install swiftlint
+      
+      - name: Run SwiftLint
+        run: swiftlint lint --strict
+      
+      - name: Check Swift Format
+        run: swift-format lint --recursive Sources Tests
+
+  # Build and Test Matrix
+  test:
+    name: Test (${{ matrix.platform }})
+    runs-on: macos-14
+    strategy:
+      matrix:
+        platform: [ios, macos, tvos]
+        include:
+          - platform: ios
+            destination: 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
+          - platform: macos
+            destination: 'platform=macOS'
+          - platform: tvos
+            destination: 'platform=tvOS Simulator,name=Apple TV,OS=17.2'
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Cache Swift Package Dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .build
+            ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-spm-${{ hashFiles('Package.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+      
+      - name: Cache C2PA Libraries
+        uses: actions/cache@v3
+        with:
+          path: |
+            build
+            output
+          key: ${{ runner.os }}-c2pa-${{ env.C2PA_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-c2pa-
+      
+      - name: Download C2PA Libraries
+        run: make download-binaries
+      
+      - name: Build XCFramework
+        run: make xcframework
+      
+      - name: Build Package
+        run: |
+          xcodebuild build \
+            -scheme C2PA-iOS \
+            -destination "${{ matrix.destination }}" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+      
+      - name: Run Tests with Coverage
+        run: |
+          xcodebuild test \
+            -scheme C2PA-iOS \
+            -destination "${{ matrix.destination }}" \
+            -configuration Debug \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults-${{ matrix.platform }}.xcresult \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+      
+      - name: Generate Coverage Report
+        run: |
+          xcrun xccov view --report --json TestResults-${{ matrix.platform }}.xcresult > coverage-${{ matrix.platform }}.json
+      
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage-${{ matrix.platform }}.json
+          flags: ${{ matrix.platform }}
+          name: ${{ matrix.platform }}-coverage
+      
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: TestResults-${{ matrix.platform }}.xcresult
+
+  # Performance Tests
+  performance:
+    name: Performance Tests
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Download C2PA Libraries
+        run: make download-binaries
+      
+      - name: Build XCFramework
+        run: make xcframework
+      
+      - name: Run Performance Tests
+        run: |
+          xcodebuild test \
+            -scheme C2PA-iOS \
+            -testPlan C2PA \
+            -configuration Performance \
+            -destination "${{ env.IOS_DESTINATION }}" \
+            -only-testing:C2PAPerformanceTests \
+            -resultBundlePath PerformanceResults.xcresult
+      
+      - name: Extract Performance Metrics
+        run: |
+          xcrun xcresulttool get --path PerformanceResults.xcresult \
+            --format json > performance-metrics.json
+      
+      - name: Upload Performance Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-results
+          path: |
+            PerformanceResults.xcresult
+            performance-metrics.json
+
+  # Documentation
+  documentation:
+    name: Generate Documentation
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Build Documentation
+        run: |
+          xcodebuild docbuild \
+            -scheme C2PA-iOS \
+            -destination "${{ env.MACOS_DESTINATION }}" \
+            -derivedDataPath ./DerivedData
+      
+      - name: Process Documentation for Static Hosting
+        run: |
+          xcrun docc process-archive \
+            transform-for-static-hosting ./DerivedData/Build/Products/Debug/C2PA.doccarchive \
+            --output-path ./docs \
+            --hosting-base-path c2pa-ios
+      
+      - name: Upload Documentation
+        uses: actions/upload-artifact@v3
+        with:
+          name: documentation
+          path: docs
+
+  # Binary Distribution
+  release:
+    name: Create Release
+    runs-on: macos-14
+    if: github.event_name == 'release'
+    needs: [lint, test]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
+      
+      - name: Download C2PA Libraries
+        run: make download-binaries
+      
+      - name: Build XCFramework
+        run: make xcframework
+      
+      - name: Create XCFramework Archive
+        run: |
+          zip -r C2PAC.xcframework.zip output/C2PAC.xcframework
+      
+      - name: Build Swift Package
+        run: swift build -c release
+      
+      - name: Create Release Archive
+        run: |
+          tar czf c2pa-ios-${{ github.event.release.tag_name }}.tar.gz \
+            Sources \
+            Package.swift \
+            LICENSE* \
+            README.md
+      
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            C2PAC.xcframework.zip
+            c2pa-ios-${{ github.event.release.tag_name }}.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,133 @@
+{
+  "configurations" : [
+    {
+      "id" : "DEDEBAFA-DFB4-4AD5-B24C-FF5ECB7EE1E8",
+      "name" : "Debug",
+      "options" : {
+        "codeCoverageEnabled" : true,
+        "diagnosticCollectionPolicy" : "keepLogs",
+        "executionTimeAllowance" : 60,
+        "maximumTestExecutionTimeAllowance" : 60,
+        "testTimeoutsEnabled" : true
+      }
+    },
+    {
+      "id" : "8A4B5F1C-2D3E-4F5A-B6C7-D8E9F0A1B2C3",
+      "name" : "Release",
+      "options" : {
+        "codeCoverageEnabled" : false,
+        "environmentVariableEntries" : [
+          {
+            "key" : "RELEASE_TESTING",
+            "value" : "1"
+          }
+        ]
+      }
+    },
+    {
+      "id" : "9B5C6D2E-3F4A-5B6C-C7D8-E9F0A1B2C3D4",
+      "name" : "CI",
+      "options" : {
+        "codeCoverageEnabled" : true,
+        "maximumTestRepetitions" : 3,
+        "testRepetitionMode" : "retryOnFailure",
+        "threadSanitizerEnabled" : true,
+        "addressSanitizerEnabled" : true,
+        "undefinedBehaviorSanitizerEnabled" : true
+      }
+    },
+    {
+      "id" : "AC6D7E3F-4A5B-6C7D-D8E9-F0A1B2C3D4E5",
+      "name" : "Performance",
+      "options" : {
+        "codeCoverageEnabled" : false,
+        "gatherLocalizationMetrics" : true,
+        "performanceMetricsToGather" : ["CPU", "Memory", "Disk", "Network"]
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverageEnabled" : true,
+    "commandLineArgumentEntries" : [
+      {
+        "argument" : "-com.apple.CoreData.SQLDebug 1",
+        "enabled" : false
+      }
+    ],
+    "environmentVariableEntries" : [
+      {
+        "key" : "C2PA_TEST_MODE",
+        "value" : "1"
+      }
+    ],
+    "language" : "en",
+    "region" : "US",
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:C2PA.xcworkspace",
+      "identifier" : "C2PATests",
+      "name" : "C2PATests"
+    },
+    "testExecutionOrdering" : "random"
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "C2PATests",
+        "name" : "C2PATests"
+      },
+      "testGroups" : [
+        {
+          "name" : "Unit Tests",
+          "tests" : [
+            {
+              "identifier" : "C2PATests",
+              "name" : "C2PATests"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "C2PAIntegrationTests",
+        "name" : "C2PAIntegrationTests"
+      },
+      "testGroups" : [
+        {
+          "name" : "Integration Tests",
+          "tests" : [
+            {
+              "identifier" : "C2PAIntegrationTests",
+              "name" : "C2PAIntegrationTests"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "enabled" : false,
+      "parallelizable" : false,
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "C2PAPerformanceTests",
+        "name" : "C2PAPerformanceTests"
+      },
+      "testGroups" : [
+        {
+          "name" : "Performance Tests",
+          "tests" : [
+            {
+              "identifier" : "C2PAPerformanceTests",
+              "name" : "C2PAPerformanceTests"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "version" : 1
+}
