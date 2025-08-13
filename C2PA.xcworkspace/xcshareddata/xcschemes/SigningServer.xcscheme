@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1540"
+   LastUpgradeVersion = "1640"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "SigningServer"
+               BlueprintIdentifier = "9A1234621234567890ABCDEF"
                BuildableName = "SigningServer"
                BlueprintName = "SigningServer"
-               ReferencedContainer = "container:signing-server">
+               ReferencedContainer = "container:SigningServer/SigningServer.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,10 +45,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "SigningServer"
+            BlueprintIdentifier = "9A1234621234567890ABCDEF"
             BuildableName = "SigningServer"
             BlueprintName = "SigningServer"
-            ReferencedContainer = "container:signing-server">
+            ReferencedContainer = "container:SigningServer/SigningServer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <CommandLineArguments>
@@ -67,6 +67,11 @@
             value = "debug"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "DYLD_LIBRARY_PATH"
+            value = "$(SRCROOT)/SigningServer/libs:$(DYLD_LIBRARY_PATH)"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
    </LaunchAction>
    <ProfileAction
@@ -79,10 +84,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "SigningServer"
+            BlueprintIdentifier = "9A1234621234567890ABCDEF"
             BuildableName = "SigningServer"
             BlueprintName = "SigningServer"
-            ReferencedContainer = "container:signing-server">
+            ReferencedContainer = "container:SigningServer/SigningServer.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

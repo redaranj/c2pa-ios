@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9A12345C1234567890ABCDEF /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1234581234567890ABCDEF /* main.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -75,6 +74,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9A1234631234567890ABCDEF /* Build configuration list for PBXNativeTarget "SigningServer" */;
 			buildPhases = (
+				9A1234701234567890ABCDEF /* Download C2PA Libraries */,
 				9A1234641234567890ABCDEF /* Sources */,
 				9A1234651234567890ABCDEF /* Frameworks */,
 				9A1234661234567890ABCDEF /* Run Script - Build with Swift Package Manager */,
@@ -122,6 +122,25 @@
 /* End PBXProject section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		9A1234701234567890ABCDEF /* Download C2PA Libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Download C2PA Libraries";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/../Library/output/C2PAC.xcframework",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# First build the Library XCFramework if it doesn't exist\nXCFRAMEWORK_PATH=\"${SRCROOT}/../Library/output/C2PAC.xcframework\"\nif [ ! -d \"$XCFRAMEWORK_PATH\" ]; then\n    echo \"Building C2PA XCFramework first...\"\n    cd \"${SRCROOT}/..\"\n    make library\nfi\n\n# Setup SigningServer with macOS C2PA library\nSCRIPT_PATH=\"${SRCROOT}/../../scripts/setup-signing-server.sh\"\nif [ -f \"$SCRIPT_PATH\" ]; then\n    echo \"Running SigningServer setup script...\"\n    bash \"$SCRIPT_PATH\"\nelse\n    echo \"Warning: setup script not found at $SCRIPT_PATH\"\n    # Check if libs already exist\n    if [ -f \"${SRCROOT}/libs/libc2pa_c.dylib\" ]; then\n        echo \"Using existing library at ${SRCROOT}/libs/libc2pa_c.dylib\"\n    else\n        echo \"Error: No C2PA library found. Please run setup-signing-server.sh first.\"\n        exit 1\n    fi\nfi\n";
+		};
 		9A1234661234567890ABCDEF /* Run Script - Build with Swift Package Manager */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -138,7 +157,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "cd \"$SRCROOT\"\nswift build -c debug\ncp .build/debug/Run \"$BUILT_PRODUCTS_DIR/SigningServer\"\n";
+			shellScript = "cd \"$SRCROOT\"\n# Set library path for build\nexport DYLD_LIBRARY_PATH=\"${SRCROOT}/libs:${DYLD_LIBRARY_PATH}\"\n# Build the SPM package\nswift build -c debug -Xlinker -L${SRCROOT}/libs\n# Copy the executable to the build products directory\ncp .build/debug/SigningServer \"$BUILT_PRODUCTS_DIR/SigningServer\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -147,7 +166,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9A12345C1234567890ABCDEF /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

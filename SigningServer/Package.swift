@@ -36,7 +36,7 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "Crypto", package: "swift-crypto"),
-                .product(name: "C2PA", package: "C2PA")
+                .product(name: "C2PA", package: "Library")
             ],
             linkerSettings: [
                 .unsafeFlags(["-Llibs", "-lc2pa_c"])

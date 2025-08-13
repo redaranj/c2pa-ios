@@ -1,18 +1,38 @@
 .PHONY: all clean build test run-tests run-example run-testapp help \
-        workspace library signing-server
+        workspace library signing-server testshared
 
 # Configuration
 CONFIGURATION := Release
 DEBUG_CONFIGURATION := Debug
-SIMULATOR_DESTINATION := platform=iOS Simulator,name=iPhone 15
-# DerivedData follows Apple's convention - in Build directory under workspace root
-DERIVED_DATA_PATH := Build/DerivedData
+
+# Detect architecture
+ARCH := $(shell uname -m)
+ifeq ($(ARCH),arm64)
+    SIM_ARCH := arm64
+else
+    SIM_ARCH := x86_64
+endif
+
+# Simulator settings - using generic destination to let Xcode pick appropriate simulator
+# Use a specific device ID or name for more reliable builds
+SIMULATOR_DESTINATION := platform=iOS Simulator,id=4AC016CA-3FE0-4C21-8F98-0BED14CF8138
+
+# DerivedData path - can be overridden with environment variable
+# Use a consistent location based on workspace name
+WORKSPACE_NAME := C2PA
+DERIVED_DATA_BASE := $(HOME)/Library/Developer/Xcode/DerivedData
+# Find the actual DerivedData folder for this workspace
+DERIVED_DATA_PATH := $(shell ls -d $(DERIVED_DATA_BASE)/$(WORKSPACE_NAME)-* 2>/dev/null | head -n1)
+ifeq ($(DERIVED_DATA_PATH),)
+    # If no existing DerivedData, use a predictable name
+    DERIVED_DATA_PATH := $(DERIVED_DATA_BASE)/$(WORKSPACE_NAME)-generated
+endif
 
 # Default target
 all: build
 
-# Build the entire workspace
-build: workspace
+# Build the entire workspace - library first, then TestShared, then TestApp
+build: library testshared testapp
 
 # Build the workspace with all targets
 workspace:
@@ -20,24 +40,55 @@ workspace:
 	xcodebuild -workspace C2PA.xcworkspace \
 		-scheme "C2PA" \
 		-configuration $(CONFIGURATION) \
+		-destination "generic/platform=iOS" \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
 		build
 	@echo "Workspace build completed."
 
-# Build just the library
+# Build TestApp
+testapp: library testshared
+	@echo "Building TestApp..."
+	xcodebuild -workspace C2PA.xcworkspace \
+		-scheme "TestApp" \
+		-configuration $(DEBUG_CONFIGURATION) \
+		-destination '$(SIMULATOR_DESTINATION)' \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		build
+	@echo "TestApp build completed."
+
+# Build just the library for both device and simulator
 library:
-	@echo "Building C2PA library..."
+	@echo "Building C2PA library for device..."
 	xcodebuild -project Library/Library.xcodeproj \
 		-scheme "C2PA" \
 		-configuration $(CONFIGURATION) \
+		-destination "generic/platform=iOS" \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		build
+	@echo "Building C2PA library for simulator..."
+	xcodebuild -project Library/Library.xcodeproj \
+		-scheme "C2PA" \
+		-configuration $(CONFIGURATION) \
+		-destination '$(SIMULATOR_DESTINATION)' \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
 		build
 	@echo "Library build completed."
 
+# Build TestShared framework
+testshared:
+	@echo "Building TestShared framework..."
+	xcodebuild -workspace C2PA.xcworkspace \
+		-scheme "TestShared" \
+		-configuration $(DEBUG_CONFIGURATION) \
+		-destination '$(SIMULATOR_DESTINATION)' \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		build
+	@echo "TestShared build completed."
+
 # Build SigningServer
 signing-server:
 	@echo "Building SigningServer..."
-	xcodebuild -project SigningServer/SigningServer.xcodeproj \
+	xcodebuild -workspace C2PA.xcworkspace \
 		-scheme "SigningServer" \
 		-configuration $(CONFIGURATION) \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
@@ -45,16 +96,26 @@ signing-server:
 	@echo "SigningServer build completed."
 
 # Run tests
-test: run-tests
+test: test-library run-tests
+
+# Run library tests using the LibraryTests scheme
+test-library: library testshared
+	@echo "Running C2PA library tests with TestShared..."
+	xcodebuild test \
+		-workspace C2PA.xcworkspace \
+		-scheme "LibraryTests" \
+		-destination '$(SIMULATOR_DESTINATION)' \
+		-derivedDataPath $(DERIVED_DATA_PATH)
+	@echo "C2PA library tests completed."
 
 run-tests:
-	@echo "Running tests..."
+	@echo "Running TestApp tests..."
 	xcodebuild test \
 		-workspace C2PA.xcworkspace \
 		-scheme "TestApp" \
 		-destination '$(SIMULATOR_DESTINATION)' \
 		-derivedDataPath $(DERIVED_DATA_PATH)
-	@echo "Tests completed."
+	@echo "TestApp tests completed."
 
 # Run ExampleApp in simulator
 run-example:
@@ -96,9 +157,17 @@ run-testapp:
 
 # Clean all build artifacts
 clean:
-	@echo "Cleaning build artifacts..."
+	@echo "Cleaning all workspace build artifacts..."
 	xcodebuild -workspace C2PA.xcworkspace \
 		-scheme "C2PA" \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		clean
+	xcodebuild -workspace C2PA.xcworkspace \
+		-scheme "TestShared" \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		clean
+	xcodebuild -workspace C2PA.xcworkspace \
+		-scheme "TestApp" \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
 		clean
 	@echo "Clean complete."
@@ -143,20 +212,31 @@ settings:
 		-scheme "C2PA" \
 		-showBuildSettings
 
+# Quick build check - build TestApp only (fastest way to verify everything works)
+quick: testapp
+	@echo "Quick build check completed successfully!"
+
+# Verify builds are working
+verify: clean build
+	@echo "Build verification completed successfully!"
+
 # Help target
 help:
 	@echo "C2PA iOS - Xcode Build Commands"
 	@echo "================================"
 	@echo ""
 	@echo "Build targets:"
-	@echo "  make              - Build the entire workspace (default)"
+	@echo "  make              - Build library, TestShared, and TestApp (default)"
 	@echo "  make workspace    - Build all workspace projects"
-	@echo "  make library      - Build just the C2PA library"
+	@echo "  make library      - Build C2PA library for device and simulator"
+	@echo "  make testshared   - Build TestShared framework"
+	@echo "  make testapp      - Build TestApp (includes dependencies)"
 	@echo "  make signing-server - Build the SigningServer"
 	@echo ""
 	@echo "Testing:"
-	@echo "  make test         - Run all tests"
-	@echo "  make run-tests    - Run tests (alias for 'test')"
+	@echo "  make test         - Run all tests (C2PA Library + TestApp)"
+	@echo "  make test-library - Run C2PA library tests"
+	@echo "  make run-tests    - Run TestApp tests"
 	@echo ""
 	@echo "Running apps:"
 	@echo "  make run-example  - Build and run ExampleApp in simulator"
@@ -173,6 +253,18 @@ help:
 	@echo "  make settings     - Show build settings"
 	@echo "  make help         - Show this help message"
 	@echo ""
+	@echo "Quick targets:"
+	@echo "  make quick        - Quick build check (TestApp only)"
+	@echo "  make verify       - Clean and rebuild everything"
+	@echo ""
 	@echo "Configuration:"
 	@echo "  CONFIGURATION=$(CONFIGURATION) (default)"
-	@echo "  Use 'make CONFIGURATION=Debug build' for debug builds"
+	@echo "  DEBUG_CONFIGURATION=$(DEBUG_CONFIGURATION)"
+	@echo "  Architecture: $(ARCH) (Simulator: $(SIM_ARCH))"
+	@echo "  DerivedData: $(DERIVED_DATA_PATH)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make              - Build everything"
+	@echo "  make quick        - Quick TestApp build to verify setup"
+	@echo "  make clean build  - Clean rebuild"
+	@echo "  make CONFIGURATION=Debug build - Debug build"

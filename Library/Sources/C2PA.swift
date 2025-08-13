@@ -150,7 +150,7 @@ public struct SignerInfo {
     }
 }
 
-public final class Signer {
+public final class C2PASigner {
     // raw pointer owned
     let ptr: UnsafeMutablePointer<C2paSigner>
     private var retainedContext: Unmanaged<AnyObject>?
@@ -537,7 +537,7 @@ public final class Builder {
     public func sign(format: String,
                      source: Stream,
                      destination: Stream,
-                     signer: Signer) throws -> Data
+                     signer: C2PASigner) throws -> Data
     {
         var manifestPtr: UnsafePointer<UInt8>?
         let size = try guardNonNegative(
@@ -617,7 +617,7 @@ public enum C2PA {
 public typealias WebServiceRequestBuilder = (Data) throws -> URLRequest
 public typealias WebServiceResponseParser = (Data, HTTPURLResponse) throws -> Data
 
-public extension Signer {
+public extension C2PASigner {
     convenience init(algorithm: SigningAlgorithm,
                      certificateChainPEM: String,
                      tsaURL: String? = nil,
@@ -721,7 +721,7 @@ public enum WebServiceHelpers {
 
 // MARK: - Keychain Signing --------------------------------------------------
 
-public extension Signer {
+public extension C2PASigner {
     convenience init(algorithm: SigningAlgorithm,
                      certificateChainPEM: String,
                      tsaURL: String? = nil,
@@ -802,7 +802,7 @@ public struct SecureEnclaveSignerConfig {
 }
 
 @available(iOS 13.0, macOS 10.15, *)
-public extension Signer {
+public extension C2PASigner {
     convenience init(algorithm: SigningAlgorithm,
                      certificateChainPEM: String,
                      tsaURL: String? = nil,
@@ -829,7 +829,7 @@ public extension Signer {
 
             let privateKey: SecKey
             if status == errSecItemNotFound {
-                privateKey = try Signer.createSecureEnclaveKey(config: secureEnclaveConfig)
+                privateKey = try C2PASigner.createSecureEnclaveKey(config: secureEnclaveConfig)
             } else if status == errSecSuccess,
                       let key = item as! SecKey?
             {
@@ -907,7 +907,7 @@ public extension Signer {
 
 // MARK: - Helper Extensions -------------------------------------------------
 
-public extension Signer {
+public extension C2PASigner {
     static func exportPublicKeyPEM(fromKeychainTag keyTag: String) throws -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
