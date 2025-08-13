@@ -6,10 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		9A12345C1234567890ABCDEF /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A1234581234567890ABCDEF /* main.swift */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		9A1234551234567890ABCDEF /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		9A1234571234567890ABCDEF /* Sources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sources; sourceTree = "<group>"; };
+		9A1234581234567890ABCDEF /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
 		9A1234601234567890ABCDEF /* SigningServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SigningServer; sourceTree = BUILT_PRODUCTS_DIR; };
+		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
+		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
+		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -26,10 +34,30 @@
 		9A1234501234567890ABCDEF = {
 			isa = PBXGroup;
 			children = (
+				BC1234591234567890ABCDEF /* Configurations */,
 				9A1234551234567890ABCDEF /* Package.swift */,
 				9A1234571234567890ABCDEF /* Sources */,
+				9A1234591234567890ABCDEF /* Run */,
 				9A1234611234567890ABCDEF /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		BC1234591234567890ABCDEF /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				BC1234561234567890ABCDEF /* Base.xcconfig */,
+				BC1234571234567890ABCDEF /* Debug.xcconfig */,
+				BC1234581234567890ABCDEF /* Release.xcconfig */,
+			);
+			name = Configurations;
+			sourceTree = "<group>";
+		};
+		9A1234591234567890ABCDEF /* Run */ = {
+			isa = PBXGroup;
+			children = (
+				9A1234581234567890ABCDEF /* main.swift */,
+			);
+			path = "Sources/Run";
 			sourceTree = "<group>";
 		};
 		9A1234611234567890ABCDEF /* Products */ = {
@@ -119,6 +147,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9A12345C1234567890ABCDEF /* main.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -127,6 +156,7 @@
 /* Begin XCBuildConfiguration section */
 		9A1234521234567890ABCDEF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BC1234571234567890ABCDEF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -190,6 +220,7 @@
 		};
 		9A1234531234567890ABCDEF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BC1234581234567890ABCDEF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

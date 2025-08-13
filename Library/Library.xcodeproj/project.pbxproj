@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 56;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -12,12 +12,14 @@
 		8B8FA1EDA73848AC9F2EAB81 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234591234567890ABCDEF /* Models.swift */; };
 /* End PBXBuildFile section */
 
-
 /* Begin PBXFileReference section */
 		8A1234501234567890ABCDEF /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		8A1234551234567890ABCDEF /* C2PA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = C2PA.swift; sourceTree = "<group>"; };
 		8A1234571234567890ABCDEF /* CertificateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificateManager.swift; sourceTree = "<group>"; };
 		8A1234591234567890ABCDEF /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
+		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
+		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -34,9 +36,20 @@
 		8A1234491234567890ABCDEF = {
 			isa = PBXGroup;
 			children = (
+				BC1234591234567890ABCDEF /* Configurations */,
 				8A1234541234567890ABCDEF /* Sources */,
 				8A1234511234567890ABCDEF /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		BC1234591234567890ABCDEF /* Configurations */ = {
+			isa = PBXGroup;
+			children = (
+				BC1234561234567890ABCDEF /* Base.xcconfig */,
+				BC1234571234567890ABCDEF /* Debug.xcconfig */,
+				BC1234581234567890ABCDEF /* Release.xcconfig */,
+			);
+			name = Configurations;
 			sourceTree = "<group>";
 		};
 		8A1234511234567890ABCDEF /* Products */ = {
@@ -54,7 +67,6 @@
 				8A1234571234567890ABCDEF /* CertificateManager.swift */,
 				8A1234591234567890ABCDEF /* Models.swift */,
 			);
-			name = Sources;
 			path = Sources;
 			sourceTree = "<group>";
 		};
@@ -75,6 +87,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8A1234661234567890ABCDEF /* Build configuration list for PBXNativeTarget "C2PA" */;
 			buildPhases = (
+				8A1234681234567890ABCDEF /* Run Script - Clean C2PA Libraries */,
 				8A1234671234567890ABCDEF /* Run Script - Download C2PA Libraries */,
 				8A12344B1234567890ABCDEF /* Sources */,
 				8A12344F1234567890ABCDEF /* Frameworks */,
@@ -113,7 +126,6 @@
 				Base,
 			);
 			mainGroup = 8A1234491234567890ABCDEF;
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 8A1234511234567890ABCDEF /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -140,7 +152,25 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Build the C2PA native libraries if needed\ncd \"$SRCROOT\"\nmake\n";
+			shellScript = "# Download and build the C2PA native libraries if needed\ncd \"$SRCROOT/..\"\n./scripts/download-c2pa-libs.sh\n";
+		};
+		8A1234681234567890ABCDEF /* Run Script - Clean C2PA Libraries */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 8;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run Script - Clean C2PA Libraries";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Clean C2PA library build artifacts\nif [ \"$ACTION\" = \"clean\" ]; then\n    cd \"$SRCROOT/..\"\n    ./scripts/clean-c2pa-libs.sh\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -160,6 +190,7 @@
 /* Begin XCBuildConfiguration section */
 		8A12345A1234567890ABCDEF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BC1234571234567890ABCDEF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -221,6 +252,7 @@
 		};
 		8A12345B1234567890ABCDEF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = BC1234581234567890ABCDEF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

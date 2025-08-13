@@ -77,7 +77,7 @@ download-binaries: setup
 # Complete library build: setup, download binaries, and build framework
 library: setup download-binaries xcframework
 	@echo "Building library Swift package..."
-	@cd library && swift build -c release
+	@cd Library && swift build -c release
 	@echo "Library build completed."
 
 xcframework: download-binaries
@@ -162,14 +162,14 @@ workspace-build: library
 # Run all tests including unit and UI tests
 tests: library
 	@echo "Running library unit tests..."
-	@cd library && swift test
+	@cd Library && swift test
 	@echo "Running test app UI tests..."
 	@xcodebuild test -workspace C2PA.xcworkspace -scheme TestApp -destination '$(DESTINATION)'
 
 # Generate code coverage report
 coverage: library
 	@echo "Running tests with coverage..."
-	@cd library && swift test --enable-code-coverage
+	@cd Library && swift test --enable-code-coverage
 	@echo "Coverage report generated."
 
 # Run test app
@@ -191,7 +191,7 @@ run-example-app: library
 # Publish library to GitHub packages or CocoaPods
 publish: library
 	@echo "Publishing library..."
-	@cd library && swift package update
+	@cd Library && swift package update
 	@echo "Ready to publish. Add pod push or GitHub release commands here."
 
 # Tests with signing server
@@ -204,71 +204,71 @@ signing-server-build:
 	@command -v swift >/dev/null 2>&1 || { echo "Error: Swift is required but not installed."; exit 1; }
 	
 	# Create server directories
-	@mkdir -p signing-server/libs
-	@mkdir -p signing-server/Sources/C2PA/include
-	@mkdir -p signing-server/Resources
+	@mkdir -p SigningServer/libs
+	@mkdir -p SigningServer/Sources/C2PA/include
+	@mkdir -p SigningServer/Resources
 	
 	# Download universal macOS binary
 	$(call download_macos_library,universal,universal-apple-darwin,macos-universal)
 	
 	# Copy dylib to server
-	@cp $(DOWNLOAD_DIR)/macos-universal/lib/libc2pa_c.dylib signing-server/libs/
+	@cp $(DOWNLOAD_DIR)/macos-universal/lib/libc2pa_c.dylib SigningServer/libs/
 	
 	# Get header file from macOS download
-	@cp $(DOWNLOAD_DIR)/macos-universal/include/c2pa.h signing-server/Sources/C2PA/include/c2pa.h.orig
+	@cp $(DOWNLOAD_DIR)/macos-universal/include/c2pa.h SigningServer/Sources/C2PA/include/c2pa.h.orig
 	
 	# Patch the header file
 	@echo "Patching c2pa.h header for server..."
-	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' signing-server/Sources/C2PA/include/c2pa.h.orig > signing-server/Sources/C2PA/include/c2pa.h
-	@rm -f signing-server/Sources/C2PA/include/c2pa.h.orig
+	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' SigningServer/Sources/C2PA/include/c2pa.h.orig > SigningServer/Sources/C2PA/include/c2pa.h
+	@rm -f SigningServer/Sources/C2PA/include/c2pa.h.orig
 	
 	# Copy Swift files and module map
-	@cp library/Sources/C2PA/C2PA.swift signing-server/Sources/C2PA/
-	@cp library/Sources/C2PA/CertificateManager.swift signing-server/Sources/C2PA/
-	@cp template/module.modulemap signing-server/Sources/C2PA/
+	@cp Library/Sources/C2PA.swift SigningServer/Sources/C2PA/
+	@cp Library/Sources/CertificateManager.swift SigningServer/Sources/C2PA/
+	@cp template/module.modulemap SigningServer/Sources/C2PA/
 	# Update header path in module map for server structure
-	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' signing-server/Sources/C2PA/module.modulemap
+	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' SigningServer/Sources/C2PA/module.modulemap
 	
 	# Copy test certificates
-	@cp example/C2PAExample/es256_certs.pem signing-server/Resources/
-	@cp example/C2PAExample/es256_private.key signing-server/Resources/
+	@cp Library/Tests/Resources/es256_certs.pem SigningServer/Resources/
+	@cp Library/Tests/Resources/es256_private.key SigningServer/Resources/
 	
-	@cd signing-server && swift package resolve
+	@cd SigningServer && swift package resolve
 	@echo "Server setup complete!"
 
 signing-server-start: signing-server-build
 	@echo "Building server..."
-	@cd signing-server && swift build
+	@cd SigningServer && swift build
 	@echo "Starting signing server..."
-	@cd signing-server && swift run Run > ../signing-server.log 2>&1 &
+	@cd SigningServer && swift run SigningServer > ../signing-server.log 2>&1 &
 	@echo "Signing server started. Check signing-server.log for details."
 	@echo "Server running at http://localhost:8080"
 	@echo "Server is now running. Use 'make signing-server-stop' to stop it."
 
-# Stop the signing server
+# Stop the signing server  
 signing-server-stop:
 	@echo "Stopping signing server..."
-	@pkill -f "Run serve" || true
-	@pkill -f ".build/debug/Run" || true
+	@pkill -f "SigningServer" || true
+	@pkill -f ".build/debug/SigningServer" || true
 	@echo "Server stopped."
 
 # Check signing server status
 signing-server-status:
 	@echo "Checking signing server status..."
-	@ps aux | grep -v grep | grep "Run" | grep "signing-server" || echo "Server is not running"
+	@ps aux | grep -v grep | grep "SigningServer" || echo "Server is not running"
 
 # Clean build artifacts
 clean:
 	@echo "Cleaning build artifacts..."
 	@rm -rf $(BUILD_DIR)
 	@rm -rf $(OUTPUT_DIR)
-	@rm -rf library/.build
-	@rm -rf test-app/build
-	@rm -rf example-app/build
-	@rm -rf signing-server/.build
-	@rm -rf signing-server/libs
-	@rm -rf signing-server/Sources/C2PA
-	@rm -rf signing-server/Resources
+	@rm -rf Library/.build
+	@rm -rf TestApp/build
+	@rm -rf ExampleApp/build
+	@rm -rf SigningServer/.build
+	@rm -rf SigningServer/libs
+	@rm -rf SigningServer/Sources/C2PA
+	@rm -rf SigningServer/Resources
 	@echo "Clean complete."
 
 # Help target

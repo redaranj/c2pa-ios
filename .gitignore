@@ -1,6 +1,8 @@
 # Build artifacts
-build/
-output/
+Build/
+Library/Build/
+Library/output/
+SigningServer/Build/
 .build/
 DerivedData/
 
@@ -44,6 +46,7 @@ Package.resolved
 *.swp
 *.swo
 
-# Signing server
-signing-server/Resources/*
-signing-server/Sources/C2PA/*
+# Signing server runtime files
+SigningServer/libs/
+SigningServer/Sources/C2PA/include/
+SigningServer/Resources/
