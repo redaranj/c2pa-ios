@@ -16,8 +16,10 @@ public class SigningHelper {
     public let testPrivateKey: SecKey?
     
     public init() {
+        let bundle = Bundle(for: SigningHelper.self)
+        
         // Load test certificate from resources
-        if let certURL = Bundle.module.url(forResource: "es256_certs", withExtension: "pem"),
+        if let certURL = bundle.url(forResource: "es256_certs", withExtension: "pem"),
            let certData = try? Data(contentsOf: certURL) {
             self.testCertificate = certData
         } else {
@@ -25,7 +27,7 @@ public class SigningHelper {
         }
         
         // Load test private key
-        if let keyURL = Bundle.module.url(forResource: "es256_private", withExtension: "key"),
+        if let keyURL = bundle.url(forResource: "es256_private", withExtension: "key"),
            let keyData = try? Data(contentsOf: keyURL) {
             self.testPrivateKey = SigningHelper.loadPrivateKey(from: keyData)
         } else {
@@ -34,7 +36,7 @@ public class SigningHelper {
     }
     
     /// Create a test signer for unit tests
-    public func createTestSigner() -> C2PASigner {
+    public func createTestSigner() -> Signer {
         return MockSigner(
             certificate: testCertificate,
             privateKey: testPrivateKey
@@ -42,7 +44,7 @@ public class SigningHelper {
     }
     
     /// Create a hardware signer mock for testing
-    public func createHardwareSignerMock() -> C2PASigner {
+    public func createHardwareSignerMock() -> Signer {
         return MockHardwareSigner()
     }
     
@@ -62,6 +64,25 @@ public class SigningHelper {
         }
         
         return signature as Data
+    }
+    
+    /// Generate test image data
+    public func generateTestImageData() -> Data? {
+        // Create a simple 1x1 pixel PNG for testing
+        let pngHeader = Data([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
+        return pngHeader
+    }
+    
+    /// Generate a test certificate
+    public func generateTestCertificate(commonName: String, organizationName: String) throws -> Data {
+        // For testing, return a mock certificate
+        return Data([0x30, 0x82]) // DER sequence start
+    }
+    
+    /// Create a test CSR
+    public func createTestCSR(commonName: String, organizationName: String) throws -> Data {
+        // For testing, return a mock CSR
+        return Data([0x30, 0x81]) // DER sequence start
     }
     
     private static func loadPrivateKey(from data: Data) -> SecKey? {
@@ -84,7 +105,7 @@ public enum SigningError: Error {
 // MARK: - Mock Implementations
 
 /// Mock signer for testing
-public class MockSigner: C2PASigner {
+public class MockSigner: Signer {
     let certificate: Data
     let privateKey: SecKey?
     
@@ -120,7 +141,7 @@ public class MockSigner: C2PASigner {
 }
 
 /// Mock hardware signer for testing Secure Enclave functionality
-public class MockHardwareSigner: C2PASigner {
+public class MockHardwareSigner: Signer {
     private let tag = "com.c2pa.test.hardware.key"
     
     public func sign(data: Data) async throws -> Data {

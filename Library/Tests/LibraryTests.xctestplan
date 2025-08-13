@@ -1,0 +1,29 @@
+{
+  "configurations" : [
+    {
+      "id" : "6D1A4E7C-B5F3-4E89-89E0-4C1F7E1B8D90",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Library.xcodeproj",
+      "identifier" : "8A12344E1234567890ABCDEF",
+      "name" : "C2PA"
+    }
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Library.xcodeproj",
+        "identifier" : "953469D82E4D2578003E83AD",
+        "name" : "LibraryTests"
+      }
+    }
+  ],
+  "version" : 1
+}

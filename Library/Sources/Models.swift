@@ -75,4 +75,3 @@ public struct ValidationResult {
 public typealias C2PAManifest = Manifest
 public typealias C2PAClaim = Claim
 public typealias C2PAAssertion = Assertion
-public typealias C2PASigner = Signer

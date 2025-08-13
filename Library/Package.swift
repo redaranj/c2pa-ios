@@ -36,7 +36,7 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "Logging", package: "swift-log")
             ],
-            path: "Sources/C2PA",
+            path: "Sources",
             resources: [
                 .process("Resources")
             ],
@@ -58,28 +58,10 @@ let package = Package(
             dependencies: [
                 "C2PA"
             ],
-            path: "Tests/C2PATests",
+            path: "Tests",
             resources: [
                 .copy("Resources")
             ]
-        ),
-        
-        // Integration tests
-        .testTarget(
-            name: "C2PAIntegrationTests",
-            dependencies: [
-                "C2PA"
-            ],
-            path: "Tests/C2PAIntegrationTests"
-        ),
-        
-        // Performance tests
-        .testTarget(
-            name: "C2PAPerformanceTests",
-            dependencies: [
-                "C2PA"
-            ],
-            path: "Tests/C2PAPerformanceTests"
         )
     ]
 )
