@@ -6,6 +6,22 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		959C89982E4DF29C00FBD820 /* PrepareC2PAC */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 959C899B2E4DF29C00FBD820 /* Build configuration list for PBXAggregateTarget "PrepareC2PAC" */;
+			buildPhases = (
+				959C899C2E4DF30000FBD820 /* Run Script - Prepare C2PAC Framework */,
+			);
+			dependencies = (
+			);
+			name = PrepareC2PAC;
+			packageProductDependencies = (
+			);
+			productName = PrepareC2PAC;
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		8A1234561234567890ABCDEF /* C2PA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234551234567890ABCDEF /* C2PA.swift */; };
 		8A1234581234567890ABCDEF /* CertificateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234571234567890ABCDEF /* CertificateManager.swift */; };
@@ -15,9 +31,9 @@
 		953469832E4CB0A8003E83AD /* _CryptoExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 953469822E4CB0A8003E83AD /* _CryptoExtras */; };
 		953469862E4CB0CE003E83AD /* Logging in Frameworks */ = {isa = PBXBuildFile; productRef = 953469852E4CB0CE003E83AD /* Logging */; };
 		953469892E4CB10A003E83AD /* SwiftASN1 in Frameworks */ = {isa = PBXBuildFile; productRef = 953469882E4CB10A003E83AD /* SwiftASN1 */; };
-		9534698C2E4CB13B003E83AD /* C2PAC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9534698B2E4CB13B003E83AD /* C2PAC.xcframework */; };
 		953469DD2E4D2578003E83AD /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1234501234567890ABCDEF /* C2PA.framework */; };
 		953469E62E4D25C6003E83AD /* TestShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 953469E52E4D25C6003E83AD /* TestShared.framework */; };
+		959C89A12E4DF40000FBD820 /* C2PAC.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 959C89A02E4DF40000FBD820 /* C2PAC.xcframework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -28,6 +44,13 @@
 			remoteGlobalIDString = 8A12344E1234567890ABCDEF;
 			remoteInfo = C2PA;
 		};
+		959C899E2E4DF35000FBD820 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8A1234461234567890ABCDEF /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 959C89982E4DF29C00FBD820;
+			remoteInfo = PrepareC2PAC;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
@@ -35,10 +58,10 @@
 		8A1234551234567890ABCDEF /* C2PA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = C2PA.swift; sourceTree = "<group>"; };
 		8A1234571234567890ABCDEF /* CertificateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificateManager.swift; sourceTree = "<group>"; };
 		8A1234591234567890ABCDEF /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
-		9534698B2E4CB13B003E83AD /* C2PAC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = C2PAC.xcframework; path = Frameworks/C2PAC.xcframework; sourceTree = "<group>"; };
 		953469D92E4D2578003E83AD /* C2PATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = C2PATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		953469E32E4D258E003E83AD /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		953469E52E4D25C6003E83AD /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		959C89A02E4DF40000FBD820 /* C2PAC.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = C2PAC.xcframework; path = Frameworks/C2PAC.xcframework; sourceTree = "<group>"; };
 		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
 		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
@@ -49,7 +72,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9534698C2E4CB13B003E83AD /* C2PAC.xcframework in Frameworks */,
+				959C89A12E4DF40000FBD820 /* C2PAC.xcframework in Frameworks */,
 				9534697E2E4CB081003E83AD /* X509 in Frameworks */,
 				953469812E4CB0A8003E83AD /* Crypto in Frameworks */,
 				953469862E4CB0CE003E83AD /* Logging in Frameworks */,
@@ -102,9 +125,9 @@
 		9534698A2E4CB13B003E83AD /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				959C89A02E4DF40000FBD820 /* C2PAC.xcframework */,
 				953469E52E4D25C6003E83AD /* TestShared.framework */,
 				953469E32E4D258E003E83AD /* TestShared.framework */,
-				9534698B2E4CB13B003E83AD /* C2PAC.xcframework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -136,8 +159,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8A1234661234567890ABCDEF /* Build configuration list for PBXNativeTarget "C2PA" */;
 			buildPhases = (
-				8A1234681234567890ABCDEF /* Run Script - Clean C2PA Libraries */,
-				8A1234671234567890ABCDEF /* Run Script - Download C2PA Libraries */,
 				8A12344B1234567890ABCDEF /* Sources */,
 				8A12344F1234567890ABCDEF /* Frameworks */,
 				8A12344D1234567890ABCDEF /* Headers */,
@@ -145,6 +166,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				959C899D2E4DF35000FBD820 /* PBXTargetDependency */,
 			);
 			name = C2PA;
 			productName = C2PA;
@@ -188,6 +210,9 @@
 					953469D82E4D2578003E83AD = {
 						CreatedOnToolsVersion = 16.4;
 					};
+					959C89982E4DF29C00FBD820 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 				};
 			};
 			buildConfigurationList = 5D41F27C216F41AC99081BE0 /* Build configuration list for PBXProject "Library" */;
@@ -211,6 +236,7 @@
 			targets = (
 				8A12344E1234567890ABCDEF /* C2PA */,
 				953469D82E4D2578003E83AD /* C2PATests */,
+				959C89982E4DF29C00FBD820 /* PrepareC2PAC */,
 			);
 		};
 /* End PBXProject section */
@@ -226,44 +252,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		8A1234671234567890ABCDEF /* Run Script - Download C2PA Libraries */ = {
+		959C899C2E4DF30000FBD820 /* Run Script - Prepare C2PAC Framework */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/../Configurations/Base.xcconfig",
 			);
-			name = "Run Script - Download C2PA Libraries";
+			name = "Run Script - Prepare C2PAC Framework";
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/download-c2pa-libs-complete",
+				"$(SRCROOT)/Frameworks/C2PAC.xcframework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nset -e\n\n# Check if this is a placeholder or real framework\nFRAMEWORKS_DIR=\"${SRCROOT}/Frameworks\"\nIS_PLACEHOLDER=false\n\n# Check if README.md exists (indicates placeholder)\nif [ -f \"${FRAMEWORKS_DIR}/C2PAC.xcframework/README.md\" ]; then\n    echo \"Placeholder framework detected, will download real libraries\"\n    IS_PLACEHOLDER=true\nfi\n\n# Check if real framework already exists with correct structure\nif [ \"$IS_PLACEHOLDER\" = \"false\" ] && \\\n   [ -f \"${FRAMEWORKS_DIR}/C2PAC.xcframework/Info.plist\" ] && \\\n   [ -f \"${FRAMEWORKS_DIR}/C2PAC.xcframework/ios-arm64/libc2pa_c.a\" ] && \\\n   [ -f \"${FRAMEWORKS_DIR}/C2PAC.xcframework/ios-arm64_x86_64-simulator/libc2pa_c.a\" ]; then\n    # Check if libraries are not placeholders (should be > 1MB)\n    ARM64_SIZE=$(stat -f%z \"${FRAMEWORKS_DIR}/C2PAC.xcframework/ios-arm64/libc2pa_c.a\" 2>/dev/null || echo 0)\n    if [ \"$ARM64_SIZE\" -gt 1000000 ]; then\n        echo \"C2PAC.xcframework already exists with real libraries, skipping download\"\n        # Touch marker file to satisfy output requirements\n        mkdir -p \"$(dirname \"${SCRIPT_OUTPUT_FILE_0}\")\"\n        touch \"${SCRIPT_OUTPUT_FILE_0}\"\n        exit 0\n    else\n        echo \"Libraries appear to be placeholders (too small), will download real ones\"\n    fi\nfi\n\necho \"Downloading C2PA libraries...\"\n\n# Read configuration\nXCCONFIG_FILE=\"${SRCROOT}/../Configurations/Base.xcconfig\"\nif [ ! -f \"$XCCONFIG_FILE\" ]; then\n    echo \"Error: Base.xcconfig not found\"\n    exit 1\nfi\n\n# Extract values from xcconfig\nGITHUB_ORG=$(grep \"^GITHUB_ORG\" \"$XCCONFIG_FILE\" | cut -d'=' -f2 | tr -d ' ')\nC2PA_VERSION=$(grep \"^C2PA_VERSION\" \"$XCCONFIG_FILE\" | cut -d'=' -f2 | tr -d ' ')\n\nif [ -z \"$GITHUB_ORG\" ] || [ -z \"$C2PA_VERSION\" ]; then\n    echo \"Error: Could not read GITHUB_ORG or C2PA_VERSION from xcconfig\"\n    exit 1\nfi\n\necho \"Using: GITHUB_ORG=$GITHUB_ORG, C2PA_VERSION=$C2PA_VERSION\"\n\n# Setup directories\nBUILD_DIR=\"${SRCROOT}/Build\"\nDOWNLOAD_DIR=\"${BUILD_DIR}/Downloads\"\n\nmkdir -p \"${BUILD_DIR}\"\nmkdir -p \"${DOWNLOAD_DIR}\"\nmkdir -p \"${FRAMEWORKS_DIR}\"\nmkdir -p \"${BUILD_DIR}/ios/arm64/lib\"\nmkdir -p \"${BUILD_DIR}/ios/x86_64/lib\"\nmkdir -p \"${BUILD_DIR}/ios/arm64-simulator/lib\"\nmkdir -p \"${BUILD_DIR}/patched_headers\"\n\n# Download function\ndownload_library() {\n    local arch_display=\"$1\"\n    local release_suffix=\"$2\"\n    local target_dir=\"$3\"\n    local copy_header=\"$4\"\n    \n    echo \"Downloading iOS ${arch_display} library...\"\n    curl -sL \"https://github.com/${GITHUB_ORG}/c2pa-rs/releases/download/c2pa-${C2PA_VERSION}/c2pa-${C2PA_VERSION}-${release_suffix}.zip\" \\\n        -o \"${DOWNLOAD_DIR}/${target_dir}.zip\"\n    \n    unzip -q -o \"${DOWNLOAD_DIR}/${target_dir}.zip\" -d \"${DOWNLOAD_DIR}/${target_dir}\"\n    cp \"${DOWNLOAD_DIR}/${target_dir}/lib/libc2pa_c.a\" \"${BUILD_DIR}/ios/${target_dir}/lib/\"\n    \n    if [ \"$copy_header\" = \"true\" ]; then\n        cp \"${DOWNLOAD_DIR}/${target_dir}/include/c2pa.h\" \"${BUILD_DIR}/patched_headers/c2pa.h.orig\"\n    fi\n}\n\n# Download all iOS libraries\ndownload_library \"arm64\" \"aarch64-apple-ios\" \"arm64\" \"true\"\ndownload_library \"x86_64 simulator\" \"x86_64-apple-ios\" \"x86_64\"\ndownload_library \"arm64 simulator\" \"aarch64-apple-ios-sim\" \"arm64-simulator\"\n\n# Patch the header file\necho \"Patching c2pa.h header...\"\nsed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' \\\n    \"${BUILD_DIR}/patched_headers/c2pa.h.orig\" > \"${BUILD_DIR}/patched_headers/c2pa.h\"\n\n# Create device library\nmkdir -p \"${BUILD_DIR}/ios/device/lib\"\ncp \"${BUILD_DIR}/ios/arm64/lib/libc2pa_c.a\" \"${BUILD_DIR}/ios/device/lib/\"\n\n# Create simulator fat library\nmkdir -p \"${BUILD_DIR}/ios/simulator/lib\"\nlipo -create \\\n    \"${BUILD_DIR}/ios/x86_64/lib/libc2pa_c.a\" \\\n    \"${BUILD_DIR}/ios/arm64-simulator/lib/libc2pa_c.a\" \\\n    -output \"${BUILD_DIR}/ios/simulator/lib/libc2pa_c.a\"\n\n# Remove existing XCFramework if it exists\nrm -rf \"${FRAMEWORKS_DIR}/C2PAC.xcframework\"\n\n# Create XCFramework\nxcodebuild -create-xcframework \\\n    -library \"${BUILD_DIR}/ios/device/lib/libc2pa_c.a\" \\\n    -headers \"${BUILD_DIR}/patched_headers\" \\\n    -library \"${BUILD_DIR}/ios/simulator/lib/libc2pa_c.a\" \\\n    -headers \"${BUILD_DIR}/patched_headers\" \\\n    -output \"${FRAMEWORKS_DIR}/C2PAC.xcframework\"\n\n# Add module maps to XCFramework\ncat > \"${FRAMEWORKS_DIR}/C2PAC.xcframework/ios-arm64/Headers/module.modulemap\" << EOF\nmodule C2PAC {\n    header \"c2pa.h\"\n    export *\n}\nEOF\n\ncat > \"${FRAMEWORKS_DIR}/C2PAC.xcframework/ios-arm64_x86_64-simulator/Headers/module.modulemap\" << EOF\nmodule C2PAC {\n    header \"c2pa.h\"\n    export *\n}\nEOF\n\necho \"C2PA library setup completed successfully.\"\n\n# Touch marker file to satisfy output requirements\nmkdir -p \"$(dirname \"${SCRIPT_OUTPUT_FILE_0}\")\"\ntouch \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-		};
-		8A1234681234567890ABCDEF /* Run Script - Clean C2PA Libraries */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 8;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Run Script - Clean C2PA Libraries";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-				"$(DERIVED_FILE_DIR)/clean-c2pa-libs-complete",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n# Clean C2PA library build artifacts\n# buildActionMask = 8 means this only runs during clean\n\necho \"Cleaning C2PA library build artifacts...\"\n\n# Clean build artifacts and framework\nBUILD_DIR=\"${SRCROOT}/Build\"\nFRAMEWORKS_DIR=\"${SRCROOT}/Frameworks\"\n\nif [ -d \"${BUILD_DIR}\" ]; then\n    echo \"Removing ${BUILD_DIR}...\"\n    rm -rf \"${BUILD_DIR}\"\nfi\n\n# Remove the C2PAC.xcframework when cleaning\nif [ -d \"${FRAMEWORKS_DIR}/C2PAC.xcframework\" ]; then\n    echo \"Removing C2PAC.xcframework...\"\n    rm -rf \"${FRAMEWORKS_DIR}/C2PAC.xcframework\"\nfi\n\necho \"C2PA library cleanup complete.\"\n\n# Touch a marker file to satisfy output requirements\nmkdir -p \"$(dirname \"${SCRIPT_OUTPUT_FILE_0}\")\"\ntouch \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			shellScript = "#!/bin/bash\nset -e\n\necho \"PrepareC2PAC: Starting C2PA framework preparation...\"\n\n# Run the download script from the scripts directory\nSCRIPT_PATH=\"${SRCROOT}/../scripts/download-c2pa-libs.sh\"\n\nif [ ! -f \"$SCRIPT_PATH\" ]; then\n    echo \"Error: download-c2pa-libs.sh not found at $SCRIPT_PATH\"\n    exit 1\nfi\n\necho \"PrepareC2PAC: Running download script...\"\nbash \"$SCRIPT_PATH\"\n\necho \"PrepareC2PAC: Framework preparation complete.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -292,6 +299,11 @@
 			isa = PBXTargetDependency;
 			target = 8A12344E1234567890ABCDEF /* C2PA */;
 			targetProxy = 953469DE2E4D2578003E83AD /* PBXContainerItemProxy */;
+		};
+		959C899D2E4DF35000FBD820 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 959C89982E4DF29C00FBD820 /* PrepareC2PAC */;
+			targetProxy = 959C899E2E4DF35000FBD820 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -537,6 +549,22 @@
 			};
 			name = Release;
 		};
+		959C89992E4DF29C00FBD820 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		959C899A2E4DF29C00FBD820 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -563,6 +591,15 @@
 			buildConfigurations = (
 				953469E02E4D2578003E83AD /* Debug */,
 				953469E12E4D2578003E83AD /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		959C899B2E4DF29C00FBD820 /* Build configuration list for PBXAggregateTarget "PrepareC2PAC" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				959C89992E4DF29C00FBD820 /* Debug */,
+				959C899A2E4DF29C00FBD820 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

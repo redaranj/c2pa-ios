@@ -65,7 +65,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 5) {
                             Label("Using default certificates", systemImage: "checkmark.shield.fill")
                                 .foregroundColor(.green)
-                            Text("ProofMode demo certificates are being used. You can add your own certificates above.")
+                            Text("C2PA Example demo certificates are being used. You can add your own certificates above.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                         }
@@ -88,7 +88,7 @@ struct SettingsView: View {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Default Certificate Active")
                                 .font(.headline)
-                            Text("Using ProofMode ES256 demo certificate")
+                            Text("Using C2PA Example ES256 demo certificate")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                             Text("This certificate is for testing purposes only")
