@@ -15,6 +15,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
+               BlueprintIdentifier = "8A12344E1234567890ABCDEF"
+               BuildableName = "C2PA.framework"
+               BlueprintName = "C2PA"
+               ReferencedContainer = "container:../Library/Library.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
                BlueprintIdentifier = "959206082DD9F0B800E0E44B"
                BuildableName = "ExampleApp.app"
                BlueprintName = "ExampleApp"
