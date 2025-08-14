@@ -1,5 +1,5 @@
 .PHONY: all clean build test run-tests run-example run-testapp help \
-        workspace library signing-server testshared
+        workspace library signing-server testshared download-libs
 
 # Configuration
 CONFIGURATION := Release
@@ -38,7 +38,7 @@ build: library testshared testapp
 workspace:
 	@echo "Building C2PA workspace..."
 	xcodebuild -workspace C2PA.xcworkspace \
-		-scheme "C2PA" \
+		-scheme "Library" \
 		-configuration $(CONFIGURATION) \
 		-destination "generic/platform=iOS" \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
@@ -56,18 +56,24 @@ testapp: library testshared
 		build
 	@echo "TestApp build completed."
 
+# Download C2PA libraries
+download-libs:
+	@echo "Setting up C2PA libraries..."
+	@scripts/download-c2pa-libs.sh
+	@echo "C2PA libraries setup complete."
+
 # Build just the library for both device and simulator
-library:
+library: download-libs
 	@echo "Building C2PA library for device..."
 	xcodebuild -project Library/Library.xcodeproj \
-		-scheme "C2PA" \
+		-scheme "Library" \
 		-configuration $(CONFIGURATION) \
 		-destination "generic/platform=iOS" \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
 		build
 	@echo "Building C2PA library for simulator..."
 	xcodebuild -project Library/Library.xcodeproj \
-		-scheme "C2PA" \
+		-scheme "Library" \
 		-configuration $(CONFIGURATION) \
 		-destination '$(SIMULATOR_DESTINATION)' \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
@@ -98,12 +104,12 @@ signing-server:
 # Run tests
 test: test-library run-tests
 
-# Run library tests using the LibraryTests scheme
+# Run library tests using the Library scheme
 test-library: library testshared
 	@echo "Running C2PA library tests with TestShared..."
 	xcodebuild test \
 		-workspace C2PA.xcworkspace \
-		-scheme "LibraryTests" \
+		-scheme "Library" \
 		-destination '$(SIMULATOR_DESTINATION)' \
 		-derivedDataPath $(DERIVED_DATA_PATH)
 	@echo "C2PA library tests completed."
@@ -128,12 +134,12 @@ run-example:
 		build
 
 	@echo "Installing ExampleApp on simulator..."
-	@xcrun simctl boot "iPhone 15" 2>/dev/null || true
-	@xcrun simctl install "iPhone 15" \
+	@xcrun simctl boot "iPhone 16 Pro" 2>/dev/null || true
+	@xcrun simctl install "iPhone 16 Pro" \
 		"$(DERIVED_DATA_PATH)/Build/Products/$(DEBUG_CONFIGURATION)-iphonesimulator/ExampleApp.app"
 
 	@echo "Launching ExampleApp..."
-	@xcrun simctl launch "iPhone 15" org.contentauth.ExampleApp
+	@xcrun simctl launch "iPhone 16 Pro" org.contentauth.ExampleApp
 	@echo "ExampleApp is running on the simulator."
 
 # Run TestApp in simulator
@@ -147,12 +153,12 @@ run-testapp:
 		build
 
 	@echo "Installing TestApp on simulator..."
-	@xcrun simctl boot "iPhone 15" 2>/dev/null || true
-	@xcrun simctl install "iPhone 15" \
+	@xcrun simctl boot "iPhone 16 Pro" 2>/dev/null || true
+	@xcrun simctl install "iPhone 16 Pro" \
 		"$(DERIVED_DATA_PATH)/Build/Products/$(DEBUG_CONFIGURATION)-iphonesimulator/TestApp.app"
 
 	@echo "Launching TestApp..."
-	@xcrun simctl launch "iPhone 15" org.contentauth.TestApp
+	@xcrun simctl launch "iPhone 16 Pro" org.contentauth.TestApp
 	@echo "TestApp is running on the simulator."
 
 # Clean all build artifacts
@@ -162,15 +168,43 @@ clean:
 		-scheme "C2PA" \
 		-derivedDataPath $(DERIVED_DATA_PATH) \
 		clean
-	xcodebuild -workspace C2PA.xcworkspace \
-		-scheme "TestShared" \
-		-derivedDataPath $(DERIVED_DATA_PATH) \
-		clean
-	xcodebuild -workspace C2PA.xcworkspace \
-		-scheme "TestApp" \
-		-derivedDataPath $(DERIVED_DATA_PATH) \
-		clean
+	@echo "Removing C2PA downloaded libraries..."
+	@rm -rf Library/Build
+	@rm -rf Library/Frameworks/C2PAC.xcframework
 	@echo "Clean complete."
+
+# Build library for distribution (with .swiftinterface files)
+library-dist: download-libs
+	@echo "Building C2PA library for distribution (device)..."
+	xcodebuild -project Library/Library.xcodeproj \
+		-scheme "Library" \
+		-configuration $(CONFIGURATION) \
+		-destination "generic/platform=iOS" \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+		SKIP_INSTALL=NO \
+		build
+	@echo "Building C2PA library for distribution (simulator)..."
+	xcodebuild -project Library/Library.xcodeproj \
+		-scheme "Library" \
+		-configuration $(CONFIGURATION) \
+		-destination "generic/platform=iOS Simulator" \
+		-derivedDataPath $(DERIVED_DATA_PATH) \
+		BUILD_LIBRARY_FOR_DISTRIBUTION=YES \
+		SKIP_INSTALL=NO \
+		build
+	@echo "Library distribution build completed."
+
+# Create XCFramework for distribution
+xcframework: library-dist
+	@echo "Creating C2PA.xcframework for distribution..."
+	@mkdir -p output
+	@rm -rf output/C2PA.xcframework
+	@xcodebuild -create-xcframework \
+		-framework "$(DERIVED_DATA_PATH)/Build/Products/$(CONFIGURATION)-iphoneos/C2PA.framework" \
+		-framework "$(DERIVED_DATA_PATH)/Build/Products/$(CONFIGURATION)-iphonesimulator/C2PA.framework" \
+		-output output/C2PA.xcframework
+	@echo "C2PA.xcframework created at output/C2PA.xcframework"
 
 # Archive for distribution
 archive:
@@ -228,7 +262,8 @@ help:
 	@echo "Build targets:"
 	@echo "  make              - Build library, TestShared, and TestApp (default)"
 	@echo "  make workspace    - Build all workspace projects"
-	@echo "  make library      - Build C2PA library for device and simulator"
+	@echo "  make download-libs - Download C2PA libraries from GitHub"
+	@echo "  make library      - Build C2PA library (downloads libs if needed)"
 	@echo "  make testshared   - Build TestShared framework"
 	@echo "  make testapp      - Build TestApp (includes dependencies)"
 	@echo "  make signing-server - Build the SigningServer"

@@ -6,8 +6,8 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingVerify = false
     @State private var capturedImage: UIImage?
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
+    @State private var showingSuccess = false
+    @State private var successMessage = ""
     @StateObject private var c2paManager = C2PAManager.shared
     
     var body: some View {
@@ -17,7 +17,9 @@ struct ContentView: View {
                 showingCamera: $showingCamera,
                 showingSettings: $showingSettings,
                 showingVerify: $showingVerify,
-                capturedImage: $capturedImage
+                capturedImage: $capturedImage,
+                showingSuccess: $showingSuccess,
+                successMessage: $successMessage
             )
             .edgesIgnoringSafeArea(.all)
             
@@ -35,17 +37,37 @@ struct ContentView: View {
                         .padding(.top)
                 }
             }
+            
+            // Success overlay that auto-dismisses
+            if showingSuccess {
+                Color.black.opacity(0.5)
+                    .edgesIgnoringSafeArea(.all)
+                
+                VStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundColor(.green)
+                    
+                    Text(successMessage)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.center)
+                        .padding(.top, 8)
+                }
+                .onAppear {
+                    // Auto-dismiss after 2 seconds
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                        withAnimation {
+                            showingSuccess = false
+                        }
+                    }
+                }
+            }
         }
         .sheet(isPresented: $showingSettings) {
             SettingsView(isPresented: $showingSettings)
         }
         .sheet(isPresented: $showingVerify) {
             VerifyWebView(isPresented: $showingVerify)
-        }
-        .alert("C2PA Signing", isPresented: $showingAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(alertMessage)
         }
     }
 }
@@ -55,21 +77,19 @@ struct CameraViewWrapper: View {
     @Binding var showingSettings: Bool
     @Binding var showingVerify: Bool
     @Binding var capturedImage: UIImage?
+    @Binding var showingSuccess: Bool
+    @Binding var successMessage: String
     @StateObject private var c2paManager = C2PAManager.shared
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
     
     var body: some View {
         ZStack {
-            CameraView(capturedImage: $capturedImage) { image in
-                c2paManager.signAndSaveImage(image) { success, error in
+            CustomCameraView(capturedImage: $capturedImage) { image, location in
+                c2paManager.signAndSaveImage(image, saveToPhotos: false, location: location) { success, fileName, imageData in
                     showingCamera = false
                     if success {
-                        alertMessage = "Photo saved with C2PA credentials!"
-                    } else {
-                        alertMessage = "Error: \(error ?? "Unknown error")"
+                        successMessage = "Credentials Added!"
+                        showingSuccess = true
                     }
-                    showingAlert = true
                 }
             }
             
@@ -111,11 +131,6 @@ struct CameraViewWrapper: View {
         }
         .sheet(isPresented: $showingVerify) {
             VerifyWebView(isPresented: $showingVerify)
-        }
-        .alert("C2PA Signing", isPresented: $showingAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(alertMessage)
         }
     }
 }

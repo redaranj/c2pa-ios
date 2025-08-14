@@ -32,6 +32,8 @@ struct CameraView: UIViewControllerRepresentable {
             if let image = info[.originalImage] as? UIImage {
                 parent.capturedImage = image
                 parent.onCapture(image)
+                // Dismiss the picker immediately after capturing
+                picker.dismiss(animated: true)
             }
         }
         
