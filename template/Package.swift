@@ -1,19 +1,20 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
     name: "C2PA",
     platforms: [
-        .iOS(.v15),
-        .macOS(.v11)
+        .iOS(.v16),
+        .macOS(.v14),
     ],
     products: [
         .library(
             name: "C2PA",
-            targets: ["C2PA"]),
+            targets: ["C2PA"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-certificates.git", .upToNextMajor(from: "1.0.0")),
+        .package(
+            url: "https://github.com/apple/swift-certificates.git", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-asn1.git", .upToNextMajor(from: "1.0.0")),
         .package(url: "https://github.com/apple/swift-crypto.git", .upToNextMajor(from: "3.0.0")),
     ],

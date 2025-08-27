@@ -56,6 +56,7 @@ download-binaries: setup
 	# Patch the header file
 	@echo "Patching c2pa.h header..."
 	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' $(BUILD_DIR)/patched_headers/c2pa.h.orig > $(BUILD_DIR)/patched_headers/c2pa.h
+	@rm -f $(BUILD_DIR)/patched_headers/c2pa.h.orig
 	
 	@echo "Pre-built binaries downloaded successfully."
 
@@ -168,6 +169,7 @@ setup-server:
 	# Patch the header file
 	@echo "Patching c2pa.h header for server..."
 	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' signing-server/Sources/C2PA/include/c2pa.h.orig > signing-server/Sources/C2PA/include/c2pa.h
+	@rm -f signing-server/Sources/C2PA/include/c2pa.h.orig
 	
 	# Copy Swift files and module map
 	@cp src/C2PA.swift signing-server/Sources/C2PA/

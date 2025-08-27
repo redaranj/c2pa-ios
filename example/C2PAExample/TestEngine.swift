@@ -156,12 +156,12 @@ public class TestEngine {
         return await runTest("Keychain Signer Creation", test: testKeychainSignerCreation)
     }
     
-    @available(iOS 13.0, macOS 10.15, *)
+    
     public func runSecureEnclaveSignerCreationTest() async -> TestResult {
         return await runTest("Secure Enclave Signer Creation", test: testSecureEnclaveSignerCreation)
     }
     
-    @available(iOS 13.0, macOS 10.15, *)
+    
     public func runSecureEnclaveCSRSigningTest() async -> TestResult {
         return await runTest("Secure Enclave CSR Signing", test: testSecureEnclaveCSRSigning)
     }
@@ -2227,7 +2227,7 @@ public class TestEngine {
         }
     }
     
-    @available(iOS 13.0, macOS 10.15, *)
+    
     private func testSecureEnclaveSignerCreation() async throws -> TestResult {
         var testSteps: [String] = []
         
@@ -2459,7 +2459,7 @@ public class TestEngine {
         }
     }
     
-    @available(iOS 13.0, macOS 10.15, *)
+    
     private func testSecureEnclaveCSRSigning() async throws -> TestResult {
         var testSteps: [String] = []
         

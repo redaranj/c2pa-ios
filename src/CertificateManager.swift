@@ -10,11 +10,8 @@ import X509
 import SwiftASN1
 import Crypto
 
-#if canImport(Security)
 import Security
-#endif
 
-@available(iOS 13.0, macOS 10.15, *)
 public class CertificateManager {
     
     public enum CertificateError: LocalizedError {
@@ -95,7 +92,6 @@ public class CertificateManager {
     
     // MARK: - Public Methods
     
-    #if canImport(Security)
     /// Creates a self-signed certificate chain suitable for C2PA signing (iOS/macOS with SecKey)
     public static func createSelfSignedCertificateChain(
         for publicKey: SecKey,
@@ -212,88 +208,6 @@ public class CertificateManager {
         
         return try createCSR(for: publicKey, config: config)
     }
-    #endif
-    
-    /// Creates a self-signed certificate chain for testing purposes (server version)
-    public static func createSelfSignedCertificateChain(
-        privateKey: P256.Signing.PrivateKey,
-        config: CertificateConfig
-    ) throws -> String {
-        // Create Root CA
-        let rootCA = try createRootCA(privateKey: privateKey, config: config)
-        
-        // Create Intermediate CA  
-        let intermediateCA = try createIntermediateCA(
-            privateKey: privateKey,
-            config: CertificateConfig(
-                commonName: "\(config.commonName) Intermediate CA",
-                organization: config.organization,
-                organizationalUnit: config.organizationalUnit,
-                country: config.country,
-                state: config.state,
-                locality: config.locality,
-                emailAddress: config.emailAddress
-            ),
-            issuerCertificate: rootCA,
-            issuerPrivateKey: privateKey
-        )
-        
-        // Create End Entity Certificate
-        let endEntityCert = try createEndEntityCertificate(
-            privateKey: privateKey,
-            config: config,
-            issuerCertificate: intermediateCA,
-            issuerPrivateKey: privateKey
-        )
-        
-        // Combine into chain (end entity first, then intermediate, then root)
-        let endEntity = try endEntityCert.serializeAsPEM().pemString
-        let intermediate = try intermediateCA.serializeAsPEM().pemString
-        let root = try rootCA.serializeAsPEM().pemString
-        return endEntity + "\n" + intermediate + "\n" + root
-    }
-    
-    /// Creates a CSR using a regular P256 private key
-    public static func createCSRSimple(
-        privateKey: P256.Signing.PrivateKey,
-        config: CertificateConfig,
-        subjectAlternativeNames: [String] = []
-    ) throws -> String {
-        // Create the subject distinguished name
-        let subject = try createDistinguishedName(from: config)
-        
-        // Create the private key wrapper
-        let privateKeyCertificate = Certificate.PrivateKey(privateKey)
-        
-        // Create attributes
-        var attributes = X509.CertificateSigningRequest.Attributes()
-        
-        // Add Subject Alternative Names if provided
-        if !subjectAlternativeNames.isEmpty {
-            let extensions = try Certificate.Extensions {
-                SubjectAlternativeNames(subjectAlternativeNames.map { .dnsName($0) })
-            }
-            let extensionRequest = ExtensionRequest(extensions: extensions)
-            attributes = try X509.CertificateSigningRequest.Attributes([.init(extensionRequest)])
-        }
-        
-        // Create the CSR
-        let csr = try X509.CertificateSigningRequest(
-            version: .v1,
-            subject: subject,
-            privateKey: privateKeyCertificate,
-            attributes: attributes,
-            signatureAlgorithm: .ecdsaWithSHA256
-        )
-        
-        // Verify the signature
-        if !csr.publicKey.isValidSignature(csr.signature, for: csr) {
-            throw CertificateError.signingFailed("CSR signature verification failed")
-        }
-        
-        // Serialize to PEM
-        return try csr.serializeAsPEM().pemString
-    }
     
     // MARK: - Private Methods
     
@@ -362,7 +276,6 @@ public class CertificateManager {
         return certificate
     }
     
-    #if canImport(Security)
     private static func createEndEntityCertificate(
         publicKey: SecKey,
         config: CertificateConfig,
@@ -406,43 +319,6 @@ public class CertificateManager {
         
         return certificate
     }
-    #endif
-    
-    private static func createEndEntityCertificate(
-        privateKey: P256.Signing.PrivateKey,
-        config: CertificateConfig,
-        issuerCertificate: Certificate,
-        issuerPrivateKey: P256.Signing.PrivateKey
-    ) throws -> Certificate {
-        let subject = try createDistinguishedName(from: config)
-        
-        let extensions = try Certificate.Extensions {
-            BasicConstraints.notCertificateAuthority
-            KeyUsage(digitalSignature: true, keyEncipherment: true)
-            try ExtendedKeyUsage([.clientAuth, .emailProtection])
-            SubjectKeyIdentifier(
-                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: privateKey.publicKey.rawRepresentation))
-            )
-            AuthorityKeyIdentifier(
-                keyIdentifier: ArraySlice(Crypto.SHA256.hash(data: issuerPrivateKey.publicKey.rawRepresentation))
-            )
-        }
-        
-        let certificate = try Certificate(
-            version: .v3,
-            serialNumber: Certificate.SerialNumber(),
-            publicKey: Certificate.PublicKey(privateKey.publicKey),
-            notValidBefore: Date(),
-            notValidAfter: Date().addingTimeInterval(TimeInterval(config.validityDays * 24 * 60 * 60)),
-            issuer: issuerCertificate.subject,
-            subject: subject,
-            signatureAlgorithm: .ecdsaWithSHA256,
-            extensions: extensions,
-            issuerPrivateKey: Certificate.PrivateKey(issuerPrivateKey)
-        )
-        
-        return certificate
-    }
     
     private static func createDistinguishedName(from config: CertificateConfig) throws -> DistinguishedName {
         try DistinguishedName {
@@ -458,7 +334,6 @@ public class CertificateManager {
         }
     }
     
-    #if canImport(Security)
     private static func parseSecKeyPublicKey(_ data: Data) throws -> P256.Signing.PublicKey {
         // SecKey exports P-256 public keys in X9.63 format (65 bytes: 0x04 || x || y)
         if data.count == 65 && data[0] == 0x04 {
@@ -615,7 +490,6 @@ public class CertificateManager {
         
         return nil
     }
-    #endif
     
     private static func createCSRAttributes(config: CertificateConfig) throws -> X509.CertificateSigningRequest.Attributes {
         // For now, return empty attributes

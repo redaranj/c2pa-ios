@@ -1,7 +1,5 @@
-import Vapor
 import Foundation
-
-// MARK: - Certificate Models
+import Vapor
 
 struct CertificateSigningRequest: Content {
     let csr: String  // PEM-encoded CSR
@@ -20,24 +18,3 @@ struct SignedCertificateResponse: Content {
     let expiresAt: Date
     let serialNumber: String
 }
-
-
-// MARK: - C2PA Models
-
-struct C2PASigningRequest: Content {
-    let manifestJSON: String
-    let format: String  // e.g., "image/jpeg"
-}
-
-struct C2PASigningResponse: Content {
-    let manifestStore: Data  // Binary manifest store data
-    let signatureInfo: SignatureInfo
-}
-
-struct SignatureInfo: Content {
-    let algorithm: String
-    let certificateChain: String?
-    let timestamp: Date
-}
-
-
