@@ -12,7 +12,7 @@ class CertificateSigningService {
 
     init() {
         do {
-            rootCAPrivateKey = P256.Signing.PrivateKey()
+            let rootPrivateKey = P256.Signing.PrivateKey()
             let rootSubject = try DistinguishedName {
                 CommonName("C2PA Test Root CA")
                 OrganizationName("C2PA Signing Server")
@@ -22,29 +22,26 @@ class CertificateSigningService {
                 LocalityName("San Francisco")
             }
 
-            let rootPublicKeyData = rootCAPrivateKey.publicKey.rawRepresentation
             let rootExtensions = try Certificate.Extensions {
                 BasicConstraints.isCertificateAuthority(maxPathLength: 1)
                 KeyUsage(keyCertSign: true, cRLSign: true)
-                SubjectKeyIdentifier(
-                    keyIdentifier: ArraySlice(SHA256.hash(data: rootPublicKeyData))
-                )
+                SubjectKeyIdentifier(hash: Certificate.PublicKey(rootPrivateKey.publicKey))
             }
 
-            rootCA = try Certificate(
+            let rootCert = try Certificate(
                 version: .v3,
                 serialNumber: Certificate.SerialNumber(),
-                publicKey: Certificate.PublicKey(rootCAPrivateKey.publicKey),
-                notValidBefore: Date().addingTimeInterval(-60),
+                publicKey: Certificate.PublicKey(rootPrivateKey.publicKey),
+                notValidBefore: Date().addingTimeInterval(-5 * 60),  // 5 minutes ago for clock skew
                 notValidAfter: Date().addingTimeInterval(10 * 365 * 24 * 60 * 60),
                 issuer: rootSubject,
                 subject: rootSubject,
                 signatureAlgorithm: .ecdsaWithSHA256,
                 extensions: rootExtensions,
-                issuerPrivateKey: Certificate.PrivateKey(rootCAPrivateKey)
+                issuerPrivateKey: Certificate.PrivateKey(rootPrivateKey)
             )
 
-            intermediateCAPrivateKey = P256.Signing.PrivateKey()
+            let intermediatePrivateKey = P256.Signing.PrivateKey()
             let intermediateSubject = try DistinguishedName {
                 CommonName("C2PA Test Intermediate CA")
                 OrganizationName("C2PA Signing Server")
@@ -54,67 +51,52 @@ class CertificateSigningService {
                 LocalityName("San Francisco")
             }
 
-            let intermediatePublicKeyData = intermediateCAPrivateKey.publicKey.rawRepresentation
-            let rootKeyIdentifier = ArraySlice(SHA256.hash(data: rootPublicKeyData))
+            let rootPublicKeyData = rootPrivateKey.publicKey.x963Representation
+            let rootKeyIdentifier = ArraySlice(Insecure.SHA1.hash(data: rootPublicKeyData))
+
             let intermediateExtensions = try Certificate.Extensions {
                 BasicConstraints.isCertificateAuthority(maxPathLength: 0)
                 KeyUsage(keyCertSign: true, cRLSign: true)
-                SubjectKeyIdentifier(
-                    keyIdentifier: ArraySlice(SHA256.hash(data: intermediatePublicKeyData))
-                )
+                SubjectKeyIdentifier(hash: Certificate.PublicKey(intermediatePrivateKey.publicKey))
                 AuthorityKeyIdentifier(
                     keyIdentifier: rootKeyIdentifier
                 )
             }
 
-            intermediateCA = try Certificate(
+            let intermediateCert = try Certificate(
                 version: .v3,
                 serialNumber: Certificate.SerialNumber(),
-                publicKey: Certificate.PublicKey(intermediateCAPrivateKey.publicKey),
-                notValidBefore: Date().addingTimeInterval(-60),
+                publicKey: Certificate.PublicKey(intermediatePrivateKey.publicKey),
+                notValidBefore: Date().addingTimeInterval(-5 * 60),
                 notValidAfter: Date().addingTimeInterval(5 * 365 * 24 * 60 * 60),
-                issuer: rootCA.subject,
+                issuer: rootCert.subject,
                 subject: intermediateSubject,
                 signatureAlgorithm: .ecdsaWithSHA256,
                 extensions: intermediateExtensions,
-                issuerPrivateKey: Certificate.PrivateKey(rootCAPrivateKey)
+                issuerPrivateKey: Certificate.PrivateKey(rootPrivateKey)
             )
+
+            self.rootCA = rootCert
+            self.rootCAPrivateKey = rootPrivateKey
+            self.intermediateCA = intermediateCert
+            self.intermediateCAPrivateKey = intermediatePrivateKey
         } catch {
             fatalError("Failed to initialize CA certificates: \(error)")
         }
     }
 
     func signCSR(_ csrPEM: String) async throws -> SignedCertificateResponse {
-        let csrData = try pemToData(csrPEM, type: "CERTIFICATE REQUEST")
-        let csr = try X509.CertificateSigningRequest(derEncoded: Array(csrData))
-
-        // Extract raw public key for SubjectKeyIdentifier (P256 = 65 bytes)
-        var spkiSerializer = DER.Serializer()
-        try csr.publicKey.serialize(into: &spkiSerializer)
-        let spkiData = Data(spkiSerializer.serializedBytes)
-
-        let publicKeyData: Data
-        if spkiData.count >= 65 {
-            let keyStart = spkiData.count - 65
-            if spkiData[keyStart] == 0x04 {
-                publicKeyData = spkiData[keyStart..<spkiData.count]
-            } else {
-                publicKeyData = spkiData
-            }
-        } else {
-            publicKeyData = spkiData
-        }
+        let pemDocument = try PEMDocument(pemString: csrPEM)
+        let csr = try X509.CertificateSigningRequest(derEncoded: pemDocument.derBytes)
 
         let extensions = try Certificate.Extensions {
             BasicConstraints.notCertificateAuthority
             KeyUsage(digitalSignature: true)
             try ExtendedKeyUsage([.emailProtection])
-            SubjectKeyIdentifier(
-                keyIdentifier: ArraySlice(SHA256.hash(data: publicKeyData))
-            )
+            SubjectKeyIdentifier(hash: csr.publicKey)
             AuthorityKeyIdentifier(
                 keyIdentifier: ArraySlice(
-                    SHA256.hash(data: intermediateCAPrivateKey.publicKey.rawRepresentation))
+                    Insecure.SHA1.hash(data: intermediateCAPrivateKey.publicKey.x963Representation))
             )
         }
 
@@ -143,31 +125,5 @@ class CertificateSigningService {
             expiresAt: certificate.notValidAfter,
             serialNumber: String(describing: certificate.serialNumber)
         )
-    }
-
-    private func pemToData(_ pem: String, type: String) throws -> Data {
-        let lines = pem.components(separatedBy: .newlines)
-        let beginMarker = "-----BEGIN \(type)-----"
-        let endMarker = "-----END \(type)-----"
-
-        var base64String = ""
-        var inCert = false
-
-        for line in lines {
-            if line == beginMarker {
-                inCert = true
-                continue
-            } else if line == endMarker {
-                break
-            } else if inCert {
-                base64String += line
-            }
-        }
-
-        guard let data = Data(base64Encoded: base64String) else {
-            throw Abort(.badRequest, reason: "Invalid PEM encoding")
-        }
-
-        return data
     }
 }
