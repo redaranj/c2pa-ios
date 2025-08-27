@@ -1,6 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
+extension UTType {
+    static let pemCertificate = UTType(filenameExtension: "pem")!
+    static let crtCertificate = UTType(filenameExtension: "crt")!
+    static let derCertificate = UTType(filenameExtension: "der")!
+    static let keyFile = UTType(filenameExtension: "key")!
+}
+
 struct SettingsView: View {
     @Binding var isPresented: Bool
     @AppStorage("certificatePath") private var certificatePath: String = ""
@@ -123,14 +130,14 @@ struct SettingsView: View {
         }
         .fileImporter(
             isPresented: $showingCertificatePicker,
-            allowedContentTypes: [.data],
+            allowedContentTypes: [.pemCertificate, .crtCertificate, .derCertificate, .x509Certificate, .item],
             allowsMultipleSelection: false
         ) { result in
             handleFileSelection(result: result, isCertificate: true)
         }
         .fileImporter(
             isPresented: $showingKeyPicker,
-            allowedContentTypes: [.data],
+            allowedContentTypes: [.pemCertificate, .keyFile, .item],
             allowsMultipleSelection: false
         ) { result in
             handleFileSelection(result: result, isCertificate: false)

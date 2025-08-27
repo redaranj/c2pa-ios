@@ -14,9 +14,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-asn1.git", from: "1.0.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
-        
-        // C2PA library (local)
-        .package(path: "../Library")
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.0.0"),
     ],
     targets: [
         .executableTarget(
@@ -26,39 +24,38 @@ let package = Package(
             ],
             path: "Sources/Run"
         ),
-        .target(
-            name: "App",
-            dependencies: [
-                .product(name: "Vapor", package: "vapor"),
-                .product(name: "X509", package: "swift-certificates"),
-                .product(name: "SwiftASN1", package: "swift-asn1"),
-                .product(name: "Crypto", package: "swift-crypto"),
-                .product(name: "C2PA", package: "Library")
-            ],
-            linkerSettings: [
-                .unsafeFlags(["-Llibs", "-lc2pa_c"])
-            ]
-<<<<<<< HEAD:signing-server/Package.swift
+        .systemLibrary(
+            name: "C2PAC",
+            path: "Sources/C2PAC"
         ),
         .target(
             name: "C2PA",
             dependencies: [
+                "C2PAC",
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "Crypto", package: "swift-crypto"),
-                "C2PAC",
+                .product(name: "_CryptoExtras", package: "swift-crypto"),
+                .product(name: "Logging", package: "swift-log"),
             ],
             path: "Sources/C2PA",
-            exclude: ["include"]
+            exclude: ["include/c2pa.h.orig"]
         ),
-        .systemLibrary(
-            name: "C2PAC",
-            path: "Sources/C2PA",
-            pkgConfig: nil,
-            providers: []
-        ),
-=======
+        .target(
+            name: "App",
+            dependencies: [
+                "C2PA",
+                .product(name: "Vapor", package: "vapor"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "SwiftASN1", package: "swift-asn1"),
+                .product(name: "Crypto", package: "swift-crypto"),
+            ],
+            resources: [
+                .copy("Resources")
+            ],
+            linkerSettings: [
+                .unsafeFlags(["-Llibs", "-lc2pa_c"])
+            ]
         )
->>>>>>> 1bdfeab (Reorg WIP #1):SigningServer/Package.swift
     ]
 )

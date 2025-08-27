@@ -6,6 +6,25 @@
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
       buildArchitectures = "Automatic">
+      <PreActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Download C2PA Libraries"
+               scriptText = "# Download C2PA libraries for SigningServer&#10;cd &quot;${PROJECT_DIR}&quot;&#10;./scripts/download-macos-libs.sh&#10;&#10;# Create symlink for library in build directory&#10;mkdir -p .build/arm64-apple-macosx/debug&#10;ln -sf &quot;${PROJECT_DIR}/libs/libc2pa_c.dylib&quot; .build/arm64-apple-macosx/debug/libc2pa_c.dylib"
+               shellToInvoke = "/bin/bash">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "9A1234621234567890ABCDEF"
+                     BuildableName = "SigningServer"
+                     BlueprintName = "SigningServer"
+                     ReferencedContainer = "container:SigningServer/SigningServer.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PreActions>
       <BuildActionEntries>
          <BuildActionEntry
             buildForTesting = "YES"
@@ -36,7 +55,8 @@
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
       selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
       launchStyle = "0"
-      useCustomWorkingDirectory = "NO"
+      useCustomWorkingDirectory = "YES"
+      customWorkingDirectory = "$(PROJECT_DIR)"
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       debugServiceExtension = "internal"
@@ -53,11 +73,23 @@
       </BuildableProductRunnable>
       <CommandLineArguments>
          <CommandLineArgument
-            argument = "--port 8080"
+            argument = "serve"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "--host 127.0.0.1"
+            argument = "--hostname"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "127.0.0.1"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "--port"
+            isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "8080"
             isEnabled = "YES">
          </CommandLineArgument>
       </CommandLineArguments>
@@ -69,7 +101,7 @@
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "DYLD_LIBRARY_PATH"
-            value = "$(SRCROOT)/SigningServer/libs:$(DYLD_LIBRARY_PATH)"
+            value = "libs:$(DYLD_LIBRARY_PATH)"
             isEnabled = "YES">
          </EnvironmentVariable>
       </EnvironmentVariables>
