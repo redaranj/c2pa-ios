@@ -11,7 +11,6 @@
 		15F2DB4586C47A09C777D6A1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D2BED6F777480F62D122EDD /* Cocoa.framework */; };
 		2B49F972C7FFAAF2DDF4A9B2 /* C2PAC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7A2807B509741B0E1856DF8 /* C2PAC.framework */; };
 		7DCEBC048172915DF7C4A207 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D2BED6F777480F62D122EDD /* Cocoa.framework */; };
-		9D4B0851FA22730857460223 /* C2PAC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4B6BA9869810C799488164AB /* C2PAC.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -110,13 +109,13 @@
 				BC1234591234567890ABCDEF /* Configurations */,
 				9A1234551234567890ABCDEF /* Package.swift */,
 				9A1234571234567890ABCDEF /* Sources */,
-				9A1234591234567890ABCDEF /* Run */,
+				9A1234591234567890ABCDEF /* Sources/Run */,
 				9A1234611234567890ABCDEF /* Products */,
 				58BBD8A86CD6712D279B2202 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		9A1234591234567890ABCDEF /* Run */ = {
+		9A1234591234567890ABCDEF /* Sources/Run */ = {
 			isa = PBXGroup;
 			children = (
 				9A1234581234567890ABCDEF /* main.swift */,
@@ -174,7 +173,7 @@
 /* Begin PBXNativeTarget section */
 		4F18157B5A5CF0EDC3AB2025 /* C2PAC */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D3820F48DA44AD9306E60460 /* Build configuration list for <deleted target> */;
+			buildConfigurationList = D3820F48DA44AD9306E60460 /* Build configuration list for PBXNativeTarget "C2PAC" */;
 			buildPhases = (
 				6413DC18C6926C558DE15826 /* Headers */,
 				6E6D76B297863BCAC57F01D4 /* Sources */,
@@ -232,7 +231,7 @@
 		};
 		F654677435F2C0C21740A478 /* C2PAC */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A48EDB212F10ECB37772EF51 /* Build configuration list for <deleted target> */;
+			buildConfigurationList = A48EDB212F10ECB37772EF51 /* Build configuration list for PBXNativeTarget "C2PAC" */;
 			buildPhases = (
 				14E462853F3F4230B465E93E /* Headers */,
 				20B3DB8172D95CB19648F039 /* Sources */,
@@ -257,7 +256,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1540;
-				LastUpgradeCheck = 1540;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					9A1234621234567890ABCDEF = {
 						CreatedOnToolsVersion = 15.4;
@@ -449,6 +448,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -558,6 +558,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -621,6 +622,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -646,6 +648,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -655,6 +658,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
+				DEAD_CODE_STRIPPING = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 			};
@@ -720,6 +724,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				DYLIB_INSTALL_NAME_BASE = "@rpath";
@@ -771,7 +776,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A48EDB212F10ECB37772EF51 /* Build configuration list for <deleted target> */ = {
+		A48EDB212F10ECB37772EF51 /* Build configuration list for PBXNativeTarget "C2PAC" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				410D4770E4FD9420E7208E7A /* Release */,
@@ -780,7 +785,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		D3820F48DA44AD9306E60460 /* Build configuration list for <deleted target> */ = {
+		D3820F48DA44AD9306E60460 /* Build configuration list for PBXNativeTarget "C2PAC" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				3091CF4612E37532BC4C2EF1 /* Release */,
