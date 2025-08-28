@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		8A1234561234567890ABCDEF /* C2PA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234551234567890ABCDEF /* C2PA.swift */; };
 		8A1234581234567890ABCDEF /* CertificateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234571234567890ABCDEF /* CertificateManager.swift */; };
-		8B8FA1EDA73848AC9F2EAB81 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A1234591234567890ABCDEF /* Models.swift */; };
 		9534697E2E4CB081003E83AD /* X509 in Frameworks */ = {isa = PBXBuildFile; productRef = 9534697D2E4CB081003E83AD /* X509 */; };
 		953469812E4CB0A8003E83AD /* Crypto in Frameworks */ = {isa = PBXBuildFile; productRef = 953469802E4CB0A8003E83AD /* Crypto */; };
 		953469832E4CB0A8003E83AD /* _CryptoExtras in Frameworks */ = {isa = PBXBuildFile; productRef = 953469822E4CB0A8003E83AD /* _CryptoExtras */; };
@@ -280,7 +279,6 @@
 			files = (
 				8A1234561234567890ABCDEF /* C2PA.swift in Sources */,
 				8A1234581234567890ABCDEF /* CertificateManager.swift in Sources */,
-				8B8FA1EDA73848AC9F2EAB81 /* Models.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

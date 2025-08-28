@@ -356,7 +356,7 @@ class C2PAManager: ObservableObject {
                 print("✅ Builder created successfully")
                 
                 // Create signer
-                let signer = try C2PASigner(
+                let signer = try Signer(
                     certsPEM: certString,
                     privateKeyPEM: keyString,
                     algorithm: .es256,

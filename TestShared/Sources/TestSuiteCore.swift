@@ -90,13 +90,6 @@ open class TestSuiteCore {
     
     // MARK: - Common Test Assertions
     
-    /// Check if manifest is valid
-    public func isManifestValid(_ manifest: C2PAManifest) -> Bool {
-        return manifest.claim != nil &&
-               !manifest.assertions.isEmpty &&
-               manifest.signature != nil
-    }
-    
     /// Check if signature is valid
     public func isSignatureValid(_ signature: Data) -> Bool {
         return !signature.isEmpty && signature.count > 64 // Minimum ES256 signature size
@@ -110,23 +103,6 @@ open class TestSuiteCore {
     }
     
     // MARK: - Test Data Generators
-    
-    /// Generate test manifest
-    public func generateTestManifest() -> C2PAManifest {
-        return C2PAManifest(
-            claim: C2PAClaim(
-                generator: "C2PA iOS Test Suite",
-                title: "Test Image",
-                format: "image/jpeg"
-            ),
-            assertions: [
-                C2PAAssertion(
-                    label: "c2pa.actions",
-                    data: Data("test action".utf8)
-                )
-            ]
-        )
-    }
     
     /// Generate test image data
     public func generateTestImageData(size: CGSize = CGSize(width: 100, height: 100)) -> Data? {

@@ -1,16 +1,16 @@
-// swift-tools-version:5.7
+// swift-tools-version:5.9
 import PackageDescription
 
 let package = Package(
     name: "C2PA",
     platforms: [
-        .iOS(.v15),
-        .macOS(.v11)
+        .iOS(.v16),
+        .macOS(.v14),
     ],
     products: [
         .library(
             name: "C2PA",
-            targets: ["C2PA", "C2PAC"]),
+            targets: ["C2PA", "C2PAC"])
     ],
     dependencies: [],
     targets: [

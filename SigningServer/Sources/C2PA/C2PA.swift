@@ -10,10 +10,10 @@ import Security
 // MARK: - Error model -------------------------------------------------------
 
 public enum C2PAError: Error, CustomStringConvertible {
-    case api(String) // message from Rust layer
-    case nilPointer // unexpected NULL
-    case utf8 // invalid UTF-8 returned
-    case negative(Int64) // negative status from C
+    case api(String)  // message from Rust layer
+    case nilPointer  // unexpected NULL
+    case utf8  // invalid UTF-8 returned
+    case negative(Int64)  // negative status from C
 
     public var description: String {
         switch self {
@@ -59,8 +59,10 @@ private func guardNonNegative(_ v: Int64) throws -> Int64 {
 @inline(__always)
 private func withSignerInfo<R>(
     alg: String, cert: String, key: String, tsa: String?,
-    _ body: (UnsafePointer<CChar>, UnsafePointer<CChar>,
-             UnsafePointer<CChar>, UnsafePointer<CChar>?) throws -> R
+    _ body: (
+        UnsafePointer<CChar>, UnsafePointer<CChar>,
+        UnsafePointer<CChar>, UnsafePointer<CChar>?
+    ) throws -> R
 ) rethrows -> R {
     try alg.withCString { algPtr in
         try cert.withCString { certPtr in
@@ -138,11 +140,12 @@ public struct SignerInfo {
     public let privateKeyPEM: String
     public let tsaURL: String?
 
-    public init(algorithm: SigningAlgorithm,
-                certificatePEM: String,
-                privateKeyPEM: String,
-                tsaURL: String? = nil)
-    {
+    public init(
+        algorithm: SigningAlgorithm,
+        certificatePEM: String,
+        privateKeyPEM: String,
+        tsaURL: String? = nil
+    ) {
         self.algorithm = algorithm
         self.certificatePEM = certificatePEM
         self.privateKeyPEM = privateKeyPEM
@@ -150,7 +153,7 @@ public struct SignerInfo {
     }
 }
 
-public final class C2PASigner {
+public final class Signer {
     // raw pointer owned
     let ptr: UnsafeMutablePointer<C2paSigner>
     private var retainedContext: Unmanaged<AnyObject>?
@@ -163,59 +166,64 @@ public final class C2PASigner {
     // --------------------------------------------------------------------
     // 1) PEM-based convenience
     // --------------------------------------------------------------------
-    public convenience init(certsPEM: String,
-                            privateKeyPEM: String,
-                            algorithm: SigningAlgorithm,
-                            tsaURL: String? = nil) throws
-    {
+    public convenience init(
+        certsPEM: String,
+        privateKeyPEM: String,
+        algorithm: SigningAlgorithm,
+        tsaURL: String? = nil
+    ) throws {
         var raw: UnsafeMutablePointer<C2paSigner>!
-        try withSignerInfo(alg: algorithm.description,
-                           cert: certsPEM,
-                           key: privateKeyPEM,
-                           tsa: tsaURL)
-        { algPtr, certPtr, keyPtr, tsaPtr in
-            var info = C2paSignerInfo(alg: algPtr,
-                                      sign_cert: certPtr,
-                                      private_key: keyPtr,
-                                      ta_url: tsaPtr)
+        try withSignerInfo(
+            alg: algorithm.description,
+            cert: certsPEM,
+            key: privateKeyPEM,
+            tsa: tsaURL
+        ) { algPtr, certPtr, keyPtr, tsaPtr in
+            var info = C2paSignerInfo(
+                alg: algPtr,
+                sign_cert: certPtr,
+                private_key: keyPtr,
+                ta_url: tsaPtr)
             raw = try guardNotNull(c2pa_signer_from_info(&info))
         }
         self.init(ptr: raw)
     }
 
     public convenience init(info: SignerInfo) throws {
-        try self.init(certsPEM: info.certificatePEM,
-                      privateKeyPEM: info.privateKeyPEM,
-                      algorithm: info.algorithm,
-                      tsaURL: info.tsaURL)
+        try self.init(
+            certsPEM: info.certificatePEM,
+            privateKeyPEM: info.privateKeyPEM,
+            algorithm: info.algorithm,
+            tsaURL: info.tsaURL)
     }
 
     // --------------------------------------------------------------------
     // 2) Swift-native closure  (Data in → Data out)
     // --------------------------------------------------------------------
-    public convenience init(algorithm: SigningAlgorithm,
-                            certificateChainPEM: String,
-                            tsaURL: String? = nil,
-                            sign: @escaping (Data) throws -> Data) throws
-    {
+    public convenience init(
+        algorithm: SigningAlgorithm,
+        certificateChainPEM: String,
+        tsaURL: String? = nil,
+        sign: @escaping (Data) throws -> Data
+    ) throws {
         // keep closure alive
         final class Box {
             let fn: (Data) throws -> Data
             init(_ fn: @escaping (Data) throws -> Data) { self.fn = fn }
         }
         let box = Box(sign)
-        let ref = Unmanaged.passRetained(box as AnyObject) // Retain Box as AnyObject
+        let ref = Unmanaged.passRetained(box as AnyObject)  // Retain Box as AnyObject
 
         let tramp: SignerCallback = { ctx, bytes, len, dst, dstCap in
             // ctx is the opaque pointer to our Box instance
             guard let ctx, let bytes, let dst else { return -1 }
             let b = Unmanaged<Box>.fromOpaque(ctx).takeUnretainedValue()
-            let msg = Data(bytes: bytes, count: Int(len)) // len is uintptr_t (UInt)
+            let msg = Data(bytes: bytes, count: Int(len))  // len is uintptr_t (UInt)
 
             do {
                 let sig = try b.fn(msg)
                 // dstCap is uintptr_t (UInt)
-                guard UInt(sig.count) <= dstCap else { return -1 } // Compare UInts
+                guard UInt(sig.count) <= dstCap else { return -1 }  // Compare UInts
                 sig.copyBytes(to: dst, count: sig.count)
                 return sig.count
             } catch {
@@ -228,7 +236,7 @@ public final class C2PASigner {
             try withOptionalCString(tsaURL) { tsaPtr in
                 raw = try guardNotNull(
                     c2pa_signer_create(
-                        ref.toOpaque(), // Pass opaque pointer to Box instance
+                        ref.toOpaque(),  // Pass opaque pointer to Box instance
                         tramp,
                         algorithm.cValue,
                         certPtr,
@@ -239,7 +247,7 @@ public final class C2PASigner {
         }
 
         self.init(ptr: raw)
-        retainedContext = ref // Store the Unmanaged<AnyObject>
+        retainedContext = ref  // Store the Unmanaged<AnyObject>
     }
 
     // --------------------------------------------------------------------
@@ -278,7 +286,10 @@ public final class Stream {
         var fileHandleBox: AnyObject?
 
         init(r: Reader?, s: Seeker?, w: Writer?, f: Flusher?, fileHandleBox: AnyObject? = nil) {
-            self.r = r; self.s = s; self.w = w; self.f = f
+            self.r = r
+            self.s = s
+            self.w = w
+            self.f = f
             self.fileHandleBox = fileHandleBox
         }
     }
@@ -315,7 +326,7 @@ public final class Stream {
     private let streamPtr: UnsafeMutablePointer<C2paStream>
 
     // generic constructor for user-provided callbacks
-    private init(bundle: Bundle) { // Made fileprivate to guide users to public inits
+    private init(bundle: Bundle) {  // Made fileprivate to guide users to public inits
         bundleRef = .passRetained(bundle)
         contextPtr = asStreamCtx(bundleRef.toOpaque())
 
@@ -328,11 +339,12 @@ public final class Stream {
         )
     }
 
-    public convenience init(read: Reader? = nil,
-                            seek: Seeker? = nil,
-                            write: Writer? = nil,
-                            flush: Flusher? = nil) throws
-    {
+    public convenience init(
+        read: Reader? = nil,
+        seek: Seeker? = nil,
+        write: Writer? = nil,
+        flush: Flusher? = nil
+    ) throws {
         self.init(bundle: Bundle(r: read, s: seek, w: write, f: flush, fileHandleBox: nil))
     }
 
@@ -344,7 +356,7 @@ public final class Stream {
                 let remain = data.count - cursor
                 guard remain > 0 else { return 0 }
                 let n = Swift.min(remain, count)
-                _ = data.withUnsafeBytes { // Silence "unused result" warning
+                _ = data.withUnsafeBytes {  // Silence "unused result" warning
                     memcpy(buffer, $0.baseAddress!.advanced(by: cursor), n)
                 }
                 cursor += n
@@ -375,14 +387,15 @@ public final class Stream {
 
 // MARK: - File-based stream helper ------------------------------------------
 
-public extension Stream {
+extension Stream {
     /// Fully-featured stream backed by a file on disk.
     ///
     /// The wrapper owns the `FileHandle` and closes it automatically via the Bundle's FileHandleBox.
-    convenience init(fileURL url: URL,
-                     truncate: Bool = true,
-                     createIfNeeded: Bool = true) throws
-    {
+    public convenience init(
+        fileURL url: URL,
+        truncate: Bool = true,
+        createIfNeeded: Bool = true
+    ) throws {
         if createIfNeeded, !FileManager.default.fileExists(atPath: url.path) {
             FileManager.default.createFile(atPath: url.path, contents: nil)
         }
@@ -406,8 +419,9 @@ public extension Stream {
                 } else {
                     data = fhBox.fh.readData(ofLength: count)
                 }
-                data.copyBytes(to: buffer.assumingMemoryBound(to: UInt8.self),
-                               count: data.count)
+                data.copyBytes(
+                    to: buffer.assumingMemoryBound(to: UInt8.self),
+                    count: data.count)
                 return data.count
             },
             s: { offset, mode in
@@ -432,7 +446,7 @@ public extension Stream {
                         return -1
                     }
                     try fhBox.fh.seek(toOffset: newPos)
-                    return Int(newPos) // Return Int as per Seeker typealias
+                    return Int(newPos)  // Return Int as per Seeker typealias
                 } catch { return -1 }
             },
             w: { buffer, count in
@@ -451,7 +465,7 @@ public extension Stream {
                 }
                 return 0
             },
-            fileHandleBox: fhBox // Store the box in the bundle
+            fileHandleBox: fhBox  // Store the box in the bundle
         )
         self.init(bundle: bundle)
     }
@@ -534,19 +548,21 @@ public final class Builder {
     }
 
     @discardableResult
-    public func sign(format: String,
-                     source: Stream,
-                     destination: Stream,
-                     signer: C2PASigner) throws -> Data
-    {
+    public func sign(
+        format: String,
+        source: Stream,
+        destination: Stream,
+        signer: Signer
+    ) throws -> Data {
         var manifestPtr: UnsafePointer<UInt8>?
         let size = try guardNonNegative(
-            c2pa_builder_sign(ptr,
-                              format,
-                              source.rawPtr,
-                              destination.rawPtr,
-                              signer.ptr,
-                              &manifestPtr)
+            c2pa_builder_sign(
+                ptr,
+                format,
+                source.rawPtr,
+                destination.rawPtr,
+                signer.ptr,
+                &manifestPtr)
         )
         guard let mp = manifestPtr else { return Data() }
         let data = Data(bytes: mp, count: Int(size))
@@ -558,17 +574,19 @@ public final class Builder {
 // MARK: - Whole-file helpers -------------------------------------------------
 
 public enum C2PA {
-    public static func readFile(at url: URL,
-                                dataDir: URL? = nil) throws -> String
-    {
+    public static func readFile(
+        at url: URL,
+        dataDir: URL? = nil
+    ) throws -> String {
         try stringFromC(
             c2pa_read_file(url.path, dataDir?.path)
         )
     }
 
-    public static func readIngredient(at url: URL,
-                                      dataDir: URL? = nil) throws -> String
-    {
+    public static func readIngredient(
+        at url: URL,
+        dataDir: URL? = nil
+    ) throws -> String {
         let result = c2pa_read_ingredient_file(url.path, dataDir?.path)
         guard let result = result else {
             let errorMsg = lastC2PAError()
@@ -582,27 +600,31 @@ public enum C2PA {
         return try stringFromC(result)
     }
 
-    public static func signFile(source: URL,
-                                destination: URL,
-                                manifestJSON: String,
-                                signerInfo: SignerInfo,
-                                dataDir: URL? = nil) throws
-    {
+    public static func signFile(
+        source: URL,
+        destination: URL,
+        manifestJSON: String,
+        signerInfo: SignerInfo,
+        dataDir: URL? = nil
+    ) throws {
         var maybeErr: UnsafeMutablePointer<CChar>?
-        withSignerInfo(alg: signerInfo.algorithm.description,
-                       cert: signerInfo.certificatePEM,
-                       key: signerInfo.privateKeyPEM,
-                       tsa: signerInfo.tsaURL)
-        { algPtr, certPtr, keyPtr, tsaPtr in
-            var sInfo = C2paSignerInfo(alg: algPtr,
-                                       sign_cert: certPtr,
-                                       private_key: keyPtr,
-                                       ta_url: tsaPtr)
-            maybeErr = c2pa_sign_file(source.path,
-                                      destination.path,
-                                      manifestJSON,
-                                      &sInfo,
-                                      dataDir?.path)
+        withSignerInfo(
+            alg: signerInfo.algorithm.description,
+            cert: signerInfo.certificatePEM,
+            key: signerInfo.privateKeyPEM,
+            tsa: signerInfo.tsaURL
+        ) { algPtr, certPtr, keyPtr, tsaPtr in
+            var sInfo = C2paSignerInfo(
+                alg: algPtr,
+                sign_cert: certPtr,
+                private_key: keyPtr,
+                ta_url: tsaPtr)
+            maybeErr = c2pa_sign_file(
+                source.path,
+                destination.path,
+                manifestJSON,
+                &sInfo,
+                dataDir?.path)
         }
 
         if let e = maybeErr {
@@ -617,17 +639,19 @@ public enum C2PA {
 public typealias WebServiceRequestBuilder = (Data) throws -> URLRequest
 public typealias WebServiceResponseParser = (Data, HTTPURLResponse) throws -> Data
 
-public extension C2PASigner {
-    convenience init(algorithm: SigningAlgorithm,
-                     certificateChainPEM: String,
-                     tsaURL: String? = nil,
-                     requestBuilder: @escaping WebServiceRequestBuilder,
-                     responseParser: @escaping WebServiceResponseParser = { data, _ in data }) throws
-    {
-        try self.init(algorithm: algorithm,
-                      certificateChainPEM: certificateChainPEM,
-                      tsaURL: tsaURL)
-        { data in
+extension Signer {
+    public convenience init(
+        algorithm: SigningAlgorithm,
+        certificateChainPEM: String,
+        tsaURL: String? = nil,
+        requestBuilder: @escaping WebServiceRequestBuilder,
+        responseParser: @escaping WebServiceResponseParser = { data, _ in data }
+    ) throws {
+        try self.init(
+            algorithm: algorithm,
+            certificateChainPEM: certificateChainPEM,
+            tsaURL: tsaURL
+        ) { data in
             let request = try requestBuilder(data)
 
             let semaphore = DispatchSemaphore(value: 0)
@@ -637,7 +661,9 @@ public extension C2PASigner {
                 if let error = error {
                     result = .failure(error)
                 } else if let httpResponse = response as? HTTPURLResponse {
-                    if (200 ... 299).contains(httpResponse.statusCode), let responseData = responseData {
+                    if (200...299).contains(httpResponse.statusCode),
+                        let responseData = responseData
+                    {
                         do {
                             let signature = try responseParser(responseData, httpResponse)
                             result = .success(signature)
@@ -669,10 +695,11 @@ public extension C2PASigner {
 }
 
 public enum WebServiceHelpers {
-    public static func basicPOSTRequestBuilder(url: URL,
-                                               authToken: String? = nil,
-                                               contentType: String = "application/octet-stream") -> WebServiceRequestBuilder
-    {
+    public static func basicPOSTRequestBuilder(
+        url: URL,
+        authToken: String? = nil,
+        contentType: String = "application/octet-stream"
+    ) -> WebServiceRequestBuilder {
         return { data in
             var request = URLRequest(url: url)
             request.httpMethod = "POST"
@@ -685,10 +712,11 @@ public enum WebServiceHelpers {
         }
     }
 
-    public static func jsonRequestBuilder(url: URL,
-                                          authToken: String? = nil,
-                                          additionalFields: [String: Any] = [:]) -> WebServiceRequestBuilder
-    {
+    public static func jsonRequestBuilder(
+        url: URL,
+        authToken: String? = nil,
+        additionalFields: [String: Any] = [:]
+    ) -> WebServiceRequestBuilder {
         return { data in
             var json = additionalFields
             json["data"] = data.base64EncodedString()
@@ -706,11 +734,13 @@ public enum WebServiceHelpers {
         }
     }
 
-    public static func jsonResponseParser(signatureField: String = "signature") -> WebServiceResponseParser {
+    public static func jsonResponseParser(signatureField: String = "signature")
+        -> WebServiceResponseParser
+    {
         return { data, _ in
             guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let signatureBase64 = json[signatureField] as? String,
-                  let signature = Data(base64Encoded: signatureBase64)
+                let signatureBase64 = json[signatureField] as? String,
+                let signature = Data(base64Encoded: signatureBase64)
             else {
                 throw C2PAError.api("Invalid JSON response or missing signature field")
             }
@@ -721,12 +751,13 @@ public enum WebServiceHelpers {
 
 // MARK: - Keychain Signing --------------------------------------------------
 
-public extension C2PASigner {
-    convenience init(algorithm: SigningAlgorithm,
-                     certificateChainPEM: String,
-                     tsaURL: String? = nil,
-                     keychainKeyTag: String) throws
-    {
+extension Signer {
+    public convenience init(
+        algorithm: SigningAlgorithm,
+        certificateChainPEM: String,
+        tsaURL: String? = nil,
+        keychainKeyTag: String
+    ) throws {
         let secAlgorithm: SecKeyAlgorithm
         switch algorithm {
         case .es256:
@@ -745,10 +776,11 @@ public extension C2PASigner {
             throw C2PAError.api("Ed25519 not supported by iOS Keychain")
         }
 
-        try self.init(algorithm: algorithm,
-                      certificateChainPEM: certificateChainPEM,
-                      tsaURL: tsaURL)
-        { data in
+        try self.init(
+            algorithm: algorithm,
+            certificateChainPEM: certificateChainPEM,
+            tsaURL: tsaURL
+        ) { data in
             let query: [String: Any] = [
                 kSecClass as String: kSecClassKey,
                 kSecAttrApplicationTag as String: keychainKeyTag,
@@ -760,7 +792,7 @@ public extension C2PASigner {
             let status = SecItemCopyMatching(query as CFDictionary, &item)
 
             guard status == errSecSuccess,
-                  let privateKey = item as! SecKey?
+                let privateKey = item as! SecKey?
             else {
                 throw C2PAError.api("Failed to find key '\(keychainKeyTag)' in keychain: \(status)")
             }
@@ -770,10 +802,12 @@ public extension C2PASigner {
             }
 
             var error: Unmanaged<CFError>?
-            guard let signature = SecKeyCreateSignature(privateKey,
-                                                        secAlgorithm,
-                                                        data as CFData,
-                                                        &error)
+            guard
+                let signature = SecKeyCreateSignature(
+                    privateKey,
+                    secAlgorithm,
+                    data as CFData,
+                    &error)
             else {
                 if let error = error?.takeRetainedValue() {
                     throw C2PAError.api("Signing failed: \(error)")
@@ -788,34 +822,35 @@ public extension C2PASigner {
 
 // MARK: - Secure Enclave Signing --------------------------------------------
 
-@available(iOS 13.0, macOS 10.15, *)
 public struct SecureEnclaveSignerConfig {
     public let keyTag: String
     public let accessControl: SecAccessControlCreateFlags
 
-    public init(keyTag: String,
-                accessControl: SecAccessControlCreateFlags = [.privateKeyUsage])
-    {
+    public init(
+        keyTag: String,
+        accessControl: SecAccessControlCreateFlags = [.privateKeyUsage]
+    ) {
         self.keyTag = keyTag
         self.accessControl = accessControl
     }
 }
 
-@available(iOS 13.0, macOS 10.15, *)
-public extension C2PASigner {
-    convenience init(algorithm: SigningAlgorithm,
-                     certificateChainPEM: String,
-                     tsaURL: String? = nil,
-                     secureEnclaveConfig: SecureEnclaveSignerConfig) throws
-    {
+extension Signer {
+    public convenience init(
+        algorithm: SigningAlgorithm,
+        certificateChainPEM: String,
+        tsaURL: String? = nil,
+        secureEnclaveConfig: SecureEnclaveSignerConfig
+    ) throws {
         guard algorithm == .es256 else {
             throw C2PAError.api("Secure Enclave only supports ES256 (P-256)")
         }
 
-        try self.init(algorithm: algorithm,
-                      certificateChainPEM: certificateChainPEM,
-                      tsaURL: tsaURL)
-        { data in
+        try self.init(
+            algorithm: algorithm,
+            certificateChainPEM: certificateChainPEM,
+            tsaURL: tsaURL
+        ) { data in
             let query: [String: Any] = [
                 kSecClass as String: kSecClassKey,
                 kSecAttrApplicationTag as String: secureEnclaveConfig.keyTag,
@@ -829,9 +864,9 @@ public extension C2PASigner {
 
             let privateKey: SecKey
             if status == errSecItemNotFound {
-                privateKey = try C2PASigner.createSecureEnclaveKey(config: secureEnclaveConfig)
+                privateKey = try Signer.createSecureEnclaveKey(config: secureEnclaveConfig)
             } else if status == errSecSuccess,
-                      let key = item as! SecKey?
+                let key = item as! SecKey?
             {
                 privateKey = key
             } else {
@@ -845,10 +880,12 @@ public extension C2PASigner {
             }
 
             var error: Unmanaged<CFError>?
-            guard let signature = SecKeyCreateSignature(privateKey,
-                                                        algorithm,
-                                                        data as CFData,
-                                                        &error)
+            guard
+                let signature = SecKeyCreateSignature(
+                    privateKey,
+                    algorithm,
+                    data as CFData,
+                    &error)
             else {
                 if let error = error?.takeRetainedValue() {
                     throw C2PAError.api("Secure Enclave signing failed: \(error)")
@@ -860,13 +897,15 @@ public extension C2PASigner {
         }
     }
 
-    static func createSecureEnclaveKey(config: SecureEnclaveSignerConfig) throws -> SecKey {
-        guard let access = SecAccessControlCreateWithFlags(
-            kCFAllocatorDefault,
-            kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
-            config.accessControl,
-            nil
-        ) else {
+    public static func createSecureEnclaveKey(config: SecureEnclaveSignerConfig) throws -> SecKey {
+        guard
+            let access = SecAccessControlCreateWithFlags(
+                kCFAllocatorDefault,
+                kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
+                config.accessControl,
+                nil
+            )
+        else {
             throw C2PAError.api("Failed to create access control")
         }
 
@@ -892,7 +931,7 @@ public extension C2PASigner {
         return privateKey
     }
 
-    static func deleteSecureEnclaveKey(keyTag: String) -> Bool {
+    public static func deleteSecureEnclaveKey(keyTag: String) -> Bool {
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag,
@@ -907,8 +946,8 @@ public extension C2PASigner {
 
 // MARK: - Helper Extensions -------------------------------------------------
 
-public extension C2PASigner {
-    static func exportPublicKeyPEM(fromKeychainTag keyTag: String) throws -> String {
+extension Signer {
+    public static func exportPublicKeyPEM(fromKeychainTag keyTag: String) throws -> String {
         let query: [String: Any] = [
             kSecClass as String: kSecClassKey,
             kSecAttrApplicationTag as String: keyTag,
@@ -920,7 +959,7 @@ public extension C2PASigner {
         let status = SecItemCopyMatching(query as CFDictionary, &item)
 
         guard status == errSecSuccess,
-              let privateKey = item as! SecKey?
+            let privateKey = item as! SecKey?
         else {
             throw C2PAError.api("Failed to find key '\(keyTag)' in keychain: \(status)")
         }
@@ -930,14 +969,17 @@ public extension C2PASigner {
         }
 
         var error: Unmanaged<CFError>?
-        guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data? else {
+        guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data?
+        else {
             if let error = error?.takeRetainedValue() {
                 throw C2PAError.api("Failed to export public key: \(error)")
             }
             throw C2PAError.api("Failed to export public key")
         }
 
-        let base64 = publicKeyData.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
+        let base64 = publicKeyData.base64EncodedString(options: [
+            .lineLength64Characters, .endLineWithLineFeed,
+        ])
         return "-----BEGIN PUBLIC KEY-----\n\(base64)\n-----END PUBLIC KEY-----"
     }
 }

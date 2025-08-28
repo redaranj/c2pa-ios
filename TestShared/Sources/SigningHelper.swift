@@ -35,19 +35,6 @@ public class SigningHelper {
         }
     }
     
-    /// Create a test signer for unit tests
-    public func createTestSigner() -> Signer {
-        return MockSigner(
-            certificate: testCertificate,
-            privateKey: testPrivateKey
-        )
-    }
-    
-    /// Create a hardware signer mock for testing
-    public func createHardwareSignerMock() -> Signer {
-        return MockHardwareSigner()
-    }
-    
     /// Helper to sign data with test key
     public func signData(_ data: Data) throws -> Data {
         guard let privateKey = testPrivateKey else {
@@ -100,64 +87,4 @@ public enum SigningError: Error {
     case noPrivateKey
     case signingFailed
     case invalidCertificate
-}
-
-// MARK: - Mock Implementations
-
-/// Mock signer for testing
-public class MockSigner: Signer {
-    let certificate: Data
-    let privateKey: SecKey?
-    
-    init(certificate: Data, privateKey: SecKey?) {
-        self.certificate = certificate
-        self.privateKey = privateKey
-    }
-    
-    public func sign(data: Data) async throws -> Data {
-        guard let privateKey = privateKey else {
-            throw SigningError.noPrivateKey
-        }
-        
-        guard let signature = SecKeyCreateSignature(
-            privateKey,
-            .ecdsaSignatureMessageX962SHA256,
-            data as CFData,
-            nil
-        ) else {
-            throw SigningError.signingFailed
-        }
-        
-        return signature as Data
-    }
-    
-    public func getCertificateChain() async throws -> Data {
-        return certificate
-    }
-    
-    public func getAlgorithm() -> String {
-        return "es256"
-    }
-}
-
-/// Mock hardware signer for testing Secure Enclave functionality
-public class MockHardwareSigner: Signer {
-    private let tag = "com.c2pa.test.hardware.key"
-    
-    public func sign(data: Data) async throws -> Data {
-        // Simulate hardware signing delay
-        try await Task.sleep(nanoseconds: 100_000_000) // 100ms
-        
-        // Return mock signature
-        return Data(repeating: 0xAB, count: 64)
-    }
-    
-    public func getCertificateChain() async throws -> Data {
-        // Return mock certificate
-        return Data([0x30, 0x82]) // DER sequence start
-    }
-    
-    public func getAlgorithm() -> String {
-        return "es256"
-    }
 }
