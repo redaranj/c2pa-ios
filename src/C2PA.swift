@@ -788,7 +788,6 @@ public extension Signer {
 
 // MARK: - Secure Enclave Signing --------------------------------------------
 
-@available(iOS 13.0, macOS 10.15, *)
 public struct SecureEnclaveSignerConfig {
     public let keyTag: String
     public let accessControl: SecAccessControlCreateFlags
@@ -801,7 +800,6 @@ public struct SecureEnclaveSignerConfig {
     }
 }
 
-@available(iOS 13.0, macOS 10.15, *)
 public extension Signer {
     convenience init(algorithm: SigningAlgorithm,
                      certificateChainPEM: String,
@@ -825,7 +823,7 @@ public extension Signer {
             ]
 
             var item: CFTypeRef?
-            var status = SecItemCopyMatching(query as CFDictionary, &item)
+            let status = SecItemCopyMatching(query as CFDictionary, &item)
 
             let privateKey: SecKey
             if status == errSecItemNotFound {

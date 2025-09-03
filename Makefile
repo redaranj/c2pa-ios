@@ -1,4 +1,4 @@
-.PHONY: all clean setup download-binaries ios-framework
+.PHONY: all clean setup download-binaries ios-framework setup-server server clean-server
 
 # GitHub Release Configuration
 GITHUB_ORG := contentauth
@@ -56,6 +56,7 @@ download-binaries: setup
 	# Patch the header file
 	@echo "Patching c2pa.h header..."
 	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' $(BUILD_DIR)/patched_headers/c2pa.h.orig > $(BUILD_DIR)/patched_headers/c2pa.h
+	@rm -f $(BUILD_DIR)/patched_headers/c2pa.h.orig
 	
 	@echo "Pre-built binaries downloaded successfully."
 
@@ -110,8 +111,9 @@ define setup_swift_package
 	@mkdir -p $(1)/Sources/C2PA
 	@mkdir -p $(1)/Frameworks
 
-	# Copy Swift wrapper and patch c2pa.h
+	# Copy Swift wrapper files
 	@cp $(APPLE_DIR)/src/C2PA.swift $(1)/Sources/C2PA/
+	@cp $(APPLE_DIR)/src/CertificateManager.swift $(1)/Sources/C2PA/
 	@cp $(APPLE_DIR)/template/Package.swift $(1)/
 
 	# Copy XCFramework
@@ -136,13 +138,83 @@ clean:
 	@rm -rf $(OUTPUT_DIR)
 	@echo "Clean completed."
 
+# Function to download and extract macOS library for server
+# Args: 1=architecture name for display, 2=release filename suffix, 3=target directory name
+define download_macos_library
+	@echo "Downloading macOS $(1) library..."
+	@mkdir -p $(DOWNLOAD_DIR)
+	@curl -sL https://github.com/$(GITHUB_ORG)/c2pa-rs/releases/download/c2pa-$(C2PA_VERSION)/c2pa-$(C2PA_VERSION)-$(2).zip -o $(DOWNLOAD_DIR)/$(3).zip
+	@unzip -q -o $(DOWNLOAD_DIR)/$(3).zip -d $(DOWNLOAD_DIR)/$(3)
+endef
+
+# Server targets
+setup-server:
+	@echo "Setting up C2PA signing server..."
+	@command -v swift >/dev/null 2>&1 || { echo "Error: Swift is required but not installed."; exit 1; }
+	
+	# Create server directories
+	@mkdir -p signing-server/libs
+	@mkdir -p signing-server/Sources/C2PA/include
+	@mkdir -p signing-server/Resources
+	
+	# Download universal macOS binary
+	$(call download_macos_library,universal,universal-apple-darwin,macos-universal)
+	
+	# Copy dylib to server
+	@cp $(DOWNLOAD_DIR)/macos-universal/lib/libc2pa_c.dylib signing-server/libs/
+	
+	# Get header file from macOS download
+	@cp $(DOWNLOAD_DIR)/macos-universal/include/c2pa.h signing-server/Sources/C2PA/include/c2pa.h.orig
+	
+	# Patch the header file
+	@echo "Patching c2pa.h header for server..."
+	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' signing-server/Sources/C2PA/include/c2pa.h.orig > signing-server/Sources/C2PA/include/c2pa.h
+	@rm -f signing-server/Sources/C2PA/include/c2pa.h.orig
+	
+	# Copy Swift files and module map
+	@cp src/C2PA.swift signing-server/Sources/C2PA/
+	@cp src/CertificateManager.swift signing-server/Sources/C2PA/
+	@cp template/module.modulemap signing-server/Sources/C2PA/
+	# Update header path in module map for server structure
+	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' signing-server/Sources/C2PA/module.modulemap
+	
+	# Copy test certificates
+	@cp example/C2PAExample/es256_certs.pem signing-server/Resources/
+	@cp example/C2PAExample/es256_private.key signing-server/Resources/
+	
+	@cd signing-server && swift package resolve
+	@echo "Server setup complete!"
+
+server: setup-server
+	@echo "Building server..."
+	@cd signing-server && swift build
+	@echo "Starting C2PA signing server in development mode..."
+	@cd signing-server && DYLD_LIBRARY_PATH=libs:$$DYLD_LIBRARY_PATH .build/debug/Run serve --env development --hostname 127.0.0.1 --port 8080
+
+clean-server:
+	@echo "Cleaning server build artifacts and copied files..."
+	@cd signing-server && swift package clean
+	@cd signing-server && rm -rf .build
+	@rm -rf signing-server/libs
+	@rm -rf signing-server/Sources/C2PA
+	@rm -rf signing-server/Resources
+	@echo "Server clean completed."
+
 # Helper to show available targets
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "iOS Framework:"
 	@echo "  setup                 - Create necessary directories"
 	@echo "  download-binaries     - Download pre-built binaries from GitHub releases"
 	@echo "  ios-dev               - Build iOS library for arm64 simulator only (optimized for Apple Silicon)"
 	@echo "  ios-framework         - Create iOS XCFramework"
 	@echo "  all                   - Build iOS framework (default)"
 	@echo "  clean                 - Remove build artifacts"
+	@echo ""
+	@echo "Test Server:"
+	@echo "  setup-server          - Set up the C2PA signing server (downloads libs, copies files)"
+	@echo "  server                - Build and run the signing server (port 8080)"
+	@echo "  clean-server          - Clean server build artifacts"
+	@echo ""
 	@echo "  help                  - Show this help message"

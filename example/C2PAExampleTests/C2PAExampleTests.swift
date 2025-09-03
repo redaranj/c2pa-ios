@@ -113,7 +113,6 @@ final class C2PATests: XCTestCase {
         XCTAssertTrue(result.success, result.message)
     }
     
-    @available(iOS 13.0, macOS 10.15, *)
     func testSecureEnclaveSignerCreation() async throws {
         let result = await TestEngine.shared.runSecureEnclaveSignerCreationTest()
         XCTAssertTrue(result.success, result.message)
