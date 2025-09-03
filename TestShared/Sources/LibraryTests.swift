@@ -5,6 +5,69 @@ import TestShared
 /// Main test suite for C2PA library using TestShared functionality
 final class LibraryTests: XCTestCase {
     
+    // MARK: - Run All Test Suites
+    
+    func testCoreLibraryFunctionality() throws {
+        let coreTests = C2PACoreTests()
+        
+        try coreTests.testLibraryVersion()
+        try coreTests.testErrorHandling()
+        try coreTests.testReadImage()
+        try coreTests.testInvalidFileHandling()
+        try coreTests.testResourceReading()
+        try coreTests.testErrorEnumCoverage()
+    }
+    
+    func testBuilderAPI() throws {
+        let builderTests = C2PABuilderTests()
+        
+        try builderTests.testBuilderAPI()
+        try builderTests.testBuilderNoEmbed()
+        try builderTests.testBuilderAddResource()
+        try builderTests.testBuilderAddIngredient()
+        try builderTests.testBuilderFromArchive()
+        try builderTests.testBuilderRemoteURL()
+        try builderTests.testReadIngredient()
+    }
+    
+    func testStreamAPI() throws {
+        let streamTests = C2PAStreamTests()
+        
+        try streamTests.testStreamAPI()
+        try streamTests.testWriteOnlyStreams()
+        try streamTests.testCustomStreamCallbacks()
+        try streamTests.testStreamFileOptions()
+        try streamTests.testFileOperationsWithDataDir()
+        try streamTests.testReaderWithManifestData()
+    }
+    
+    func testSigningFunctionality() throws {
+        let signingTests = C2PASigningTests()
+        
+        try signingTests.testSignerCreation()
+        try signingTests.testSignerWithCallback()
+        try signingTests.testSigningAlgorithms()
+        try signingTests.testSignerReserveSize()
+        try signingTests.testKeychainSignerCreation()
+        try signingTests.testWebServiceSignerCreation()
+        
+        if #available(iOS 13.0, macOS 10.15, *) {
+            try signingTests.testSecureEnclaveSignerCreation()
+            try signingTests.testSecureEnclaveCSRSigning()
+        }
+    }
+    
+    func testReaderFunctionality() throws {
+        let readerTests = C2PAReaderTests()
+        
+        try readerTests.testReaderResourceErrorHandling()
+        try readerTests.testReaderWithManifestData()
+        try readerTests.testResourceReading()
+        try readerTests.testReaderValidation()
+        try readerTests.testReaderThumbnailExtraction()
+        try readerTests.testReaderIngredientExtraction()
+    }
+    
     private var testCore: TestSuiteCore!
     private var signingHelper: SigningHelper!
     
@@ -33,15 +96,6 @@ final class LibraryTests: XCTestCase {
         XCTAssertTrue(version.contains("."), "Version should be semantic")
     }
     
-    // MARK: - Manifest Tests
-    
-    func testCreateManifest() {
-        let manifest = testCore.generateTestManifest()
-        XCTAssertNotNil(manifest.claim)
-        XCTAssertEqual(manifest.claim.generator, "C2PA iOS Test Suite")
-        XCTAssertFalse(manifest.assertions.isEmpty)
-    }
-    
     // MARK: - Signing Tests
     
     func testCreateSigner() throws {
@@ -68,13 +122,13 @@ final class LibraryTests: XCTestCase {
     
     // MARK: - Performance Tests
     
-    func testPerformanceOfManifestCreation() {
-        testCore.measurePerformance(name: "manifest_creation") {
-            _ = testCore.generateTestManifest()
+    func testPerformanceOfImageDataCreation() {
+        testCore.measurePerformance(name: "image_data_creation") {
+            _ = testCore.generateTestImageData()
         }
         
-        if let time = testCore.performanceMetrics["manifest_creation"] {
-            XCTAssertLessThan(time, 1.0, "Manifest creation should be fast")
+        if let time = testCore.performanceMetrics["image_data_creation"] {
+            XCTAssertLessThan(time, 1.0, "Image data creation should be fast")
         }
     }
     
@@ -88,9 +142,6 @@ final class LibraryTests: XCTestCase {
             XCTFail("Failed to generate test image")
             return
         }
-        
-        // Create manifest
-        _ = testCore.generateTestManifest()
         
         // Create signer
         _ = signingHelper.createTestSigner()

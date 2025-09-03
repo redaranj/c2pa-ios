@@ -1,4 +1,0 @@
-module C2PAC {
-    header "include/c2pa.h"
-    export *
-}

@@ -9,16 +9,11 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "C2PA",
-            targets: ["C2PA", "C2PAC"])
+            name: "C2PAC",
+            targets: ["C2PAC"])
     ],
     dependencies: [],
     targets: [
-        // The C2PA Swift framework built by Xcode
-        .binaryTarget(
-            name: "C2PA",
-            path: "output/C2PA.xcframework"
-        ),
         // The C2PAC C library framework
         .binaryTarget(
             name: "C2PAC",

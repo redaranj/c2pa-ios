@@ -10,7 +10,7 @@ on:
 
 env:
   XCODE_VERSION: '15.2'
-  IOS_DESTINATION: 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
+  IOS_DESTINATION: 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.1'
   MACOS_DESTINATION: 'platform=macOS'
   C2PA_VERSION: 'v0.58.0'
 
@@ -43,7 +43,7 @@ jobs:
         platform: [ios, macos, tvos]
         include:
           - platform: ios
-            destination: 'platform=iOS Simulator,name=iPhone 15,OS=17.2'
+            destination: 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.1'
           - platform: macos
             destination: 'platform=macOS'
           - platform: tvos
@@ -75,31 +75,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-c2pa-
       
-      - name: Download C2PA Libraries
-        run: make download-binaries
-      
-      - name: Build XCFramework
-        run: make xcframework
+      - name: Build Library
+        run: make library
       
       - name: Build Package
-        run: |
-          xcodebuild build \
-            -scheme C2PA-iOS \
-            -destination "${{ matrix.destination }}" \
-            -configuration Debug \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+        run: make workspace-build
       
       - name: Run Tests with Coverage
-        run: |
-          xcodebuild test \
-            -scheme C2PA-iOS \
-            -destination "${{ matrix.destination }}" \
-            -configuration Debug \
-            -enableCodeCoverage YES \
-            -resultBundlePath TestResults-${{ matrix.platform }}.xcresult \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO
+        run: make tests
       
       - name: Generate Coverage Report
         run: |
@@ -129,17 +112,14 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
       
-      - name: Download C2PA Libraries
-        run: make download-binaries
-      
-      - name: Build XCFramework
-        run: make xcframework
+      - name: Build Library
+        run: make library
       
       - name: Run Performance Tests
         run: |
           xcodebuild test \
-            -scheme C2PA-iOS \
-            -testPlan C2PA \
+            -workspace C2PA.xcworkspace \
+            -scheme TestApp \
             -configuration Performance \
             -destination "${{ env.IOS_DESTINATION }}" \
             -only-testing:C2PAPerformanceTests \
@@ -171,7 +151,8 @@ jobs:
       - name: Build Documentation
         run: |
           xcodebuild docbuild \
-            -scheme C2PA-iOS \
+            -workspace C2PA.xcworkspace \
+            -scheme Library \
             -destination "${{ env.MACOS_DESTINATION }}" \
             -derivedDataPath ./DerivedData
       
@@ -201,18 +182,15 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app
       
-      - name: Download C2PA Libraries
-        run: make download-binaries
-      
-      - name: Build XCFramework
-        run: make xcframework
+      - name: Build Library
+        run: make library
       
       - name: Create XCFramework Archive
         run: |
-          zip -r C2PAC.xcframework.zip output/C2PAC.xcframework
+          zip -r C2PAC.xcframework.zip Library/Frameworks/C2PAC.xcframework
       
-      - name: Build Swift Package
-        run: swift build -c release
+      - name: Build Workspace
+        run: make workspace-build
       
       - name: Create Release Archive
         run: |

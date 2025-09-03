@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  SCHEME: C2PAExample
+  SCHEME: ExampleApp
 
 jobs:
   test:
@@ -37,25 +37,16 @@ jobs:
       - name: Verify Xcode version
         run: xcodebuild -version
 
-      - name: Build iOS Framework
-        run: make ios-framework
+      - name: Build Library
+        run: make library
 
-      - name: Setup Signing Server
-        run: |
-          echo "Setting up C2PA signing server..."
-          make setup-server
-
-      - name: Build Signing Server
-        run: |
-          cd signing-server
-          swift build
+      - name: Build and Setup Signing Server
+        run: make signing-server-build
 
       - name: Start Signing Server
         run: |
-          cd signing-server
-          DYLD_LIBRARY_PATH=libs:$DYLD_LIBRARY_PATH .build/debug/Run serve --env development --hostname 127.0.0.1 --port 8080 &
-          echo $! > ../server.pid
-          echo "Server started with PID $(cat ../server.pid)"
+          make signing-server-start
+          sleep 5
 
       - name: Wait for Server to be Ready
         run: |
@@ -85,36 +76,24 @@ jobs:
           echo "Server is listening on:"
           lsof -i :8080 || echo "No process on port 8080"
 
-      - name: Clean Build Directory
+      - name: Clean and Build Example App
         run: |
-          cd example
-          xcodebuild clean -project C2PAExample.xcodeproj -scheme "$SCHEME"
-
-      - name: Resolve Package Dependencies
-        run: |
-          cd example
-          xcodebuild -resolvePackageDependencies -project C2PAExample.xcodeproj -scheme "$SCHEME"
+          make clean
+          make example-app
 
       - name: Build & Test
         run: |
           set -o pipefail
-          cd example
           echo "CI environment variable: true"
           echo "Testing with server at http://127.0.0.1:8080"
-          TEST_RUNNER_CI=true xcrun xcodebuild test \
-            -project C2PAExample.xcodeproj \
-            -scheme "$SCHEME" \
-            -sdk iphonesimulator \
-            -destination "platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios }}" \
-            -resultBundlePath TestResults \
-            -enableCodeCoverage YES \
-            | xcpretty --test --color
+          TEST_RUNNER_CI=true make tests DESTINATION="platform=iOS Simulator,name=${{ matrix.device }},OS=${{ matrix.ios }}"
 
       - name: Generate test summary
         if: always()
         run: |
-          cd example
-          if [ -d TestResults.xcresult ]; then
+          DERIVED_DATA=$(xcodebuild -workspace C2PA.xcworkspace -scheme TestApp -showBuildSettings | grep -m 1 'BUILT_PRODUCTS_DIR' | cut -d '=' -f 2 | xargs | sed 's|/Build/Products.*||')
+          if [ -d "$DERIVED_DATA/Logs/Test/TestResults.xcresult" ]; then
+            cd "$DERIVED_DATA/Logs/Test"
             echo "=== Test Summary ==="
             xcrun xcresulttool get test-results summary --path TestResults.xcresult || true
             echo ""
@@ -139,25 +118,23 @@ jobs:
         with:
           name: TestSummary-${{ matrix.xcode }}-${{ matrix.device }}
           path: |
-            example/test-results.json
-            example/TestResults.xcresult
+            test-results.json
+            TestResults.xcresult
 
       - name: Export coverage LCOV
         if: success()
         run: |
-          cd example
-
           # Get DerivedData path from xcodebuild
-          DERIVED_DATA=$(xcodebuild -showBuildSettings -project C2PAExample.xcodeproj -scheme C2PAExample -sdk iphonesimulator | grep -m 1 " BUILD_DIR " | sed 's/.*= //' | sed 's|/Build/Products||')
+          DERIVED_DATA=$(xcodebuild -workspace C2PA.xcworkspace -scheme TestApp -showBuildSettings | grep -m 1 'BUILT_PRODUCTS_DIR' | cut -d '=' -f 2 | xargs | sed 's|/Build/Products.*||')
           echo "Derived data path: $DERIVED_DATA"
 
           # Find Coverage.profdata - search in common locations
-          PROFDATA_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
+          PROFDATA_PATH=$(find "$DERIVED_DATA" -path "*/Build/ProfileData/*/Coverage.profdata" -type f 2>/dev/null | head -1 || true)
 
           echo "Coverage.profdata path: $PROFDATA_PATH"
 
           # Find the test binary
-          TEST_BINARY_PATH=$(find ~/Library/Developer/Xcode/DerivedData -path "*/C2PAExampleTests.xctest/C2PAExampleTests" -type f 2>/dev/null | grep -i c2paexample | head -1 || true)
+          TEST_BINARY_PATH=$(find "$DERIVED_DATA" -path "*/TestApp.app/TestApp" -type f 2>/dev/null | head -1 || true)
 
           echo "Test binary path: $TEST_BINARY_PATH"
 

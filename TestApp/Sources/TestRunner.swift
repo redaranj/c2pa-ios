@@ -24,16 +24,24 @@ class TestRunner {
         
         // Test manifest builder creation
         results.append(await runTest("Create Manifest Builder") {
-            let manifest = C2PAManifest(
-                claim: C2PAClaim(
-                    generator: "TestApp",
-                    title: "Test Manifest",
-                    format: "image/jpeg"
-                ),
-                assertions: []
-            )
-            // Just test we can create a manifest
-            return manifest.claim.generator == "TestApp"
+            // Create a simple manifest JSON string
+            let manifestJSON = """
+            {
+                "claim_generator": "TestApp/1.0",
+                "title": "Test Manifest",
+                "format": "image/jpeg",
+                "assertions": []
+            }
+            """
+            
+            do {
+                _ = try Builder(manifestJSON: manifestJSON)
+                // If we can create a builder, the test passes
+                return true
+            } catch {
+                print("Builder creation error: \(error)")
+                return false
+            }
         })
         
         // Test signing helper from TestShared
