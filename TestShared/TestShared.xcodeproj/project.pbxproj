@@ -10,7 +10,6 @@
 		7A1234561234567890ABCDEF /* SigningHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1234551234567890ABCDEF /* SigningHelper.swift */; };
 		7A1234581234567890ABCDEF /* TestSuiteCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1234571234567890ABCDEF /* TestSuiteCore.swift */; };
 		95C99A3C2E68D83F00C54D0E /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; };
-		95C99A3D2E68D83F00C54D0E /* C2PA.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A542E695DF100C54D0E /* StreamTests.swift */; };
 		95C99A562E695DF100C54D0E /* ComprehensiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */; };
 		95C99A572E695DF100C54D0E /* BuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A4F2E695DF100C54D0E /* BuilderTests.swift */; };
@@ -32,7 +31,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				95C99A3D2E68D83F00C54D0E /* C2PA.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -43,7 +41,6 @@
 		7A1234501234567890ABCDEF /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A1234551234567890ABCDEF /* SigningHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningHelper.swift; sourceTree = "<group>"; };
 		7A1234571234567890ABCDEF /* TestSuiteCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuiteCore.swift; sourceTree = "<group>"; };
-		95C99A392E68D6B300C54D0E /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		95C99A3B2E68D83F00C54D0E /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		95C99A4F2E695DF100C54D0E /* BuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuilderTests.swift; sourceTree = "<group>"; };
 		95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComprehensiveTests.swift; sourceTree = "<group>"; };
@@ -113,7 +110,6 @@
 			isa = PBXGroup;
 			children = (
 				95C99A3B2E68D83F00C54D0E /* C2PA.framework */,
-				95C99A392E68D6B300C54D0E /* C2PA.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";

@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		15F2DB4586C47A09C777D6A1 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 6D2BED6F777480F62D122EDD /* Cocoa.framework */; };
 		2B49F972C7FFAAF2DDF4A9B2 /* C2PAC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7A2807B509741B0E1856DF8 /* C2PAC.framework */; };
 /* End PBXBuildFile section */
 
@@ -23,13 +22,9 @@
 
 /* Begin PBXFileReference section */
 		4B6BA9869810C799488164AB /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		6D2BED6F777480F62D122EDD /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = Platforms/MacOSX.platform/Developer/SDKs/MacOSX15.0.sdk/System/Library/Frameworks/Cocoa.framework; sourceTree = DEVELOPER_DIR; };
 		9A1234551234567890ABCDEF /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		9A1234571234567890ABCDEF /* Sources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sources; sourceTree = "<group>"; };
 		9A1234601234567890ABCDEF /* SigningServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SigningServer; sourceTree = BUILT_PRODUCTS_DIR; };
-		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
-		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
-		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
 		D7A2807B509741B0E1856DF8 /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FD955EAFD503AF5F76308D00 /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -39,7 +34,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				15F2DB4586C47A09C777D6A1 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,30 +48,12 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		1537979696EFD5551CBFD1DD /* OS X */ = {
-			isa = PBXGroup;
-			children = (
-				6D2BED6F777480F62D122EDD /* Cocoa.framework */,
-			);
-			name = "OS X";
-			sourceTree = "<group>";
-		};
-		58BBD8A86CD6712D279B2202 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				1537979696EFD5551CBFD1DD /* OS X */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		9A1234501234567890ABCDEF = {
 			isa = PBXGroup;
 			children = (
-				BC1234591234567890ABCDEF /* Configurations */,
 				9A1234551234567890ABCDEF /* Package.swift */,
 				9A1234571234567890ABCDEF /* Sources */,
 				9A1234611234567890ABCDEF /* Products */,
-				58BBD8A86CD6712D279B2202 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -90,16 +66,6 @@
 				D7A2807B509741B0E1856DF8 /* C2PAC.framework */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		BC1234591234567890ABCDEF /* Configurations */ = {
-			isa = PBXGroup;
-			children = (
-				BC1234561234567890ABCDEF /* Base.xcconfig */,
-				BC1234571234567890ABCDEF /* Debug.xcconfig */,
-				BC1234581234567890ABCDEF /* Release.xcconfig */,
-			);
-			name = Configurations;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

@@ -263,7 +263,7 @@ public final class Signer {
 
 // MARK: - Stream wrapper ----------------------------------------------------
 
-public struct StreamOptions: OptionSet, Sendable {
+public struct StreamOptions: OptionSet {
     public let rawValue: UInt8
     public static let read = StreamOptions(rawValue: 1 << 0)
     public static let write = StreamOptions(rawValue: 1 << 1)

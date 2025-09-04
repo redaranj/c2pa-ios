@@ -19,6 +19,7 @@ struct CustomCameraView: UIViewControllerRepresentable {
         Coordinator(self)
     }
     
+    @MainActor
     class Coordinator: NSObject, CustomCameraViewControllerDelegate {
         let parent: CustomCameraView
         
@@ -37,6 +38,7 @@ struct CustomCameraView: UIViewControllerRepresentable {
     }
 }
 
+@MainActor
 protocol CustomCameraViewControllerDelegate: AnyObject {
     func didCapturePhoto(_ image: UIImage, location: CLLocation?)
     func didCancel()
@@ -71,6 +73,12 @@ class CustomCameraViewController: UIViewController {
     }
     
     private func setupCamera() {
+        #if targetEnvironment(simulator)
+        // Don't setup camera on simulator
+        print("📷 Camera not available on simulator")
+        return
+        #else
+        
         captureSession = AVCaptureSession()
         guard let captureSession = captureSession else { return }
         
@@ -117,10 +125,27 @@ class CustomCameraViewController: UIViewController {
         if let previewLayer = previewLayer {
             view.layer.insertSublayer(previewLayer, at: 0)
         }
+        #endif
     }
     
     private func setupUI() {
         view.backgroundColor = .black
+        
+        #if targetEnvironment(simulator)
+        // Add a label for simulator
+        let simulatorLabel = UILabel()
+        simulatorLabel.text = "Camera Preview\n(Simulator Mode)"
+        simulatorLabel.textAlignment = .center
+        simulatorLabel.numberOfLines = 2
+        simulatorLabel.textColor = .white
+        simulatorLabel.font = .systemFont(ofSize: 20)
+        simulatorLabel.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(simulatorLabel)
+        NSLayoutConstraint.activate([
+            simulatorLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            simulatorLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+        #endif
         
         // Add capture button with black background and white icon
         let captureButton = UIButton(type: .custom)
@@ -168,8 +193,10 @@ class CustomCameraViewController: UIViewController {
     }
     
     private func startSession() {
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            self?.captureSession?.startRunning()
+        // Capture the session before going off main actor
+        let session = captureSession
+        DispatchQueue.global(qos: .userInitiated).async {
+            session?.startRunning()
         }
     }
     
@@ -178,6 +205,10 @@ class CustomCameraViewController: UIViewController {
     }
     
     @objc private func capturePhoto() {
+        #if targetEnvironment(simulator)
+        // Simulate photo capture on simulator
+        simulatePhotoCapture()
+        #else
         guard let photoOutput = photoOutput else { return }
         
         let settings = AVCapturePhotoSettings()
@@ -188,7 +219,35 @@ class CustomCameraViewController: UIViewController {
         }
         
         photoOutput.capturePhoto(with: settings, delegate: self)
+        #endif
     }
+    
+    #if targetEnvironment(simulator)
+    private func simulatePhotoCapture() {
+        // Create a placeholder image for simulator
+        let placeholderView = UIView(frame: CGRect(x: 0, y: 0, width: 400, height: 600))
+        placeholderView.backgroundColor = .systemBlue
+        
+        let label = UILabel(frame: placeholderView.bounds)
+        label.text = "Simulated Photo\n\(Date())" 
+        label.textAlignment = .center
+        label.numberOfLines = 2
+        label.textColor = .white
+        label.font = .systemFont(ofSize: 24, weight: .bold)
+        placeholderView.addSubview(label)
+        
+        let renderer = UIGraphicsImageRenderer(size: placeholderView.bounds.size)
+        let image = renderer.image { ctx in
+            placeholderView.layer.render(in: ctx.cgContext)
+        }
+        
+        // Call delegate with simulated image
+        DispatchQueue.main.async { [weak self] in
+            self?.delegate?.didCapturePhoto(image, location: self?.currentLocation)
+            self?.dismiss(animated: true)
+        }
+    }
+    #endif
     
     @objc private func cancelCapture() {
         dismiss(animated: true) {
@@ -198,7 +257,7 @@ class CustomCameraViewController: UIViewController {
 }
 
 extension CustomCameraViewController: AVCapturePhotoCaptureDelegate {
-    func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
+    nonisolated func photoOutput(_ output: AVCapturePhotoOutput, didFinishProcessingPhoto photo: AVCapturePhoto, error: Error?) {
         if let error = error {
             print("Error capturing photo: \(error)")
             return
@@ -209,25 +268,25 @@ extension CustomCameraViewController: AVCapturePhotoCaptureDelegate {
             return
         }
         
-        // Add GPS metadata if location is available
-        var finalImageData = imageData
-        if let location = currentLocation {
-            finalImageData = addGPSMetadata(to: imageData, location: location) ?? imageData
-        }
-        
-        guard let image = UIImage(data: finalImageData) else {
-            print("Unable to create image from photo data")
-            return
-        }
-        
-        // Do NOT save to photo library here - just pass the image to the delegate
-        // The delegate will handle C2PA signing and then save
-        print("📸 Photo captured, passing to delegate for C2PA signing...")
-        print("📍 Current location: \(currentLocation?.coordinate.latitude ?? 0), \(currentLocation?.coordinate.longitude ?? 0)")
-        
-        DispatchQueue.main.async { [weak self] in
-            self?.delegate?.didCapturePhoto(image, location: self?.currentLocation)
-            self?.dismiss(animated: true)
+        Task { @MainActor in
+            // Add GPS metadata if location is available
+            var finalImageData = imageData
+            if let location = currentLocation {
+                finalImageData = addGPSMetadata(to: imageData, location: location) ?? imageData
+            }
+            
+            guard let image = UIImage(data: finalImageData) else {
+                print("Unable to create image from photo data")
+                return
+            }
+            
+            // Do NOT save to photo library here - just pass the image to the delegate
+            // The delegate will handle C2PA signing and then save
+            print("📸 Photo captured, passing to delegate for C2PA signing...")
+            print("📍 Current location: \(currentLocation?.coordinate.latitude ?? 0), \(currentLocation?.coordinate.longitude ?? 0)")
+            
+            delegate?.didCapturePhoto(image, location: currentLocation)
+            dismiss(animated: true)
         }
     }
     
@@ -309,27 +368,38 @@ extension CustomCameraViewController: AVCapturePhotoCaptureDelegate {
 // MARK: - CLLocationManagerDelegate
 
 extension CustomCameraViewController: CLLocationManagerDelegate {
-    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        currentLocation = locations.last
-        if let location = currentLocation {
-            print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        Task { @MainActor in
+            currentLocation = locations.last
+            if let location = currentLocation {
+                print("📍 Location updated: \(location.coordinate.latitude), \(location.coordinate.longitude)")
+            }
         }
     }
     
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         print("❌ Location error: \(error)")
     }
     
-    func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        switch manager.authorizationStatus {
-        case .authorizedWhenInUse, .authorizedAlways:
-            startLocationUpdates()
-        case .denied, .restricted:
-            print("⚠️ Location access denied")
-        case .notDetermined:
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        
+        if status == .notDetermined {
             manager.requestWhenInUseAuthorization()
-        @unknown default:
-            break
+            return
+        }
+        
+        Task { @MainActor in
+            switch status {
+            case .authorizedWhenInUse, .authorizedAlways:
+                startLocationUpdates()
+            case .denied, .restricted:
+                print("⚠️ Location access denied")
+            case .notDetermined:
+                break // Already handled above
+            @unknown default:
+                break
+            }
         }
     }
 }

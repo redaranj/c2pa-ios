@@ -32,9 +32,6 @@
 		9553B1A22E4B2FC60088E976 /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9553B1A62E4B2FCB0088E976 /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		959206092DD9F0B800E0E44B /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
-		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
-		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -70,7 +67,6 @@
 		959206002DD9F0B800E0E44B = {
 			isa = PBXGroup;
 			children = (
-				BC1234591234567890ABCDEF /* Configurations */,
 				9522D5912E4B22F700D63536 /* Sources */,
 				9553B1A12E4B2FC60088E976 /* Frameworks */,
 				9592060A2DD9F0B800E0E44B /* Products */,
@@ -83,16 +79,6 @@
 				959206092DD9F0B800E0E44B /* TestApp.app */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		BC1234591234567890ABCDEF /* Configurations */ = {
-			isa = PBXGroup;
-			children = (
-				BC1234561234567890ABCDEF /* Base.xcconfig */,
-				BC1234571234567890ABCDEF /* Debug.xcconfig */,
-				BC1234581234567890ABCDEF /* Release.xcconfig */,
-			);
-			name = Configurations;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -180,7 +166,6 @@
 /* Begin XCBuildConfiguration section */
 		959206122DD9F0BA00E0E44B /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BC1234571234567890ABCDEF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -248,7 +233,6 @@
 		};
 		959206132DD9F0BA00E0E44B /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BC1234581234567890ABCDEF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -330,7 +314,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -358,7 +342,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;

@@ -124,16 +124,19 @@ signing-server-build:
 	@sed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' SigningServer/Sources/C2PA/include/c2pa.h.orig > SigningServer/Sources/C2PA/include/c2pa.h
 	@rm -f SigningServer/Sources/C2PA/include/c2pa.h.orig
 	
-	# Copy Swift files and module map
+	# Copy Swift files from Library
 	@cp Library/Sources/C2PA.swift SigningServer/Sources/C2PA/
 	@cp Library/Sources/CertificateManager.swift SigningServer/Sources/C2PA/
-	@cp template/module.modulemap SigningServer/Sources/C2PA/
-	# Update header path in module map for server structure
-	@sed -i '' 's|header "c2pa.h"|header "include/c2pa.h"|' SigningServer/Sources/C2PA/module.modulemap
+	
+	# Create module map directly
+	@echo 'module C2PAC {' > SigningServer/Sources/C2PA/module.modulemap
+	@echo '    header "include/c2pa.h"' >> SigningServer/Sources/C2PA/module.modulemap
+	@echo '    export *' >> SigningServer/Sources/C2PA/module.modulemap
+	@echo '}' >> SigningServer/Sources/C2PA/module.modulemap
 	
 	# Copy test certificates
-	@cp Library/Tests/Resources/es256_certs.pem SigningServer/Resources/
-	@cp Library/Tests/Resources/es256_private.key SigningServer/Resources/
+	@cp TestShared/Sources/Resources/es256_certs.pem SigningServer/Resources/
+	@cp TestShared/Sources/Resources/es256_private.key SigningServer/Resources/
 	
 	@cd SigningServer && swift package resolve
 	@echo "Server setup complete!"

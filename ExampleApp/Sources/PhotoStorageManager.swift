@@ -1,7 +1,8 @@
 import Foundation
 import UIKit
 
-class PhotoStorageManager {
+@MainActor
+final class PhotoStorageManager: Sendable {
     static let shared = PhotoStorageManager()
     
     private let documentsDirectory: URL

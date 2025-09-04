@@ -44,9 +44,6 @@
 		95A1B2C22E4F3A0100000002 /* default_private.key */ = {isa = PBXFileReference; lastKnownFileType = text; path = default_private.key; sourceTree = "<group>"; };
 		95A1B2C52E4F3A0100000003 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		95D65F762E017C67009D5F10 /* ExampleAppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ExampleAppTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
-		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
-		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -79,10 +76,9 @@
 		7D53FD7DAEAA49D7B932021B = {
 			isa = PBXGroup;
 			children = (
-				BC1234591234567890ABCDEF /* Configurations */,
+				95A1B2C52E4F3A0100000003 /* Info.plist */,
 				9522D5972E4B230300D63536 /* Sources */,
 				95A1B2C02E4F3A0100000000 /* Resources */,
-				95A1B2C52E4F3A0100000003 /* Info.plist */,
 				9553B19C2E4B2FB10088E976 /* Frameworks */,
 				9592060A2DD9F0B800E0E44B /* Products */,
 			);
@@ -112,16 +108,6 @@
 				95A1B2C22E4F3A0100000002 /* default_private.key */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		BC1234591234567890ABCDEF /* Configurations */ = {
-			isa = PBXGroup;
-			children = (
-				BC1234561234567890ABCDEF /* Base.xcconfig */,
-				BC1234571234567890ABCDEF /* Debug.xcconfig */,
-				BC1234581234567890ABCDEF /* Release.xcconfig */,
-			);
-			name = Configurations;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -258,7 +244,6 @@
 /* Begin XCBuildConfiguration section */
 		959206122DD9F0BA00E0E44B /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BC1234571234567890ABCDEF /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -324,7 +309,6 @@
 		};
 		959206132DD9F0BA00E0E44B /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = BC1234581234567890ABCDEF /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -411,7 +395,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -446,7 +430,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SKIP_INSTALL = NO;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -467,7 +451,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExampleApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExampleApp";
 			};
@@ -489,7 +473,7 @@
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ExampleApp.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ExampleApp";
 			};

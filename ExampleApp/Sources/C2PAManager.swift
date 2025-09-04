@@ -5,8 +5,11 @@ import PhotosUI
 import C2PA
 import CoreLocation
 import ImageIO
+import Crypto
+import Security
 
-class C2PAManager: ObservableObject {
+@MainActor
+final class C2PAManager: ObservableObject, Sendable {
     static let shared = C2PAManager()
     
     @Published var isProcessing = false
@@ -17,6 +20,19 @@ class C2PAManager: ObservableObject {
     
     private init() {
         loadDefaultCertificates()
+        
+        // Listen for signing mode changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(signingModeChanged),
+            name: Notification.Name("SigningModeChanged"),
+            object: nil
+        )
+    }
+    
+    @objc private func signingModeChanged() {
+        // Refresh settings when mode changes
+        print("Signing mode changed")
     }
     
     private func loadDefaultCertificates() {
@@ -50,24 +66,22 @@ class C2PAManager: ObservableObject {
                 
                 print("📸 Original image data size: \(imageData.count) bytes")
                 
-                // Check for custom certificates first, then fall back to defaults
-                let customCertData = UserDefaults.standard.data(forKey: "certificateData")
-                let customKeyData = UserDefaults.standard.data(forKey: "privateKeyData")
+                // Get the current signing mode
+                let signingModeString = UserDefaults.standard.string(forKey: "signingMode") ?? "Default"
+                let signingMode = SigningMode(rawValue: signingModeString) ?? .defaultMode
+                
+                print("🔐 Using signing mode: \(signingMode.rawValue)")
                 
                 var signedImageData: Data
                 
-                if let certData = customCertData, let keyData = customKeyData {
-                    // Use custom certificates provided by user
-                    print("Using custom certificates for signing")
-                    signedImageData = try await signWithCertificate(
-                        imageData: imageData,
-                        certificateData: certData,
-                        privateKeyData: keyData,
-                        isCustom: true,
-                        location: location
-                    )
-                } else if let certData = defaultCertificateData, let keyData = defaultPrivateKeyData {
+                switch signingMode {
+                case .defaultMode:
                     // Use default certificates from bundle
+                    guard let certData = defaultCertificateData, let keyData = defaultPrivateKeyData else {
+                        throw NSError(domain: "C2PAManager", code: 2, userInfo: [
+                            NSLocalizedDescriptionKey: "Default certificates not available"
+                        ])
+                    }
                     print("Using default certificates for signing")
                     signedImageData = try await signWithCertificate(
                         imageData: imageData,
@@ -76,10 +90,36 @@ class C2PAManager: ObservableObject {
                         isCustom: false,
                         location: location
                     )
-                } else {
-                    throw NSError(domain: "C2PAManager", code: 2, userInfo: [
-                        NSLocalizedDescriptionKey: "No certificates available for signing"
-                    ])
+                    
+                case .keychain:
+                    // Use keychain-stored certificate
+                    print("Using Keychain certificate for signing")
+                    signedImageData = try await signWithKeychainKey(
+                        imageData: imageData,
+                        keyTag: "com.c2pa.example.keychain.privatekey",
+                        location: location
+                    )
+                    
+                case .secureEnclave:
+                    // Use Secure Enclave for signing
+                    print("Using Secure Enclave for signing")
+                    signedImageData = try await signWithKeychainKey(
+                        imageData: imageData,
+                        keyTag: "com.c2pa.example.secureenclave.key",
+                        location: location
+                    )
+                    
+                case .custom:
+                    // Use custom uploaded certificates
+                    let (certData, keyData) = try getCustomCertificate()
+                    print("Using custom certificates for signing")
+                    signedImageData = try await signWithCertificate(
+                        imageData: imageData,
+                        certificateData: certData,
+                        privateKeyData: keyData,
+                        isCustom: true,
+                        location: location
+                    )
                 }
                 
                 print("📸 Signed image data size: \(signedImageData.count) bytes")
@@ -445,7 +485,7 @@ class C2PAManager: ObservableObject {
         
         // Save the image and get its identifier
         var savedAssetIdentifier: String?
-        try await PHPhotoLibrary.shared().performChanges {
+        try await PHPhotoLibrary.shared().performChanges { @Sendable in
             let creationRequest = PHAssetCreationRequest.forAsset()
             creationRequest.addResource(with: .photo, data: imageData, options: nil)
             savedAssetIdentifier = creationRequest.placeholderForCreatedAsset?.localIdentifier
@@ -503,5 +543,192 @@ class C2PAManager: ObservableObject {
                 print("❌ Could not fetch saved asset with ID: \(assetId)")
             }
         }
+    }
+    
+    // Helper method to sign with a keychain/secure enclave key using CertificateManager
+    private func signWithKeychainKey(imageData: Data, keyTag: String, location: CLLocation? = nil) async throws -> Data {
+        // Retrieve the certificate chain from keychain
+        let certChainKey = keyTag + ".certchain"
+        
+        let certQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: certChainKey,
+            kSecReturnData as String: true
+        ]
+        
+        var certItem: CFTypeRef?
+        let certStatus = SecItemCopyMatching(certQuery as CFDictionary, &certItem)
+        
+        guard certStatus == errSecSuccess,
+              let certData = certItem as? Data,
+              String(data: certData, encoding: .utf8) != nil else {
+            // Certificate chain not found, need to generate it
+            print("Certificate chain not found for key tag: \(keyTag), generating...")
+            
+            // Get the public key from the keychain
+            let keyQuery: [String: Any] = [
+                kSecClass as String: kSecClassKey,
+                kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
+                kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+                kSecReturnRef as String: true
+            ]
+            
+            var keyItem: CFTypeRef?
+            let keyStatus = SecItemCopyMatching(keyQuery as CFDictionary, &keyItem)
+            
+            guard keyStatus == errSecSuccess,
+                  let privateKey = keyItem as! SecKey?,
+                  let publicKey = SecKeyCopyPublicKey(privateKey) else {
+                throw NSError(domain: "C2PAManager", code: 4, userInfo: [
+                    NSLocalizedDescriptionKey: "Key not found in keychain for tag: \(keyTag)"
+                ])
+            }
+            
+            // Create certificate chain using CertificateManager
+            let config = CertificateManager.CertificateConfig(
+                commonName: "C2PA Example User",
+                organization: "C2PA Example",
+                organizationalUnit: "Mobile",
+                country: "US",
+                state: "CA",
+                locality: "San Francisco",
+                emailAddress: "user@example.com"
+            )
+            
+            let certChain = try CertificateManager.createSelfSignedCertificateChain(
+                for: publicKey,
+                config: config
+            )
+            
+            // Store the certificate chain in keychain
+            let certChainData = certChain.data(using: .utf8)!
+            let saveQuery: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrAccount as String: certChainKey,
+                kSecValueData as String: certChainData
+            ]
+            
+            SecItemDelete(saveQuery as CFDictionary) // Delete if exists
+            let saveStatus = SecItemAdd(saveQuery as CFDictionary, nil)
+            if saveStatus != errSecSuccess {
+                print("Warning: Could not cache certificate chain: \(saveStatus)")
+            }
+            
+            // Now sign with the generated certificate chain
+            return try await signWithSecKey(
+                imageData: imageData,
+                privateKey: privateKey,
+                certificateChain: certChain,
+                location: location
+            )
+        }
+        
+        // Certificate chain found, use it for signing
+        guard let certString = String(data: certData, encoding: .utf8) else {
+            throw NSError(domain: "C2PAManager", code: 5, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid certificate chain format"
+            ])
+        }
+        
+        // Get the private key reference from keychain
+        let keyQuery: [String: Any] = [
+            kSecClass as String: kSecClassKey,
+            kSecAttrApplicationTag as String: keyTag.data(using: .utf8)!,
+            kSecAttrKeyType as String: kSecAttrKeyTypeECSECPrimeRandom,
+            kSecReturnRef as String: true
+        ]
+        
+        var keyItem: CFTypeRef?
+        let keyStatus = SecItemCopyMatching(keyQuery as CFDictionary, &keyItem)
+        
+        guard keyStatus == errSecSuccess,
+              let privateKey = keyItem as! SecKey? else {
+            throw NSError(domain: "C2PAManager", code: 6, userInfo: [
+                NSLocalizedDescriptionKey: "Private key not found in keychain"
+            ])
+        }
+        
+        return try await signWithSecKey(
+            imageData: imageData,
+            privateKey: privateKey,
+            certificateChain: certString,
+            location: location
+        )
+    }
+    
+    // Helper method to sign with a SecKey (keychain or secure enclave)
+    private func signWithSecKey(imageData: Data, privateKey: SecKey, certificateChain: String, location: CLLocation? = nil) async throws -> Data {
+        // Since we can't export the private key, we need to use a custom signer
+        // that delegates signing to SecKey
+        
+        // For now, we'll fall back to creating a PEM representation if possible
+        // In a real implementation, this would require custom C2PA signer integration
+        
+        // Check if this is a secure enclave key (which cannot be exported)
+        guard let keyAttrs = SecKeyCopyAttributes(privateKey) as? [String: Any],
+              let tokenID = keyAttrs[kSecAttrTokenID as String] as? String,
+              tokenID == kSecAttrTokenIDSecureEnclave as String else {
+            // Not a secure enclave key, try to export it
+            var error: Unmanaged<CFError>?
+            guard let keyData = SecKeyCopyExternalRepresentation(privateKey, &error) else {
+                if let error = error?.takeRetainedValue() {
+                    throw error
+                }
+                throw NSError(domain: "C2PAManager", code: 7, userInfo: [
+                    NSLocalizedDescriptionKey: "Could not export private key"
+                ])
+            }
+            
+            // Convert to PEM format
+            let keyDataObject = keyData as Data
+            let keyBase64 = keyDataObject.base64EncodedString(options: [.lineLength64Characters, .endLineWithLineFeed])
+            let keyPEM = "-----BEGIN EC PRIVATE KEY-----\n\(keyBase64)\n-----END EC PRIVATE KEY-----\n"
+            
+            return try await signWithCertificate(
+                imageData: imageData,
+                certificateData: certificateChain.data(using: .utf8)!,
+                privateKeyData: keyPEM.data(using: .utf8)!,
+                isCustom: true,
+                location: location
+            )
+        }
+        
+        // This is a secure enclave key - for now, throw an error
+        // In a real implementation, we would need custom C2PA signer support
+        throw NSError(domain: "C2PAManager", code: 8, userInfo: [
+            NSLocalizedDescriptionKey: "Secure Enclave signing requires custom C2PA signer implementation (not yet supported)"
+        ])
+    }
+    
+    // Helper method to get custom certificate from keychain
+    private func getCustomCertificate() throws -> (Data, Data) {
+        let certQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "com.c2pa.example.custom.cert",
+            kSecReturnData as String: true
+        ]
+        
+        let keyQuery: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrAccount as String: "com.c2pa.example.custom.key",
+            kSecReturnData as String: true
+        ]
+        
+        var certItem: CFTypeRef?
+        var keyItem: CFTypeRef?
+        
+        let certStatus = SecItemCopyMatching(certQuery as CFDictionary, &certItem)
+        let keyStatus = SecItemCopyMatching(keyQuery as CFDictionary, &keyItem)
+        
+        guard certStatus == errSecSuccess,
+              let certData = certItem as? Data,
+              keyStatus == errSecSuccess,
+              let keyData = keyItem as? Data else {
+            throw NSError(domain: "C2PAManager", code: 9, userInfo: [
+                NSLocalizedDescriptionKey: "Custom certificates not found in keychain. Please upload certificates in Settings."
+            ])
+        }
+        
+        return (certData, keyData)
     }
 }
