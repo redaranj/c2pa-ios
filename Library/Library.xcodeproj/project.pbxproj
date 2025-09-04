@@ -17,6 +17,8 @@
 		953469DD2E4D2578003E83AD /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8A1234501234567890ABCDEF /* C2PA.framework */; };
 		953469E62E4D25C6003E83AD /* TestShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 953469E52E4D25C6003E83AD /* TestShared.framework */; };
 		959C8A3A2E4E3C0000FBD820 /* C2PAC.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 959C8A2E2E4E38E700FBD820 /* C2PAC.framework */; };
+		95C99A6E2E69717700C54D0E /* LibraryTestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A6B2E69717700C54D0E /* LibraryTestRunner.swift */; };
+		95C99A6F2E69717700C54D0E /* LibraryTests.xctestplan in Resources */ = {isa = PBXBuildFile; fileRef = 95C99A6C2E69717700C54D0E /* LibraryTests.xctestplan */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -43,6 +45,8 @@
 		953469D92E4D2578003E83AD /* C2PATests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = C2PATests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		953469E52E4D25C6003E83AD /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		959C8A2E2E4E38E700FBD820 /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		95C99A6B2E69717700C54D0E /* LibraryTestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LibraryTestRunner.swift; sourceTree = "<group>"; };
+		95C99A6C2E69717700C54D0E /* LibraryTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = LibraryTests.xctestplan; sourceTree = "<group>"; };
 		BC1234561234567890ABCDEF /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		BC1234571234567890ABCDEF /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Debug.xcconfig; path = ../Configurations/Debug.xcconfig; sourceTree = "<group>"; };
 		BC1234581234567890ABCDEF /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Release.xcconfig; path = ../Configurations/Release.xcconfig; sourceTree = "<group>"; };
@@ -79,6 +83,7 @@
 			children = (
 				BC1234591234567890ABCDEF /* Configurations */,
 				8A1234541234567890ABCDEF /* Sources */,
+				95C99A6D2E69717700C54D0E /* Tests */,
 				9534698A2E4CB13B003E83AD /* Frameworks */,
 				8A1234511234567890ABCDEF /* Products */,
 			);
@@ -109,6 +114,15 @@
 				953469E52E4D25C6003E83AD /* TestShared.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		95C99A6D2E69717700C54D0E /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				95C99A6B2E69717700C54D0E /* LibraryTestRunner.swift */,
+				95C99A6C2E69717700C54D0E /* LibraryTests.xctestplan */,
+			);
+			path = Tests;
 			sourceTree = "<group>";
 		};
 		BC1234591234567890ABCDEF /* Configurations */ = {
@@ -242,6 +256,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				95C99A6F2E69717700C54D0E /* LibraryTests.xctestplan in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -284,6 +299,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				95C99A6E2E69717700C54D0E /* LibraryTestRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -16,7 +16,4 @@
    <FileRef
       location = "group:SigningServer/SigningServer.xcodeproj">
    </FileRef>
-   <FileRef
-      location = "group:../C2PATests.xctestplan">
-   </FileRef>
 </Workspace>

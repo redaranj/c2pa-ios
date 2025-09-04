@@ -11,6 +11,18 @@
 		7A1234581234567890ABCDEF /* TestSuiteCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A1234571234567890ABCDEF /* TestSuiteCore.swift */; };
 		95C99A3C2E68D83F00C54D0E /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; };
 		95C99A3D2E68D83F00C54D0E /* C2PA.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A542E695DF100C54D0E /* StreamTests.swift */; };
+		95C99A562E695DF100C54D0E /* ComprehensiveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */; };
+		95C99A572E695DF100C54D0E /* BuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A4F2E695DF100C54D0E /* BuilderTests.swift */; };
+		95C99A592E695DF100C54D0E /* ReaderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A522E695DF100C54D0E /* ReaderTests.swift */; };
+		95C99A5A2E695DF100C54D0E /* SigningTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A532E695DF100C54D0E /* SigningTests.swift */; };
+		95C99A642E696CBF00C54D0E /* StreamTestsImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A612E696CBF00C54D0E /* StreamTestsImpl.swift */; };
+		95C99A652E696CBF00C54D0E /* TestRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A632E696CBF00C54D0E /* TestRunner.swift */; };
+		95C99A662E696CBF00C54D0E /* ReaderTestsImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A5F2E696CBF00C54D0E /* ReaderTestsImpl.swift */; };
+		95C99A672E696CBF00C54D0E /* SigningTestsImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A602E696CBF00C54D0E /* SigningTestsImpl.swift */; };
+		95C99A682E696CBF00C54D0E /* ComprehensiveTestsImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A5E2E696CBF00C54D0E /* ComprehensiveTestsImpl.swift */; };
+		95C99A692E696CBF00C54D0E /* TestResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A622E696CBF00C54D0E /* TestResult.swift */; };
+		95C99A6A2E696CBF00C54D0E /* BuilderTestsImpl.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A5D2E696CBF00C54D0E /* BuilderTestsImpl.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,6 +45,18 @@
 		7A1234571234567890ABCDEF /* TestSuiteCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestSuiteCore.swift; sourceTree = "<group>"; };
 		95C99A392E68D6B300C54D0E /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		95C99A3B2E68D83F00C54D0E /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		95C99A4F2E695DF100C54D0E /* BuilderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuilderTests.swift; sourceTree = "<group>"; };
+		95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComprehensiveTests.swift; sourceTree = "<group>"; };
+		95C99A522E695DF100C54D0E /* ReaderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderTests.swift; sourceTree = "<group>"; };
+		95C99A532E695DF100C54D0E /* SigningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningTests.swift; sourceTree = "<group>"; };
+		95C99A542E695DF100C54D0E /* StreamTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamTests.swift; sourceTree = "<group>"; };
+		95C99A5D2E696CBF00C54D0E /* BuilderTestsImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuilderTestsImpl.swift; sourceTree = "<group>"; };
+		95C99A5E2E696CBF00C54D0E /* ComprehensiveTestsImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComprehensiveTestsImpl.swift; sourceTree = "<group>"; };
+		95C99A5F2E696CBF00C54D0E /* ReaderTestsImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReaderTestsImpl.swift; sourceTree = "<group>"; };
+		95C99A602E696CBF00C54D0E /* SigningTestsImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SigningTestsImpl.swift; sourceTree = "<group>"; };
+		95C99A612E696CBF00C54D0E /* StreamTestsImpl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamTestsImpl.swift; sourceTree = "<group>"; };
+		95C99A622E696CBF00C54D0E /* TestResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestResult.swift; sourceTree = "<group>"; };
+		95C99A632E696CBF00C54D0E /* TestRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestRunner.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -67,6 +91,18 @@
 		7A1234541234567890ABCDEF /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				95C99A5D2E696CBF00C54D0E /* BuilderTestsImpl.swift */,
+				95C99A5E2E696CBF00C54D0E /* ComprehensiveTestsImpl.swift */,
+				95C99A5F2E696CBF00C54D0E /* ReaderTestsImpl.swift */,
+				95C99A602E696CBF00C54D0E /* SigningTestsImpl.swift */,
+				95C99A612E696CBF00C54D0E /* StreamTestsImpl.swift */,
+				95C99A622E696CBF00C54D0E /* TestResult.swift */,
+				95C99A632E696CBF00C54D0E /* TestRunner.swift */,
+				95C99A4F2E695DF100C54D0E /* BuilderTests.swift */,
+				95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */,
+				95C99A522E695DF100C54D0E /* ReaderTests.swift */,
+				95C99A532E695DF100C54D0E /* SigningTests.swift */,
+				95C99A542E695DF100C54D0E /* StreamTests.swift */,
 				7A1234551234567890ABCDEF /* SigningHelper.swift */,
 				7A1234571234567890ABCDEF /* TestSuiteCore.swift */,
 			);
@@ -152,6 +188,18 @@
 			buildActionMask = 2147483647;
 			files = (
 				7A1234561234567890ABCDEF /* SigningHelper.swift in Sources */,
+				95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */,
+				95C99A562E695DF100C54D0E /* ComprehensiveTests.swift in Sources */,
+				95C99A572E695DF100C54D0E /* BuilderTests.swift in Sources */,
+				95C99A592E695DF100C54D0E /* ReaderTests.swift in Sources */,
+				95C99A5A2E695DF100C54D0E /* SigningTests.swift in Sources */,
+				95C99A642E696CBF00C54D0E /* StreamTestsImpl.swift in Sources */,
+				95C99A652E696CBF00C54D0E /* TestRunner.swift in Sources */,
+				95C99A662E696CBF00C54D0E /* ReaderTestsImpl.swift in Sources */,
+				95C99A672E696CBF00C54D0E /* SigningTestsImpl.swift in Sources */,
+				95C99A682E696CBF00C54D0E /* ComprehensiveTestsImpl.swift in Sources */,
+				95C99A692E696CBF00C54D0E /* TestResult.swift in Sources */,
+				95C99A6A2E696CBF00C54D0E /* BuilderTestsImpl.swift in Sources */,
 				7A1234581234567890ABCDEF /* TestSuiteCore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
