@@ -7,8 +7,9 @@ import Crypto
 public enum SigningMode: String, CaseIterable {
     case defaultMode = "Default"
     case keychain = "Keychain"
-    case secureEnclave = "Secure Enclave"
+    case secureEnclave = "SE"
     case custom = "Custom"
+    case remote = "Remote"
     
     var description: String {
         switch self {
@@ -17,9 +18,11 @@ public enum SigningMode: String, CaseIterable {
         case .keychain:
             return "Generates and stores certificate in Keychain"
         case .secureEnclave:
-            return "Uses device hardware security"
+            return "Uses device hardware security (Secure Enclave)"
         case .custom:
             return "Upload your own certificate/key"
+        case .remote:
+            return "Use remote signing service"
         }
     }
     
@@ -33,6 +36,8 @@ public enum SigningMode: String, CaseIterable {
             return "lock.shield.fill"
         case .custom:
             return "person.badge.key.fill"
+        case .remote:
+            return "network"
         }
     }
 }
@@ -55,6 +60,10 @@ struct SettingsView: View {
     // Custom certificate storage
     @AppStorage("customCertificatePath") private var customCertificatePath: String = ""
     @AppStorage("customPrivateKeyPath") private var customPrivateKeyPath: String = ""
+    
+    // Remote signing configuration
+    @AppStorage("remoteSigningURL") private var remoteSigningURL: String = ""
+    @AppStorage("remoteBearerToken") private var remoteBearerToken: String = ""
     
     // UI State
     @State private var showingCertificatePicker = false
@@ -113,6 +122,8 @@ struct SettingsView: View {
                     secureEnclaveSection
                 case .custom:
                     customModeSection
+                case .remote:
+                    remoteModeSection
                 }
                 
                 // Status Section
@@ -299,6 +310,41 @@ struct SettingsView: View {
         }
     }
     
+    private var remoteModeSection: some View {
+        Group {
+            Section(header: Text("Remote Signing Service")) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Service URL")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    TextField("https://signing-server.example.com/sign", text: $remoteSigningURL)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
+                    Text("Bearer Token")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    SecureField("Enter bearer token", text: $remoteBearerToken)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .autocapitalization(.none)
+                        .disableAutocorrection(true)
+                    
+                    if !remoteSigningURL.isEmpty && !remoteBearerToken.isEmpty {
+                        Label("Credentials configured", systemImage: "checkmark.seal.fill")
+                            .foregroundColor(.green)
+                            .font(.caption)
+                    } else {
+                        Text("⚠️ Both URL and token are required")
+                            .font(.caption)
+                            .foregroundColor(.orange)
+                    }
+                }
+                .padding(.vertical, 5)
+            }
+        }
+    }
+    
     private var statusView: some View {
         VStack(alignment: .leading, spacing: 5) {
             switch selectedMode {
@@ -327,6 +373,14 @@ struct SettingsView: View {
                         .foregroundColor(.green)
                 } else {
                     Label("Certificate and key needed", systemImage: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                }
+            case .remote:
+                if !remoteSigningURL.isEmpty && !remoteBearerToken.isEmpty {
+                    Label("Ready to sign", systemImage: "checkmark.circle.fill")
+                        .foregroundColor(.green)
+                } else {
+                    Label("URL and token needed", systemImage: "exclamationmark.triangle.fill")
                         .foregroundColor(.orange)
                 }
             }

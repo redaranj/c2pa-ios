@@ -38,8 +38,7 @@ let package = Package(
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
                 .product(name: "Logging", package: "swift-log"),
             ],
-            path: "Sources/C2PA",
-            exclude: ["include/c2pa.h.orig"]
+            path: "Sources/C2PA"
         ),
         .target(
             name: "App",

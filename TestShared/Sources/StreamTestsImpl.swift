@@ -20,7 +20,7 @@ public final class StreamTestsImpl: TestImplementation {
     public func testStreamOperations() -> TestResult {
         do {
             let testData = "Hello, C2PA Stream!".data(using: .utf8)!
-            let stream = try Stream(data: testData)
+            _ = try Stream(data: testData)
             
             return .success("Stream Operations", "✅ Created stream from data successfully")
         } catch {
@@ -57,7 +57,7 @@ public final class StreamTestsImpl: TestImplementation {
         do {
             var capturedData = Data()
             
-            let stream = try Stream(
+            _ = try Stream(
                 write: { buffer, count in
                     let data = Data(bytes: buffer, count: count)
                     capturedData.append(data)

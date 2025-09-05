@@ -1,5 +1,5 @@
 import SwiftUI
-import AVFoundation
+@preconcurrency import AVFoundation
 import UIKit
 import CoreLocation
 
@@ -44,6 +44,7 @@ protocol CustomCameraViewControllerDelegate: AnyObject {
     func didCancel()
 }
 
+@MainActor
 class CustomCameraViewController: UIViewController {
     weak var delegate: CustomCameraViewControllerDelegate?
     
@@ -194,9 +195,14 @@ class CustomCameraViewController: UIViewController {
     
     private func startSession() {
         // Capture the session before going off main actor
-        let session = captureSession
-        DispatchQueue.global(qos: .userInitiated).async {
-            session?.startRunning()
+        guard let session = captureSession else { return }
+        Task {
+            await withCheckedContinuation { continuation in
+                DispatchQueue.global(qos: .userInitiated).async {
+                    session.startRunning()
+                    continuation.resume()
+                }
+            }
         }
     }
     

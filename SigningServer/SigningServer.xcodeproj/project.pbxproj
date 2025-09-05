@@ -21,9 +21,9 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		9A1234551234567890ABCDF0 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		4B6BA9869810C799488164AB /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A1234551234567890ABCDEF /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
+		9A1234551234567890ABCDF0 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		9A1234571234567890ABCDEF /* Sources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sources; sourceTree = "<group>"; };
 		9A1234601234567890ABCDEF /* SigningServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = SigningServer; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7A2807B509741B0E1856DF8 /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -49,12 +49,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		959F6BBC2E6B02A0006C623F /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				9A1234551234567890ABCDF0 /* Base.xcconfig */,
+			);
+			name = "Recovered References";
+			sourceTree = "<group>";
+		};
 		9A1234501234567890ABCDEF = {
 			isa = PBXGroup;
 			children = (
 				9A1234551234567890ABCDEF /* Package.swift */,
 				9A1234571234567890ABCDEF /* Sources */,
 				9A1234611234567890ABCDEF /* Products */,
+				959F6BBC2E6B02A0006C623F /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -389,6 +398,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEBUG_INFORMATION_FORMAT = dwarf;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -399,6 +409,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEAD_CODE_STRIPPING = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_DEBUG_INFORMATION_FORMAT = dwarf;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;

@@ -636,8 +636,8 @@ public enum C2PA {
 
 // MARK: - Web Service Signing -----------------------------------------------
 
-public typealias WebServiceRequestBuilder = (Data) throws -> URLRequest
-public typealias WebServiceResponseParser = (Data, HTTPURLResponse) throws -> Data
+public typealias WebServiceRequestBuilder = @Sendable (Data) throws -> URLRequest
+public typealias WebServiceResponseParser = @Sendable (Data, HTTPURLResponse) throws -> Data
 
 extension Signer {
     public convenience init(
@@ -721,8 +721,18 @@ public enum WebServiceHelpers {
         authToken: String? = nil,
         additionalFields: [String: Any] = [:]
     ) -> WebServiceRequestBuilder {
+        // Serialize additional fields outside the closure to avoid Sendable issues
+        let additionalFieldsData = try? JSONSerialization.data(withJSONObject: additionalFields)
+        
         return { data in
-            var json = additionalFields
+            var json: [String: Any] = [:]
+            
+            // Deserialize the additional fields inside the closure if they exist
+            if let additionalFieldsData = additionalFieldsData,
+               let fields = try? JSONSerialization.jsonObject(with: additionalFieldsData) as? [String: Any] {
+                json = fields
+            }
+            
             json["data"] = data.base64EncodedString()
 
             let jsonData = try JSONSerialization.data(withJSONObject: json)

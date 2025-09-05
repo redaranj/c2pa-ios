@@ -72,7 +72,7 @@ struct TestResultsView: View {
     private func runAllTests() {
         isRunning = true
         Task { @MainActor in
-            let results = await testRunner.runAllTests()
+            let results = testRunner.runAllTests()
             self.testSuites = results
             self.isRunning = false
         }
@@ -81,7 +81,7 @@ struct TestResultsView: View {
     private func runTestSuite(_ suite: TestSuite) {
         isRunning = true
         Task { @MainActor in
-            let results = await testRunner.runTestSuite(suite)
+            let results = testRunner.runTestSuite(suite)
             let suiteResult = TestSuiteResult(name: suite.displayName, results: results)
             
             // Replace if exists, otherwise append

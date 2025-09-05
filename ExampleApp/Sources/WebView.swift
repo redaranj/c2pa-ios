@@ -19,7 +19,7 @@ class CustomWebView: WKWebView, WKUIDelegate {
     }
     
     // Intercept file upload requests - iOS 18.4+ API
-    func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
+  private func webView(_ webView: WKWebView, runOpenPanelWith parameters: WKOpenPanelParameters, initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping ([URL]?) -> Void) {
         print("DEBUG: runOpenPanelWith called!")
         print("DEBUG: allowsMultipleSelection: \(parameters.allowsMultipleSelection)")
         
@@ -248,7 +248,7 @@ struct WebView: UIViewRepresentable {
             self.parent = parent
         }
         
-        func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+      private func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
             if let url = navigationAction.request.url {
                 // Allow content credentials sites and local files
                 if url.host == "contentcredentials.org" || 

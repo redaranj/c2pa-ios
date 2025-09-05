@@ -152,7 +152,7 @@ public final class SigningTestsImpl: TestImplementation {
     }
     
     public func testWebServiceSignerCreation() -> TestResult {
-        let serviceURL = "https://signing.example.com/sign"
+        _ = "https://signing.example.com/sign"
         
         let webSignCallback: (Data) throws -> Data = { data in
             // Return dummy signature for testing
@@ -182,7 +182,7 @@ public final class SigningTestsImpl: TestImplementation {
         var signers: [Signer] = []
         var createdCount = 0
         
-        for i in 0..<5 {
+        for _ in 0..<5 {
             do {
                 let signer = try Signer(
                     algorithm: .es256,

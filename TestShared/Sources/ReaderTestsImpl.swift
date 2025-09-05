@@ -47,7 +47,7 @@ public final class ReaderTestsImpl: TestImplementation {
             do {
                 try reader.resource(uri: resourceURI, to: resourceStream)
                 return .success("Reader Resource Error", "⚠️ Resource found (unexpected)")
-            } catch let error as C2PAError {
+            } catch _ as C2PAError {
                 return .success("Reader Resource Error", "✅ Error handled correctly")
             }
             

@@ -120,6 +120,14 @@ final class C2PAManager: ObservableObject, Sendable {
                         isCustom: true,
                         location: location
                     )
+                    
+                case .remote:
+                    // Use remote signing service
+                    print("Using remote signing service")
+                    signedImageData = try await signWithRemoteService(
+                        imageData: imageData,
+                        location: location
+                    )
                 }
                 
                 print("📸 Signed image data size: \(signedImageData.count) bytes")
@@ -484,11 +492,26 @@ final class C2PAManager: ObservableObject, Sendable {
         }
         
         // Save the image and get its identifier
-        var savedAssetIdentifier: String?
-        try await PHPhotoLibrary.shared().performChanges { @Sendable in
-            let creationRequest = PHAssetCreationRequest.forAsset()
-            creationRequest.addResource(with: .photo, data: imageData, options: nil)
-            savedAssetIdentifier = creationRequest.placeholderForCreatedAsset?.localIdentifier
+        let savedAssetIdentifier = try await withCheckedThrowingContinuation { continuation in
+            // Use a sendable container for the identifier
+            final class IdentifierBox: @unchecked Sendable {
+                var value: String?
+            }
+            let identifierBox = IdentifierBox()
+            
+            PHPhotoLibrary.shared().performChanges { @Sendable in
+                let creationRequest = PHAssetCreationRequest.forAsset()
+                creationRequest.addResource(with: .photo, data: imageData, options: nil)
+                identifierBox.value = creationRequest.placeholderForCreatedAsset?.localIdentifier
+            } completionHandler: { success, error in
+                if success {
+                    continuation.resume(returning: identifierBox.value)
+                } else {
+                    continuation.resume(throwing: error ?? NSError(domain: "C2PAManager", code: 2, userInfo: [
+                        NSLocalizedDescriptionKey: "Failed to save photo"
+                    ]))
+                }
+            }
         }
         
         // Verify the saved image has C2PA credentials
@@ -704,13 +727,13 @@ final class C2PAManager: ObservableObject, Sendable {
     private func getCustomCertificate() throws -> (Data, Data) {
         let certQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "com.c2pa.example.custom.cert",
+            kSecAttrAccount as String: "com.c2pa.example.custom.certificate",
             kSecReturnData as String: true
         ]
         
         let keyQuery: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
-            kSecAttrAccount as String: "com.c2pa.example.custom.key",
+            kSecAttrAccount as String: "com.c2pa.example.custom.privatekey",
             kSecReturnData as String: true
         ]
         
@@ -730,5 +753,139 @@ final class C2PAManager: ObservableObject, Sendable {
         }
         
         return (certData, keyData)
+    }
+    
+    // Sign with remote signing service
+    private func signWithRemoteService(imageData: Data, location: CLLocation? = nil) async throws -> Data {
+        // Get remote signing configuration from UserDefaults
+        let remoteURL = UserDefaults.standard.string(forKey: "remoteSigningURL") ?? ""
+        let bearerToken = UserDefaults.standard.string(forKey: "remoteBearerToken") ?? ""
+        
+        guard !remoteURL.isEmpty, !bearerToken.isEmpty else {
+            throw NSError(domain: "C2PAManager", code: 10, userInfo: [
+                NSLocalizedDescriptionKey: "Remote signing URL and bearer token not configured. Please configure in Settings."
+            ])
+        }
+        
+        guard let url = URL(string: remoteURL) else {
+            throw NSError(domain: "C2PAManager", code: 11, userInfo: [
+                NSLocalizedDescriptionKey: "Invalid remote signing URL"
+            ])
+        }
+        
+        // First, we need to get the certificate from the remote service
+        // For now, we'll assume the service returns a certificate when called with a GET request
+        var certificateRequest = URLRequest(url: url.appendingPathComponent("certificate"))
+        certificateRequest.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
+        
+        let (certData, _) = try await URLSession.shared.data(for: certificateRequest)
+        guard let certificatePEM = String(data: certData, encoding: .utf8) else {
+            throw NSError(domain: "C2PAManager", code: 12, userInfo: [
+                NSLocalizedDescriptionKey: "Failed to get certificate from remote service"
+            ])
+        }
+        
+        do {
+            // Create temporary files
+            let tempDir = FileManager.default.temporaryDirectory
+            let inputURL = tempDir.appendingPathComponent("input_\(UUID().uuidString).jpg")
+            let outputURL = tempDir.appendingPathComponent("output_\(UUID().uuidString).jpg")
+            
+            try imageData.write(to: inputURL)
+            
+            // Build manifest JSON (similar to signWithCertificate method)
+            let currentDate = ISO8601DateFormatter().string(from: Date())
+            let deviceModel = await MainActor.run { UIDevice.current.model }
+            let osVersion = await MainActor.run { UIDevice.current.systemVersion }
+            
+            var exifAssertionData: [String: Any] = [
+                "@context": ["exif": "http://ns.adobe.com/exif/1.0/"],
+                "exif:Make": "Apple",
+                "exif:Model": deviceModel,
+                "exif:Software": "C2PA Example iOS \(osVersion)",
+                "exif:DateTimeOriginal": currentDate,
+                "exif:DateTimeDigitized": currentDate,
+                "exif:PixelXDimension": "4032",
+                "exif:PixelYDimension": "3024"
+            ]
+            
+            // Add GPS data if available
+            if let location = location {
+                exifAssertionData["exif:GPSLatitude"] = "\(location.coordinate.latitude)"
+                exifAssertionData["exif:GPSLongitude"] = "\(location.coordinate.longitude)"
+                if location.altitude >= 0 {
+                    exifAssertionData["exif:GPSAltitude"] = "\(location.altitude)"
+                }
+            }
+            
+            let exifJSONData = try JSONSerialization.data(withJSONObject: exifAssertionData, options: [.sortedKeys])
+            let exifJSONString = String(data: exifJSONData, encoding: .utf8) ?? "{}"
+            
+            let manifestJSON = """
+            {
+                "claim_generator": "C2PA Example/1.0.0",
+                "title": "Photo signed remotely",
+                "thumbnail": null,
+                "assertions": [
+                    {
+                        "label": "c2pa.actions",
+                        "data": {
+                            "actions": [
+                                {
+                                    "action": "c2pa.created"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "label": "stds.exif",
+                        "data": \(exifJSONString)
+                    }
+                ]
+            }
+            """
+            
+            // Create the signer with web service configuration
+            let signer = try Signer(
+                algorithm: .es256,
+                certificateChainPEM: certificatePEM,
+                tsaURL: nil,
+                requestBuilder: WebServiceHelpers.jsonRequestBuilder(
+                    url: url,
+                    authToken: "Bearer \(bearerToken)",
+                    additionalFields: ["format": "es256"]
+                ),
+                responseParser: WebServiceHelpers.jsonResponseParser(signatureField: "signature")
+            )
+            
+            // Create a Builder and sign with it
+            let builder = try Builder(manifestJSON: manifestJSON)
+            
+            // Create streams for source and destination
+            let sourceStream = try Stream(fileURL: inputURL, truncate: false, createIfNeeded: false)
+            let destStream = try Stream(fileURL: outputURL, truncate: true, createIfNeeded: true)
+            
+            // Sign the file using the builder
+            _ = try builder.sign(
+                format: "image/jpeg",
+                source: sourceStream,
+                destination: destStream,
+                signer: signer
+            )
+            
+            print("Remote signing completed")
+            
+            // Read the signed image
+            let signedData = try Data(contentsOf: outputURL)
+            
+            // Clean up temporary files
+            try? FileManager.default.removeItem(at: inputURL)
+            try? FileManager.default.removeItem(at: outputURL)
+            
+            return signedData
+        } catch {
+            print("Remote signing error: \(error)")
+            throw error
+        }
     }
 }
