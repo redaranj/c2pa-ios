@@ -40,9 +40,6 @@ jobs:
       - name: Build Library
         run: make library
 
-      - name: Build and Setup Signing Server
-        run: make signing-server-build
-
       - name: Start Signing Server
         run: |
           make signing-server-start
@@ -176,16 +173,12 @@ jobs:
       - name: Stop Signing Server
         if: always()
         run: |
-          if [ -f server.pid ]; then
-            SERVER_PID=$(cat server.pid)
-            echo "Stopping signing server (PID: $SERVER_PID)..."
-            kill $SERVER_PID || true
-            rm server.pid
-          fi
+          echo "Stopping signing server..."
+          make signing-server-stop || true
 
       - name: Upload Server Logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: server-logs-${{ matrix.xcode }}-${{ matrix.device }}
-          path: signing-server/.build/debug/*.log
+          path: signing-server.log
