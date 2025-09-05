@@ -71,37 +71,27 @@ struct TestResultsView: View {
     
     private func runAllTests() {
         isRunning = true
-        Task {
-            let results = await Task.detached {
-                await testRunner.runAllTests()
-            }.value
-            
-            await MainActor.run {
-                self.testSuites = results
-                self.isRunning = false
-            }
+        Task { @MainActor in
+            let results = await testRunner.runAllTests()
+            self.testSuites = results
+            self.isRunning = false
         }
     }
     
     private func runTestSuite(_ suite: TestSuite) {
         isRunning = true
-        Task {
-            let results = await Task.detached {
-                await testRunner.runTestSuite(suite)
-            }.value
+        Task { @MainActor in
+            let results = await testRunner.runTestSuite(suite)
+            let suiteResult = TestSuiteResult(name: suite.displayName, results: results)
             
-            await MainActor.run {
-                let suiteResult = TestSuiteResult(name: suite.displayName, results: results)
-                
-                // Replace if exists, otherwise append
-                if let index = testSuites.firstIndex(where: { $0.name == suite.displayName }) {
-                    testSuites[index] = suiteResult
-                } else {
-                    testSuites.append(suiteResult)
-                }
-                
-                self.isRunning = false
+            // Replace if exists, otherwise append
+            if let index = testSuites.firstIndex(where: { $0.name == suite.displayName }) {
+                testSuites[index] = suiteResult
+            } else {
+                testSuites.append(suiteResult)
             }
+            
+            self.isRunning = false
         }
     }
 }

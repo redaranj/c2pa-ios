@@ -21,6 +21,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		9A1234551234567890ABCDF0 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		4B6BA9869810C799488164AB /* C2PAC.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = C2PAC.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9A1234551234567890ABCDEF /* Package.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		9A1234571234567890ABCDEF /* Sources */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Sources; sourceTree = "<group>"; };
@@ -181,7 +182,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nset -e\n\necho \"C2PAC Framework Builder for macOS\"\necho \"=================================\"\n\n# Use configuration values from Base.xcconfig\nGITHUB_ORG=\"${GITHUB_ORG:-contentauth}\"\nC2PA_VERSION=\"${C2PA_VERSION:-v0.58.0}\"\n\necho \"Version: ${C2PA_VERSION}\"\necho \"GitHub Org: ${GITHUB_ORG}\"\necho \"Platform: macOS\"\necho \"Target Build Dir: ${TARGET_BUILD_DIR}\"\n\n# Setup directories\nFRAMEWORK_DIR=\"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework\"\nDOWNLOAD_DIR=\"${TEMP_DIR}/C2PAC-Downloads\"\nmkdir -p \"${DOWNLOAD_DIR}\"\nmkdir -p \"${FRAMEWORK_DIR}\"\n\n# Download macOS universal binary\necho \"Downloading macOS universal library...\"\ncurl -sL \"https://github.com/${GITHUB_ORG}/c2pa-rs/releases/download/c2pa-${C2PA_VERSION}/c2pa-${C2PA_VERSION}-universal-apple-darwin.zip\" \\\n    -o \"${DOWNLOAD_DIR}/macos-universal.zip\"\n\nmkdir -p \"${DOWNLOAD_DIR}/macos-universal\"\ncd \"${DOWNLOAD_DIR}/macos-universal\"\nunzip -q -o \"${DOWNLOAD_DIR}/macos-universal.zip\"\n\n# Copy the dynamic library as the framework binary\ncp \"${DOWNLOAD_DIR}/macos-universal/lib/libc2pa_c.dylib\" \"${FRAMEWORK_DIR}/C2PAC\"\n\n# Copy and patch header\nmkdir -p \"${FRAMEWORK_DIR}/Headers\"\nsed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' \\\n    \"${DOWNLOAD_DIR}/macos-universal/include/c2pa.h\" > \"${FRAMEWORK_DIR}/Headers/c2pa.h\"\n\n# Create module map\nmkdir -p \"${FRAMEWORK_DIR}/Modules\"\ncat > \"${FRAMEWORK_DIR}/Modules/module.modulemap\" << EOF\nframework module C2PAC {\n    header \"c2pa.h\"\n    export *\n}\nEOF\n\n# Create Info.plist\ncat > \"${FRAMEWORK_DIR}/Info.plist\" << 'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>CFBundleIdentifier</key>\n    <string>org.contentauth.C2PAC</string>\n    <key>CFBundleName</key>\n    <string>C2PAC</string>\n    <key>CFBundleVersion</key>\n    <string>1.0</string>\n    <key>CFBundlePackageType</key>\n    <string>FMWK</string>\n</dict>\n</plist>\nPLIST\n\n# Create stamp file for build system\ntouch \"${FRAMEWORK_DIR}/.stamp\"\n\necho \"✓ C2PAC framework built successfully at ${FRAMEWORK_DIR}\"\n";
+			shellScript = "#!/bin/bash\nset -e\n\necho \"C2PAC Framework Builder for macOS\"\necho \"=================================\"\n\n# Use build settings from Base.xcconfig (loaded by Xcode)\n# These are now available as environment variables\nGITHUB_ORG=\"${GITHUB_ORG:-contentauth}\"\nC2PA_VERSION=\"${C2PA_VERSION:-v0.58.0}\"\n\necho \"Version: ${C2PA_VERSION}\"\necho \"GitHub Org: ${GITHUB_ORG}\"\necho \"Platform: macOS\"\necho \"Target Build Dir: ${TARGET_BUILD_DIR}\"\n\n# Setup directories\nFRAMEWORK_DIR=\"${TARGET_BUILD_DIR}/${PRODUCT_NAME}.framework\"\nDOWNLOAD_DIR=\"${TEMP_DIR}/C2PAC-Downloads\"\nmkdir -p \"${DOWNLOAD_DIR}\"\nmkdir -p \"${FRAMEWORK_DIR}\"\n\n# Download macOS universal binary\necho \"Downloading macOS universal library...\"\ncurl -sL \"https://github.com/${GITHUB_ORG}/c2pa-rs/releases/download/c2pa-${C2PA_VERSION}/c2pa-${C2PA_VERSION}-universal-apple-darwin.zip\" \\\n    -o \"${DOWNLOAD_DIR}/macos-universal.zip\"\n\nmkdir -p \"${DOWNLOAD_DIR}/macos-universal\"\ncd \"${DOWNLOAD_DIR}/macos-universal\"\nunzip -q -o \"${DOWNLOAD_DIR}/macos-universal.zip\"\n\n# Copy the dynamic library as the framework binary\ncp \"${DOWNLOAD_DIR}/macos-universal/lib/libc2pa_c.dylib\" \"${FRAMEWORK_DIR}/C2PAC\"\n\n# Copy and patch header\nmkdir -p \"${FRAMEWORK_DIR}/Headers\"\nsed 's/typedef struct C2paSigner C2paSigner;/typedef struct C2paSigner { } C2paSigner;/g' \\\n    \"${DOWNLOAD_DIR}/macos-universal/include/c2pa.h\" > \"${FRAMEWORK_DIR}/Headers/c2pa.h\"\n\n# Create module map\nmkdir -p \"${FRAMEWORK_DIR}/Modules\"\ncat > \"${FRAMEWORK_DIR}/Modules/module.modulemap\" << EOF\nframework module C2PAC {\n    header \"c2pa.h\"\n    export *\n}\nEOF\n\n# Create Info.plist\ncat > \"${FRAMEWORK_DIR}/Info.plist\" << 'PLIST'\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\">\n<dict>\n    <key>CFBundleIdentifier</key>\n    <string>org.contentauth.C2PAC</string>\n    <key>CFBundleName</key>\n    <string>C2PAC</string>\n    <key>CFBundleVersion</key>\n    <string>1.0</string>\n    <key>CFBundlePackageType</key>\n    <string>FMWK</string>\n</dict>\n</plist>\nPLIST\n\n# Create stamp file for build system\ntouch \"${FRAMEWORK_DIR}/.stamp\"\n\necho \"✓ C2PAC framework built successfully at ${FRAMEWORK_DIR}\"\n";
 		};
 		9A1234661234567890ABCDEF /* Run Script - Build with Swift Package Manager */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -262,6 +263,7 @@
 		};
 		9A1234521234567890ABCDEF /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A1234551234567890ABCDF0 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -326,6 +328,7 @@
 		};
 		9A1234531234567890ABCDEF /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 9A1234551234567890ABCDF0 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

@@ -29,6 +29,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8B73A2F62E5A8C3400D5E928 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Base.xcconfig; path = ../Configurations/Base.xcconfig; sourceTree = "<group>"; };
 		9553B1A22E4B2FC60088E976 /* C2PA.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = C2PA.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9553B1A62E4B2FCB0088E976 /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		959206092DD9F0B800E0E44B /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -67,6 +68,7 @@
 		959206002DD9F0B800E0E44B = {
 			isa = PBXGroup;
 			children = (
+				8B73A2F62E5A8C3400D5E928 /* Base.xcconfig */,
 				9522D5912E4B22F700D63536 /* Sources */,
 				9553B1A12E4B2FC60088E976 /* Frameworks */,
 				9592060A2DD9F0B800E0E44B /* Products */,
@@ -166,6 +168,7 @@
 /* Begin XCBuildConfiguration section */
 		959206122DD9F0BA00E0E44B /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8B73A2F62E5A8C3400D5E928 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -233,6 +236,7 @@
 		};
 		959206132DD9F0BA00E0E44B /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8B73A2F62E5A8C3400D5E928 /* Base.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;

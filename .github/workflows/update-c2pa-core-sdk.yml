@@ -38,10 +38,10 @@ jobs:
         echo "Latest matching tag: $LATEST_TAG"
         echo "Extracted version: $VERSION"
     
-    - name: Get current version from Makefile
+    - name: Get current version from Base.xcconfig
       id: current_version
       run: |
-        CURRENT_VERSION=$(grep '^C2PA_VERSION := ' Makefile | cut -d' ' -f3)
+        CURRENT_VERSION=$(grep '^C2PA_VERSION' Configurations/Base.xcconfig | cut -d'=' -f2 | xargs)
         echo "current_version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
         echo "Current version: $CURRENT_VERSION"
     
@@ -56,15 +56,20 @@ jobs:
           echo "No update needed, versions match: ${{ steps.current_version.outputs.current_version }}"
         fi
     
-    - name: Update Makefile
+    - name: Update Base.xcconfig and CI workflow
       if: steps.check_update.outputs.needs_update == 'true'
       run: |
-        # Update the C2PA_VERSION variable in Makefile
-        sed -i "s/^C2PA_VERSION := .*/C2PA_VERSION := ${{ steps.get_release.outputs.version }}/" Makefile
+        # Update the C2PA_VERSION in Base.xcconfig
+        sed -i "s/^C2PA_VERSION = .*/C2PA_VERSION = ${{ steps.get_release.outputs.version }}/" Configurations/Base.xcconfig
         
-        # Verify the change
-        echo "Updated Makefile:"
-        grep '^C2PA_VERSION := ' Makefile
+        # Also update the CI workflow to keep cache keys in sync
+        sed -i "s/C2PA_VERSION: .*/C2PA_VERSION: '${{ steps.get_release.outputs.version }}'/" .github/workflows/ci.yml
+        
+        # Verify the changes
+        echo "Updated Base.xcconfig:"
+        grep '^C2PA_VERSION' Configurations/Base.xcconfig
+        echo "Updated CI workflow:"
+        grep 'C2PA_VERSION:' .github/workflows/ci.yml
     
     - name: Create pull request
       if: steps.check_update.outputs.needs_update == 'true'
@@ -74,7 +79,7 @@ jobs:
         commit-message: "Update core C2PA SDK to ${{ steps.get_release.outputs.version }}"
         title: "Update core C2PA SDK to ${{ steps.get_release.outputs.version }}"
         body: |
-          This PR updates C2PA_VERSION in the Makefile to use the latest c2pa-rs release.
+          This PR updates C2PA_VERSION in Base.xcconfig and CI workflow to use the latest c2pa-rs release.
           
           - **Previous version**: ${{ steps.current_version.outputs.current_version }}
           - **New version**: ${{ steps.get_release.outputs.version }}

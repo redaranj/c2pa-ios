@@ -31,7 +31,7 @@ public enum C2PAError: Error, CustomStringConvertible {
 private func stringFromC(_ p: UnsafeMutablePointer<CChar>?) throws -> String {
     guard let p else { throw C2PAError.api(lastC2PAError()) }
     defer { c2pa_string_free(p) }
-    guard let s = String(validatingUTF8: p) else { throw C2PAError.utf8 }
+    guard let s = String(validatingCString: p) else { throw C2PAError.utf8 }
     return s
 }
 
@@ -263,7 +263,7 @@ public final class Signer {
 
 // MARK: - Stream wrapper ----------------------------------------------------
 
-public struct StreamOptions: OptionSet {
+public struct StreamOptions: OptionSet, Sendable {
     public let rawValue: UInt8
     public static let read = StreamOptions(rawValue: 1 << 0)
     public static let write = StreamOptions(rawValue: 1 << 1)
@@ -654,27 +654,31 @@ extension Signer {
         ) { data in
             let request = try requestBuilder(data)
 
+            // Use a thread-safe box to store the result
+            final class ResultBox: @unchecked Sendable {
+                var value: Result<Data, Error>?
+            }
+            let resultBox = ResultBox()
             let semaphore = DispatchSemaphore(value: 0)
-            var result: Result<Data, Error>?
 
             let task = URLSession.shared.dataTask(with: request) { responseData, response, error in
                 if let error = error {
-                    result = .failure(error)
+                    resultBox.value = .failure(error)
                 } else if let httpResponse = response as? HTTPURLResponse {
                     if (200...299).contains(httpResponse.statusCode),
                         let responseData = responseData
                     {
                         do {
                             let signature = try responseParser(responseData, httpResponse)
-                            result = .success(signature)
+                            resultBox.value = .success(signature)
                         } catch {
-                            result = .failure(error)
+                            resultBox.value = .failure(error)
                         }
                     } else {
-                        result = .failure(C2PAError.api("HTTP \(httpResponse.statusCode)"))
+                        resultBox.value = .failure(C2PAError.api("HTTP \(httpResponse.statusCode)"))
                     }
                 } else {
-                    result = .failure(C2PAError.api("Invalid response"))
+                    resultBox.value = .failure(C2PAError.api("Invalid response"))
                 }
                 semaphore.signal()
             }
@@ -682,7 +686,7 @@ extension Signer {
             task.resume()
             semaphore.wait()
 
-            switch result {
+            switch resultBox.value {
             case let .success(signature):
                 return signature
             case let .failure(error):
