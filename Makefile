@@ -5,7 +5,8 @@
 # Build configuration
 CONFIGURATION := Release
 SDK := iphoneos
-DESTINATION := platform=iOS Simulator,name=iPhone 16 Pro
+# Default destination - can be overridden from command line
+DESTINATION ?= platform=iOS Simulator,name=iPhone 16 Pro
 
 # Default target
 all: workspace-build
