@@ -16,15 +16,27 @@ C2PA iOS offers:
 - Stream-based APIs for flexible data handling
 - Builder APIs for creating custom manifests
 - Comprehensive test suite with example application
+- Hardware-backed signing with Secure Enclave (iOS devices)
 
 ## Repository Structure
 
-- `/src` - Swift wrapper source code
-- `/template` - Swift package template
-- `/example` - Example iOS application
-- `/output` - Build output artifacts
-- `/build` - Temporary build files and external dependencies
-- `/Makefile` - Build system commands
+This repository follows iOS/Apple conventions, organized similarly to our Android implementation:
+
+```
+c2pa-ios/
+├── library/              # Swift Package containing the C2PA library
+│   ├── Sources/         # Library source code
+│   │   └── C2PA/       # Main library implementation
+│   └── Tests/          # Unit tests
+│       └── C2PATests/  # Test implementations
+├── test-app/           # iOS app for running tests with UI
+│   └── TestApp/        # Test runner application
+├── example-app/        # Sample iOS app for implementation reference
+│   └── ExampleApp/     # Example implementation
+├── signing-server/     # Local test server for signing operations
+├── C2PA.xcworkspace/   # Xcode workspace tying everything together
+└── Makefile           # Build automation (wraps xcodebuild/swift commands)
+```
 
 ## Requirements
 
@@ -39,6 +51,53 @@ C2PA iOS offers:
 - Rust (latest stable version)
 - Xcode Command Line Tools
 - Make
+
+## Quick Start
+
+### Building the Library
+
+```bash
+# Build the complete library with XCFramework
+make library
+
+# Build for development (simulator only, faster)
+make ios-dev
+
+# Run all tests
+make tests
+
+# Generate test coverage
+make coverage
+```
+
+### Running Applications
+
+```bash
+# Run the test app in iOS Simulator
+make run-test-app
+
+# Run the example app in iOS Simulator
+make run-example-app
+
+# Build entire workspace
+make workspace-build
+```
+
+### Working with the Signing Server
+
+```bash
+# Start the local signing server
+make signing-server-start
+
+# Check server status
+make signing-server-status
+
+# Stop the server
+make signing-server-stop
+
+# Run tests with signing server
+make tests-with-server
+```
 
 ## Installation
 

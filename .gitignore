@@ -1,6 +1,8 @@
 # Build artifacts
-build/
-output/
+Build/
+Library/Build/
+Library/output/
+SigningServer/Build/
 .build/
 DerivedData/
 
@@ -15,8 +17,6 @@ Pods/
 # C2PA specific
 *.xcframework
 *.xcframework.zip
-C2PA-Swift-Package.zip
-C2PA-iOS/
 
 # OSX
 .DS_Store
@@ -44,6 +44,15 @@ Package.resolved
 *.swp
 *.swo
 
-# Signing server
-signing-server/Resources/*
-signing-server/Sources/C2PA/*
+# Signing server runtime files
+SigningServer/Sources/C2PAC/*
+SigningServer/Sources/C2PA/*
+
+# Test and coverage artifacts
+TestResults.xcresult/
+coverage.json
+coverage.lcov
+coverage.txt
+coverage-*.lcov
+signing-server.log
+test-results.json
