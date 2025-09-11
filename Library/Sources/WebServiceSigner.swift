@@ -100,7 +100,7 @@ public final class WebServiceSigner: @unchecked Sendable {
             print("[WebServiceSigner] Added bearer token to request")
         }
 
-        let requestBody = SignRequest(dataToSign: data.base64EncodedString())
+        let requestBody = SignRequest(claim: data.base64EncodedString())
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         print("[WebServiceSigner] Request body size: \(request.httpBody?.count ?? 0) bytes")
@@ -162,7 +162,7 @@ private struct SignerConfiguration: Codable {
 }
 
 private struct SignRequest: Codable {
-    let dataToSign: String  // Base64-encoded bytes to be signed
+    let claim: String  // Base64-encoded bytes to be signed
 }
 
 private struct SignResponse: Codable {

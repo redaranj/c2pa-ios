@@ -9,7 +9,7 @@ struct CertificateSigningController {
         }
 
         let response = try await req.application.certificateService.signCSR(csrRequest.csr)
-        req.logger.info("Issued certificate: \(response.cert_id)")
+        req.logger.info("Issued certificate: \(response.certificate_id)")
 
         return response
     }

@@ -120,8 +120,8 @@ class CertificateSigningService {
         ].joined(separator: "\n")
 
         return SignedCertificateResponse(
-            cert_id: UUID().uuidString,
-            cert_chain: certificateChain,
+            certificate_id: UUID().uuidString,
+            certificate_chain: certificateChain,
             expires_at: certificate.notValidAfter,
             serial_number: String(describing: certificate.serialNumber)
         )

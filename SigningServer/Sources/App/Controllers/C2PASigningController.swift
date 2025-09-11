@@ -21,7 +21,7 @@ struct C2PASigningController {
         }
 
         // Decode the base64-encoded data to sign
-        guard let dataToSign = Data(base64Encoded: signingRequest.dataToSign) else {
+        guard let dataToSign = Data(base64Encoded: signingRequest.claim) else {
             throw Abort(.badRequest, reason: "Invalid base64-encoded data")
         }
 
