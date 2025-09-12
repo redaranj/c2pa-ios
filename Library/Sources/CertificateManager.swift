@@ -314,24 +314,6 @@ public class CertificateManager {
         privateKey: SecKey,
         config: CertificateConfig
     ) throws -> String {
-        // Try using the X509 CertificateSigningRequest directly
-        // Since we can't access the private key material, we'll need to create it differently
-
-        // First, create a temporary P256 key pair for testing
-        let tempPrivateKey = P256.Signing.PrivateKey()
-
-        // Create the CSR with the temp key but our public key's data
-        let csr = try CertificateSigningRequest(
-            version: .v1,
-            subject: try createDistinguishedName(from: config),
-            privateKey: Certificate.PrivateKey(tempPrivateKey),
-            attributes: CertificateSigningRequest.Attributes(),
-            signatureAlgorithm: .ecdsaWithSHA256
-        )
-
-        // Now we need to replace the public key in the CSR with our actual public key
-        // and re-sign with our secure enclave key
-
         let subject = try createDistinguishedName(from: config)
 
         // Create the CertificationRequestInfo

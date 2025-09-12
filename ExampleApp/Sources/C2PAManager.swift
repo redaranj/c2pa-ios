@@ -4,8 +4,6 @@ import Crypto
 import Foundation
 import ImageIO
 import OSLog
-import Photos
-import PhotosUI
 import Security
 import UIKit
 
@@ -56,7 +54,7 @@ final class C2PAManager: ObservableObject {
     // MARK: - Main Public Interface
 
     func signAndSaveImage(
-        _ image: UIImage, saveToPhotos: Bool = false, location: CLLocation? = nil,
+        _ image: UIImage, location: CLLocation? = nil,
         completion: @escaping (Bool, String?, Data?) -> Void
     ) {
         isProcessing = true
@@ -115,7 +113,7 @@ final class C2PAManager: ObservableObject {
                     // Read the file back and verify C2PA credentials
                     let manifestJSON = try C2PA.readFile(at: savedURL, dataDir: nil)
 
-                    os_log("✅ C2PA VERIFICATION SUCCESS", log: Logger.verification, type: .info)
+                    os_log("C2PA VERIFICATION SUCCESS", log: Logger.verification, type: .info)
                     os_log("Manifest JSON loaded successfully", log: Logger.verification, type: .info)
 
                     // Log raw JSON length for debugging
@@ -141,7 +139,7 @@ final class C2PAManager: ObservableObject {
                                 // Check if this is using test mode
                                 if claimGenerator.contains("Example") || claimGenerator.contains("Test") {
                                     os_log(
-                                        "⚠️ WARNING: Using test/example claim generator - will not validate on public verifiers",
+                                        "WARNING: Using test/example claim generator - will not validate on public verifiers",
                                         log: Logger.verification, type: .error)
                                 }
                             }
@@ -176,7 +174,7 @@ final class C2PAManager: ObservableObject {
                                 }
                             } else {
                                 os_log(
-                                    "⚠️ No signature info found in manifest",
+                                    "No signature info found in manifest",
                                     log: Logger.verification, type: .error)
                             }
 
@@ -204,7 +202,7 @@ final class C2PAManager: ObservableObject {
 
                         } else {
                             os_log(
-                                "⚠️ No active manifest found in manifest store",
+                                "No active manifest found in manifest store",
                                 log: Logger.verification, type: .error)
                         }
 
@@ -225,7 +223,7 @@ final class C2PAManager: ObservableObject {
                                 if let code = status["code"] as? String {
                                     if code.contains("error") || code.contains("failure") {
                                         os_log(
-                                            "⚠️ Validation error: %{public}@",
+                                            "Validation error: %{public}@",
                                             log: Logger.verification, type: .error, code)
                                     } else {
                                         os_log(
@@ -245,7 +243,7 @@ final class C2PAManager: ObservableObject {
                     }
 
                 } catch {
-                    os_log("❌ C2PA VERIFICATION FAILED", log: Logger.verification, type: .error)
+                    os_log("C2PA VERIFICATION FAILED", log: Logger.verification, type: .error)
                     os_log(
                         "Error: %{public}@", log: Logger.verification, type: .error,
                         error.localizedDescription)
@@ -264,17 +262,15 @@ final class C2PAManager: ObservableObject {
                         log: Logger.verification, type: .error)
                 }
 
-                if saveToPhotos {
-                    os_log(
-                        "Saving to photo library (metadata may be stripped)", log: Logger.storage,
-                        type: .info)
-                    try await saveToPhotoLibrary(imageData: signedImageData)
-                    os_log("Saved to photo library", log: Logger.storage, type: .info)
-                }
 
                 // Return the signed data and saved URL
                 let fileName = savedURL.lastPathComponent
                 let imageDataCopy = signedImageData
+
+                if signingMode == .secureEnclave {
+                    // Wait 1 second to let Face ID UI complete its animation
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                }
 
                 await MainActor.run {
                     self.isProcessing = false
@@ -305,8 +301,8 @@ final class C2PAManager: ObservableObject {
             "Signing with mode: %{public}@", log: Logger.signing, type: .info,
             signingMode.rawValue)
 
-        // Create manifest JSON
-        let manifestJSON = try createManifestJSON(location: location)
+        // Create manifest JSON with signing mode metadata
+        let manifestJSON = try createManifestJSON(location: location, signingMode: signingMode)
 
         // Create temporary files for image processing
         let tempDir = FileManager.default.temporaryDirectory
@@ -321,17 +317,42 @@ final class C2PAManager: ObservableObject {
         try imageData.write(to: inputURL)
 
         // Create the appropriate signer based on the mode
-        let signer = try await createSigner(for: signingMode)
+        os_log("Creating signer for mode: %{public}@", log: Logger.signing, type: .info, signingMode.rawValue)
+        let signer: Signer
+        do {
+            signer = try await createSigner(for: signingMode)
+            os_log("Signer created successfully", log: Logger.signing, type: .info)
+        } catch {
+            os_log("Failed to create signer: %{public}@", log: Logger.signing, type: .error, String(describing: error))
+            throw error
+        }
 
         // Sign the image using the Library's Builder
         os_log("Creating Builder with manifest", log: Logger.signing, type: .info)
-        let builder = try Builder(manifestJSON: manifestJSON)
+        let builder: Builder
+        do {
+            builder = try Builder(manifestJSON: manifestJSON)
+            os_log("Builder created successfully", log: Logger.signing, type: .info)
+        } catch {
+            os_log("Failed to create Builder: %{public}@", log: Logger.signing, type: .error, String(describing: error))
+            throw error
+        }
+
+        // Check input file before signing
+        let inputFileSize = try FileManager.default.attributesOfItem(atPath: inputURL.path)[.size] as? Int64 ?? 0
+        os_log(
+            "Input file size: %lld bytes at %{public}@", log: Logger.signing, type: .debug, inputFileSize, inputURL.path
+        )
 
         os_log("Creating source and destination streams", log: Logger.signing, type: .info)
         let sourceStream = try Stream(fileURL: inputURL, truncate: false)
         let destStream = try Stream(fileURL: outputURL, truncate: true)
 
         os_log("Starting builder.sign operation", log: Logger.signing, type: .info)
+        os_log("  Format: image/jpeg", log: Logger.signing, type: .debug)
+        os_log("  Input: %{public}@", log: Logger.signing, type: .debug, inputURL.lastPathComponent)
+        os_log("  Output: %{public}@", log: Logger.signing, type: .debug, outputURL.lastPathComponent)
+
         do {
             try builder.sign(
                 format: "image/jpeg",
@@ -344,7 +365,34 @@ final class C2PAManager: ObservableObject {
             os_log(
                 "builder.sign failed with error: %{public}@", log: Logger.signing, type: .error,
                 String(describing: error))
+
+            // Check if it's a C2PA error
+            if let c2paError = error as? C2PAError {
+                os_log("C2PA Error type: %{public}@", log: Logger.signing, type: .error, String(describing: c2paError))
+            }
+
             throw error
+        }
+
+        // Ensure streams are released before reading the file
+        // The streams will be deallocated when they go out of scope here
+        _ = sourceStream  // Keep reference to prevent early deallocation
+        _ = destStream  // Keep reference to prevent early deallocation
+
+        // Check if output file exists and has content
+        let fileManager = FileManager.default
+        guard fileManager.fileExists(atPath: outputURL.path) else {
+            os_log("Output file does not exist at: %{public}@", log: Logger.signing, type: .error, outputURL.path)
+            throw C2PAManagerError.signingFailed("Output file was not created")
+        }
+
+        let attributes = try fileManager.attributesOfItem(atPath: outputURL.path)
+        let fileSize = attributes[.size] as? Int64 ?? 0
+        os_log("Output file size: %lld bytes", log: Logger.signing, type: .debug, fileSize)
+
+        guard fileSize > 0 else {
+            os_log("Output file is empty", log: Logger.signing, type: .error)
+            throw C2PAManagerError.signingFailed("Output file is empty")
         }
 
         // Read the signed image data
@@ -561,6 +609,14 @@ final class C2PAManager: ObservableObject {
             let certString = String(data: certData, encoding: .utf8)
         {
             os_log("Found existing certificate chain for Secure Enclave key", log: Logger.certificate, type: .info)
+            os_log("Using cached certificate chain from keychain", log: Logger.certificate, type: .info)
+
+            // Log the cached certificate details
+            os_log("=== CACHED CERTIFICATE CHAIN (PEM) ===", log: Logger.certificate, type: .info)
+            os_log("%{public}@", log: Logger.certificate, type: .info, certString)
+            os_log("=== END CACHED CERTIFICATE CHAIN ===", log: Logger.certificate, type: .info)
+            logCertificateDetails(certString)
+
             return certString
         }
 
@@ -755,6 +811,116 @@ final class C2PAManager: ObservableObject {
         return certPEM
     }
 
+    // MARK: - Certificate Logging
+
+    private func logCertificateDetails(_ certChainPEM: String) {
+        os_log("=== PARSING CERTIFICATE CHAIN ===", log: Logger.certificate, type: .info)
+
+        // Split the PEM chain into individual certificates
+        let certPattern = "-----BEGIN CERTIFICATE-----[\\s\\S]*?-----END CERTIFICATE-----"
+        guard let regex = try? NSRegularExpression(pattern: certPattern, options: []) else {
+            os_log("Failed to create regex for certificate parsing", log: Logger.certificate, type: .error)
+            return
+        }
+
+        let matches = regex.matches(
+            in: certChainPEM, options: [], range: NSRange(location: 0, length: certChainPEM.count))
+
+        os_log("Found %d certificate(s) in chain", log: Logger.certificate, type: .info, matches.count)
+
+        for (index, match) in matches.enumerated() {
+            guard let range = Range(match.range, in: certChainPEM) else { continue }
+            let certPEM = String(certChainPEM[range])
+
+            os_log("=== CERTIFICATE %d ===", log: Logger.certificate, type: .info, index + 1)
+
+            // Extract the base64 content between the headers
+            let lines = certPEM.components(separatedBy: .newlines)
+            let base64Lines = lines.filter {
+                !$0.contains("BEGIN CERTIFICATE") && !$0.contains("END CERTIFICATE") && !$0.isEmpty
+            }
+            let base64String = base64Lines.joined()
+
+            guard let certData = Data(base64Encoded: base64String) else {
+                os_log("Failed to decode base64 for certificate %d", log: Logger.certificate, type: .error, index + 1)
+                continue
+            }
+
+            // Try to parse with SecCertificateCreateWithData
+            guard let certificate = SecCertificateCreateWithData(nil, certData as CFData) else {
+                os_log(
+                    "Failed to parse certificate %d with SecCertificate", log: Logger.certificate, type: .error,
+                    index + 1)
+                continue
+            }
+
+            // Get certificate summary
+            if let summary = SecCertificateCopySubjectSummary(certificate) as String? {
+                os_log("  Subject: %{public}@", log: Logger.certificate, type: .info, summary)
+            }
+
+            // Try to get more details using the certificate data
+            logCertificateDetailsFromDER(certData, index: index + 1)
+
+            os_log("=== END CERTIFICATE %d ===", log: Logger.certificate, type: .info, index + 1)
+        }
+
+        os_log("=== END PARSING CERTIFICATE CHAIN ===", log: Logger.certificate, type: .info)
+    }
+
+    private func logCertificateDetailsFromDER(_ certData: Data, index: Int) {
+        // Log the certificate size
+        os_log("  Size: %d bytes", log: Logger.certificate, type: .info, certData.count)
+
+        // Try to extract basic fields from the DER structure
+        // This is a simplified parser - for production, use a proper X.509 library
+
+        guard let certificate = SecCertificateCreateWithData(nil, certData as CFData) else {
+            return
+        }
+
+        // Get serial number
+        if let serialNumber = SecCertificateCopySerialNumberData(certificate, nil) as Data? {
+            let serialHex = serialNumber.map { String(format: "%02x", $0) }.joined()
+            os_log("  Serial Number: %{public}@", log: Logger.certificate, type: .info, serialHex)
+        }
+
+        // Try to get the public key to verify it matches our Secure Enclave key
+        if let publicKey = SecCertificateCopyKey(certificate) {
+            var error: Unmanaged<CFError>?
+            if let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data? {
+                let keyHex = publicKeyData.prefix(32).map { String(format: "%02x", $0) }.joined(separator: " ")
+                os_log("  Public Key (first 32 bytes): %{public}@", log: Logger.certificate, type: .info, keyHex)
+                os_log("  Public Key Size: %d bytes", log: Logger.certificate, type: .info, publicKeyData.count)
+            } else if let error = error?.takeRetainedValue() {
+                os_log(
+                    "  Could not extract public key: %{public}@", log: Logger.certificate, type: .debug,
+                    error.localizedDescription)
+            }
+        }
+
+        // Parse basic X.509 fields manually from DER
+        // This is a simplified check - just looking for common patterns
+        if let utf8Data = String(data: certData, encoding: .utf8) {
+            // Try to find CN (Common Name) patterns
+            if let cnRange = utf8Data.range(of: "CN=") {
+                let startIndex = cnRange.upperBound
+                let endIndex = utf8Data.index(
+                    startIndex, offsetBy: min(50, utf8Data.distance(from: startIndex, to: utf8Data.endIndex)))
+                let cnValue = String(utf8Data[startIndex..<endIndex])
+                os_log("  Possible CN in cert: %{public}@", log: Logger.certificate, type: .debug, cnValue)
+            }
+        }
+
+        // Check if this looks like a self-signed certificate
+        let certDescription = SecCertificateCopySubjectSummary(certificate) as String? ?? "Unknown"
+        os_log("  Certificate Summary: %{public}@", log: Logger.certificate, type: .info, certDescription)
+
+        // Log first 200 bytes of hex for debugging
+        let hexPrefix = certData.prefix(200).map { String(format: "%02x", $0) }.joined(separator: " ")
+        os_log("  DER hex (first 200 bytes): %{public}@", log: Logger.certificate, type: .debug, hexPrefix)
+    }
+
     // MARK: - Certificate Enrollment
 
     private func enrollCertificate(csrPEM: String) async throws -> String {
@@ -787,8 +953,8 @@ final class C2PAManager: ObservableObject {
         }
 
         struct EnrollmentResponse: Codable {
-            let cert_id: String
-            let cert_chain: String
+            let certificate_id: String
+            let certificate_chain: String
             let expires_at: Date
             let serial_number: String
         }
@@ -821,9 +987,17 @@ final class C2PAManager: ObservableObject {
 
         os_log(
             "Certificate enrolled successfully. Certificate ID: %{public}@",
-            log: Logger.certificate, type: .info, enrollmentResponse.cert_id)
+            log: Logger.certificate, type: .info, enrollmentResponse.certificate_id)
 
-        return enrollmentResponse.cert_chain
+        // Log the raw certificate chain
+        os_log("=== RAW CERTIFICATE CHAIN (PEM) ===", log: Logger.certificate, type: .info)
+        os_log("%{public}@", log: Logger.certificate, type: .info, enrollmentResponse.certificate_chain)
+        os_log("=== END RAW CERTIFICATE CHAIN ===", log: Logger.certificate, type: .info)
+
+        // Parse and log certificate details
+        logCertificateDetails(enrollmentResponse.certificate_chain)
+
+        return enrollmentResponse.certificate_chain
     }
 
     // MARK: - Remote Service Signer
@@ -867,10 +1041,57 @@ final class C2PAManager: ObservableObject {
 
     // MARK: - Manifest Creation
 
-    private func createManifestJSON(location: CLLocation? = nil) throws -> String {
+    private func createManifestJSON(location: CLLocation? = nil, signingMode: SigningMode? = nil) throws -> String {
+        // Get the signing mode if not provided
+        let mode =
+            signingMode
+            ?? {
+                let signingModeString =
+                    UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.signingMode) ?? "Default"
+                return SigningMode(rawValue: signingModeString) ?? .defaultMode
+            }()
+
+        // Create distinct metadata for each signing mode
+        let claimGenerator: String
+        let title: String
+        let signingMethodDescription: String
+        let signingMethodColor: String  // Visual indicator
+
+        switch mode {
+        case .defaultMode:
+            claimGenerator = "C2PA iOS Example/1.0.0 [DEFAULT TEST CERT]"
+            title = "DEFAULT MODE - Test Certificate"
+            signingMethodDescription = "Signed with included test certificate (for development only)"
+            signingMethodColor = "BLUE"
+
+        case .keychain:
+            claimGenerator = "C2PA iOS Example/1.0.0 [KEYCHAIN]"
+            title = "KEYCHAIN MODE - Software Key"
+            signingMethodDescription = "Signed with software key stored in iOS Keychain"
+            signingMethodColor = "GREEN"
+
+        case .secureEnclave:
+            claimGenerator = "C2PA iOS Example/1.0.0 [SECURE ENCLAVE]"
+            title = "SECURE ENCLAVE - Hardware Security"
+            signingMethodDescription = "Signed with hardware-backed key in Secure Enclave"
+            signingMethodColor = "YELLOW"
+
+        case .custom:
+            claimGenerator = "C2PA iOS Example/1.0.0 [CUSTOM CERT]"
+            title = "CUSTOM MODE - User Certificate"
+            signingMethodDescription = "Signed with user-provided certificate and private key"
+            signingMethodColor = "PURPLE"
+
+        case .remote:
+            claimGenerator = "C2PA iOS Example/1.0.0 [REMOTE SERVICE]"
+            title = "REMOTE MODE - Web Service"
+            signingMethodDescription = "Signed via remote signing service"
+            signingMethodColor = "RED"
+        }
+
         var manifest: [String: Any] = [
-            "claim_generator": "C2PA iOS Example/1.0.0",
-            "title": "Image signed on iOS",
+            "claim_generator": claimGenerator,
+            "title": title,
             "assertions": []
         ]
 
@@ -891,14 +1112,16 @@ final class C2PAManager: ObservableObject {
             manifest["assertions"] = assertions
         }
 
-        // Add creation time assertion
+        // Add creation time assertion with signing method details
         let creationAssertion: [String: Any] = [
             "label": "c2pa.actions",
             "data": [
                 "actions": [
                     [
                         "action": "c2pa.created",
-                        "when": ISO8601DateFormatter().string(from: Date())
+                        "when": ISO8601DateFormatter().string(from: Date()),
+                        "softwareAgent": claimGenerator,
+                        "description": signingMethodDescription
                     ]
                 ]
             ]
@@ -906,6 +1129,26 @@ final class C2PAManager: ObservableObject {
 
         var assertions = manifest["assertions"] as! [[String: Any]]
         assertions.append(creationAssertion)
+
+        // Add custom assertion with signing method metadata
+        let signingMethodAssertion: [String: Any] = [
+            "label": "org.contentauth.signing_method",
+            "data": [
+                "method": mode.rawValue,
+                "description": signingMethodDescription,
+                "color_indicator": signingMethodColor,
+                "security_level": getSecurityLevel(for: mode),
+                "device_info": [
+                    "platform": "iOS",
+                    "model": UIDevice.current.model,
+                    "os_version": UIDevice.current.systemVersion,
+                    "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
+                ],
+                "timestamp": ISO8601DateFormatter().string(from: Date())
+            ]
+        ]
+
+        assertions.append(signingMethodAssertion)
         manifest["assertions"] = assertions
 
         let jsonData = try JSONSerialization.data(withJSONObject: manifest)
@@ -917,6 +1160,21 @@ final class C2PAManager: ObservableObject {
     }
 
     // MARK: - Helper Methods
+
+    private func getSecurityLevel(for mode: SigningMode) -> String {
+        switch mode {
+        case .defaultMode:
+            return "TEST_ONLY"
+        case .keychain:
+            return "SOFTWARE"
+        case .secureEnclave:
+            return "HARDWARE"
+        case .custom:
+            return "USER_PROVIDED"
+        case .remote:
+            return "REMOTE_SERVICE"
+        }
+    }
 
     func getCustomCertificate() throws -> (Data, Data) {
         let certQuery: [String: Any] = [
@@ -948,142 +1206,6 @@ final class C2PAManager: ObservableObject {
         return (certData, keyData)
     }
 
-    private func saveToPhotoLibrary(imageData: Data) async throws {
-        let status = PHPhotoLibrary.authorizationStatus(for: .addOnly)
-
-        switch status {
-        case .authorized:
-            break
-        case .notDetermined:
-            let granted = await PHPhotoLibrary.requestAuthorization(for: .addOnly) == .authorized
-            if !granted {
-                throw C2PAManagerError.photoLibraryAccessDenied
-            }
-        default:
-            throw C2PAManagerError.photoLibraryAccessDenied
-        }
-
-        return try await withCheckedThrowingContinuation { continuation in
-            PHPhotoLibrary.shared().performChanges(
-                {
-                    let creationRequest = PHAssetCreationRequest.forAsset()
-                    creationRequest.addResource(with: .photo, data: imageData, options: nil)
-                },
-                completionHandler: { success, error in
-                    if success {
-                        continuation.resume()
-                    } else {
-                        continuation.resume(
-                            throwing: error ?? C2PAManagerError.savePhotoFailed
-                        )
-                    }
-                })
-        }
-    }
-
-    func loadImageFromPhotoLibrary(
-        assetId: String, completion: @escaping (UIImage?) -> Void
-    ) {
-        let fetchResult = PHAsset.fetchAssets(
-            withLocalIdentifiers: [assetId], options: nil)
-
-        guard let asset = fetchResult.firstObject else {
-            os_log(
-                "Asset not found with ID: %{public}@", log: Logger.storage, type: .error,
-                assetId)
-            completion(nil)
-            return
-        }
-
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-        options.deliveryMode = .highQualityFormat
-
-        PHImageManager.default().requestImage(
-            for: asset,
-            targetSize: PHImageManagerMaximumSize,
-            contentMode: .aspectFit,
-            options: options
-        ) { image, _ in
-            DispatchQueue.main.async {
-                completion(image)
-            }
-        }
-    }
-
-    func fetchLastPhotoAsset(completion: @escaping (PHAsset?) -> Void) {
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.sortDescriptors = [
-            NSSortDescriptor(key: "creationDate", ascending: false)
-        ]
-        fetchOptions.fetchLimit = 1
-
-        let fetchResult = PHAsset.fetchAssets(with: .image, options: fetchOptions)
-
-        DispatchQueue.main.async {
-            completion(fetchResult.firstObject)
-        }
-    }
-
-    func loadUIImage(from asset: PHAsset, completion: @escaping (UIImage?) -> Void) {
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-        options.deliveryMode = .highQualityFormat
-
-        PHImageManager.default().requestImage(
-            for: asset,
-            targetSize: PHImageManagerMaximumSize,
-            contentMode: .aspectFit,
-            options: options
-        ) { image, _ in
-            DispatchQueue.main.async {
-                completion(image)
-            }
-        }
-    }
-
-    func loadImageData(
-        from asset: PHAsset, completion: @escaping (Data?) -> Void
-    ) {
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-
-        PHImageManager.default().requestImageDataAndOrientation(
-            for: asset, options: options
-        ) { data, _, _, _ in
-            DispatchQueue.main.async {
-                completion(data)
-            }
-        }
-    }
-
-    func loadImageData(from assetId: String, completion: @escaping (Data?) -> Void) {
-        let fetchResult = PHAsset.fetchAssets(
-            withLocalIdentifiers: [assetId], options: nil)
-
-        guard let asset = fetchResult.firstObject else {
-            os_log(
-                "Could not fetch saved asset with ID: %{public}@", log: Logger.storage,
-                type: .error, assetId)
-            completion(nil)
-            return
-        }
-
-        let options = PHImageRequestOptions()
-        options.isSynchronous = false
-        options.deliveryMode = .highQualityFormat
-        options.isNetworkAccessAllowed = true
-
-        PHImageManager.default().requestImageDataAndOrientation(
-            for: asset, options: options
-        ) { data, _, _, _ in
-            DispatchQueue.main.async {
-                completion(data)
-            }
-        }
-    }
 }
 
 // MARK: - Error Definition
@@ -1092,8 +1214,7 @@ enum C2PAManagerError: LocalizedError {
     case imageConversionFailed
     case certificatesNotAvailable
     case invalidCertificateFormat
-    case photoLibraryAccessDenied
-    case savePhotoFailed
+
     case keychainKeyNotFound(String)
     case invalidCertificateChain
     case privateKeyExportFailed
@@ -1108,6 +1229,7 @@ enum C2PAManagerError: LocalizedError {
     case secureEnclaveKeyNotFound
     case customError(String)
     case invalidURL
+    case signingFailed(String)
     case networkError(String)
 
     var errorDescription: String? {
@@ -1118,10 +1240,6 @@ enum C2PAManagerError: LocalizedError {
             return "Default certificates not available"
         case .invalidCertificateFormat:
             return "Invalid certificate or key format"
-        case .photoLibraryAccessDenied:
-            return "Photo library access denied"
-        case .savePhotoFailed:
-            return "Failed to save photo"
         case .keychainKeyNotFound(let tag):
             return "Key not found in keychain for tag: \(tag)"
         case .invalidCertificateChain:
@@ -1150,6 +1268,8 @@ enum C2PAManagerError: LocalizedError {
             return message
         case .invalidURL:
             return "Invalid URL"
+        case .signingFailed(let message):
+            return "Signing failed: \(message)"
         case .networkError(let message):
             return "Network error: \(message)"
         }

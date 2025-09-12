@@ -188,12 +188,12 @@ struct SettingsView: View {
                 Label("Test Certificate Active", systemImage: "checkmark.seal.fill")
                     .foregroundColor(.green)
                 Text("Using C2PA Example ES256 demo certificate")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text("⚠️ For testing purposes only")
-                    .font(.caption)
-                    .foregroundColor(.orange)
-            }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text("For testing purposes only")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                }
             .padding(.vertical, 5)
         }
     }
@@ -368,12 +368,12 @@ struct SettingsView: View {
                     if !remoteSigningURL.isEmpty && !remoteBearerToken.isEmpty {
                         Label("Credentials configured", systemImage: "checkmark.seal.fill")
                             .foregroundColor(.green)
-                            .font(.caption)
-                    } else {
-                        Text("⚠️ Both URL and token are required")
-                            .font(.caption)
-                            .foregroundColor(.orange)
-                    }
+                                .font(.caption)
+                        } else {
+                            Text("Both URL and token are required")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
                 }
                 .padding(.vertical, 5)
             }
@@ -477,11 +477,19 @@ struct SettingsView: View {
                 ]
 
                 // Delete existing if any
-                SecItemDelete(query as CFDictionary)
-
-                // Add new key
-                let status = SecItemAdd(query as CFDictionary, nil)
-
+                    SecItemDelete(query as CFDictionary)
+    
+                    // Also delete any existing certificate chain
+                    let certChainKey = Constants.Keychain.keychainPrivateKeyTag + Constants.Keychain.certChainSuffix
+                    let deleteCertQuery: [String: Any] = [
+                        kSecClass as String: kSecClassGenericPassword,
+                        kSecAttrAccount as String: certChainKey
+                    ]
+                    SecItemDelete(deleteCertQuery as CFDictionary)
+    
+                    // Add new key
+                    let status = SecItemAdd(query as CFDictionary, nil)
+    
                 if status == errSecSuccess {
                     await MainActor.run {
                         UserDefaults.standard.set(true, forKey: "hasKeychainCertificate")
@@ -514,11 +522,19 @@ struct SettingsView: View {
                     kSecClass as String: kSecClassKey,
                     kSecAttrApplicationTag as String: tag
                 ]
-                SecItemDelete(deleteQuery as CFDictionary)
-
-                // Generate new key
-                var error: Unmanaged<CFError>?
-                guard
+                    SecItemDelete(deleteQuery as CFDictionary)
+    
+                    // Also delete the associated certificate chain
+                    let certChainKey = Constants.Keychain.secureEnclaveKeyTag + Constants.Keychain.certChainSuffix
+                    let deleteCertQuery: [String: Any] = [
+                        kSecClass as String: kSecClassGenericPassword,
+                        kSecAttrAccount as String: certChainKey
+                    ]
+                    SecItemDelete(deleteCertQuery as CFDictionary)
+    
+                    // Generate new key
+                    var error: Unmanaged<CFError>?
+                    guard
                     let access = SecAccessControlCreateWithFlags(
                         kCFAllocatorDefault,
                         kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
@@ -567,14 +583,12 @@ struct SettingsView: View {
                 let certificateChain = try CertificateManager.createSelfSignedCertificateChain(
                     for: publicKey,
                     config: config
-                )
-
-                // Store certificate chain
-                UserDefaults.standard.set(
-                    certificateChain, forKey: "secureEnclaveeCertificateChain")
-                UserDefaults.standard.set(true, forKey: "hasSecureEnclaveKey")
-
-                await MainActor.run {
+                    )
+    
+                    // Mark that we have a Secure Enclave key (certificate chain is not stored here anymore)
+                    UserDefaults.standard.set(true, forKey: "hasSecureEnclaveKey")
+    
+                    await MainActor.run {
                     statusMessage = "Secure Enclave key generated successfully"
                     isGeneratingSecureEnclave = false
                 }
@@ -669,10 +683,20 @@ struct SettingsView: View {
             let passwordQuery: [String: Any] = [
                 kSecClass as String: kSecClassGenericPassword,
                 kSecAttrAccount as String: key
-            ]
-            SecItemDelete(passwordQuery as CFDictionary)
+                ]
+                SecItemDelete(passwordQuery as CFDictionary)
+    
+                // Also delete certificate chains for keys that have them
+                if key == Constants.Keychain.secureEnclaveKeyTag || key == Constants.Keychain.keychainPrivateKeyTag {
+                    let certChainKey = key + Constants.Keychain.certChainSuffix
+                    let certChainQuery: [String: Any] = [
+                        kSecClass as String: kSecClassGenericPassword,
+                        kSecAttrAccount as String: certChainKey
+                    ]
+                    SecItemDelete(certChainQuery as CFDictionary)
+                }
+            }
         }
-    }
 
     private func saveSettings() {
         // Settings are automatically saved via @AppStorage

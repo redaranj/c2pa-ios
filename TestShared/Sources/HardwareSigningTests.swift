@@ -79,7 +79,7 @@ public final class HardwareSigningTests: TestImplementation {
         guard isSecureEnclaveAvailable() else {
             return .success(
                 "Secure Enclave Signer Creation",
-                "⚠️ Skipped - Secure Enclave not available (simulator)")
+                "[WARN] Skipped - Secure Enclave not available (simulator)")
         }
 
         let keyTag = "org.contentauth.test.secure.\(UUID().uuidString)"
@@ -157,7 +157,7 @@ public final class HardwareSigningTests: TestImplementation {
                     secureEnclaveConfig: config
                 )
             } catch {
-                testSteps.append("✅ Correctly rejected mismatched certificate: \(error)")
+                testSteps.append("[PASS] Correctly rejected mismatched certificate: \(error)")
             }
 
             return .success(
@@ -176,7 +176,7 @@ public final class HardwareSigningTests: TestImplementation {
         guard isSecureEnclaveAvailable() else {
             return .success(
                 "Secure Enclave CSR Signing",
-                "⚠️ Skipped - Secure Enclave not available (simulator)")
+                "[WARN] Skipped - Secure Enclave not available (simulator)")
         }
 
         var testSteps: [String] = []
@@ -186,7 +186,7 @@ public final class HardwareSigningTests: TestImplementation {
         if !serverAvailable {
             return .success(
                 "Secure Enclave CSR Signing",
-                "⚠️ Skipped - Signing server not available (run 'make signing-server')")
+                "[WARN] Skipped - Signing server not available (run 'make signing-server')")
         }
         testSteps.append("✓ Signing server is available")
 
@@ -292,7 +292,7 @@ public final class HardwareSigningTests: TestImplementation {
                         _ = signer
                         testSteps.append("✓ Created signer with enrolled certificate")
                     } catch {
-                        testSteps.append("⚠️ Signer creation: \(error)")
+                        testSteps.append("[WARN] Signer creation: \(error)")
                     }
                 }
 
@@ -346,7 +346,7 @@ public final class HardwareSigningTests: TestImplementation {
                 if nsError.code == -34018 {  // errSecMissingEntitlement
                     return .success(
                         "Keychain Signer Creation",
-                        "⚠️ Skipped - Keychain access not available in this test environment")
+                        "[WARN] Skipped - Keychain access not available in this test environment")
                 }
                 testSteps.append("✗ Failed to create test key in keychain: \(error)")
             } else {
@@ -405,7 +405,7 @@ public final class HardwareSigningTests: TestImplementation {
             if verified {
                 testSteps.append("✓ Signature verification passed")
             } else {
-                testSteps.append("⚠️ Signature verification failed")
+                testSteps.append("[WARN] Signature verification failed")
             }
 
             // Generate self-signed certificate chain matching the keychain key
@@ -444,7 +444,7 @@ public final class HardwareSigningTests: TestImplementation {
             if reserveSize > 0 {
                 testSteps.append("✓ Reserve size calculated: \(reserveSize) bytes")
             } else {
-                testSteps.append("⚠️ Reserve size is 0")
+                testSteps.append("[WARN] Reserve size is 0")
             }
 
             return .success(

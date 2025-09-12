@@ -11,7 +11,7 @@ public final class StreamTests: TestImplementation {
             let testData = Data("Hello, C2PA Stream!".utf8)
             _ = try Stream(data: testData)
 
-            return .success("Stream Operations", "✅ Created stream from data successfully")
+            return .success("Stream Operations", "[PASS] Created stream from data successfully")
         } catch {
             return .failure("Stream Operations", "Failed to create stream: \(error)")
         }
@@ -37,7 +37,7 @@ public final class StreamTests: TestImplementation {
             let writeStream = try Stream(fileURL: writeURL, truncate: true, createIfNeeded: true)
             _ = writeStream
 
-            return .success("Stream File Operations", "✅ File streams created successfully")
+            return .success("Stream File Operations", "[PASS] File streams created successfully")
         } catch {
             return .failure("Stream File Operations", "Failed: \(error)")
         }
@@ -77,7 +77,7 @@ public final class StreamTests: TestImplementation {
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
             return .success(
                 "Write-Only Streams",
-                fileExists ? "✅ Write-only stream working" : "⚠️ Archive not created")
+                fileExists ? "[PASS] Write-only stream working" : "[WARN] Archive not created")
         } catch {
             return .failure("Write-Only Streams", "Failed: \(error)")
         }
@@ -122,7 +122,7 @@ public final class StreamTests: TestImplementation {
             )
 
             _ = customStream
-            return .success("Custom Stream Callbacks", "✅ Custom callbacks configured")
+            return .success("Custom Stream Callbacks", "[PASS] Custom callbacks configured")
         } catch {
             return .failure("Custom Stream Callbacks", "Failed: \(error)")
         }
@@ -135,7 +135,7 @@ public final class StreamTests: TestImplementation {
         do {
             let stream = try Stream(data: largeData)
             _ = stream
-            return .success("Large Data Stream", "✅ Handled \(largeSize / 1_000_000)MB data")
+            return .success("Large Data Stream", "[PASS] Handled \(largeSize / 1_000_000)MB data")
         } catch {
             return .failure("Large Data Stream", "Failed with large data: \(error)")
         }
@@ -151,7 +151,7 @@ public final class StreamTests: TestImplementation {
                 streams.append(stream)
             }
 
-            return .success("Multiple Streams", "✅ Created \(streams.count) concurrent streams")
+            return .success("Multiple Streams", "[PASS] Created \(streams.count) concurrent streams")
         } catch {
             return .failure("Multiple Streams", "Failed: \(error)")
         }
@@ -179,7 +179,7 @@ public final class StreamTests: TestImplementation {
             let truncateStream = try Stream(fileURL: tempFile, truncate: true, createIfNeeded: false)
             _ = truncateStream
 
-            return .success("File Stream Options", "✅ File stream options working")
+            return .success("File Stream Options", "[PASS] File stream options working")
         } catch {
             return .failure("File Stream Options", "Failed: \(error)")
         }
@@ -197,7 +197,7 @@ public final class StreamTests: TestImplementation {
             let reader = try Reader(format: "image/jpeg", stream: stream)
             _ = try? reader.json()  // Expected to fail since Pexels image has no manifest
 
-            return .success("Stream with Reader", "✅ Stream works with Reader API")
+            return .success("Stream with Reader", "[PASS] Stream works with Reader API")
         } catch {
             // No manifest is expected for the Pexels image
             if let c2paError = error as? C2PAError,
@@ -205,7 +205,7 @@ public final class StreamTests: TestImplementation {
                 message.contains("no JUMBF data found") || message.contains("ManifestNotFound")
                     || message.contains("No manifest")
             {
-                return .success("Stream with Reader", "✅ Reader created (no manifest in test image)")
+                return .success("Stream with Reader", "[PASS] Reader created (no manifest in test image)")
             }
             return .failure("Stream with Reader", "Failed: \(error)")
         }
@@ -251,14 +251,14 @@ public final class StreamTests: TestImplementation {
 
             _ = try? builder.sign(format: "image/jpeg", source: sourceStream, destination: destStream, signer: signer)
 
-            return .success("Stream with Builder", "✅ Stream works with Builder API")
+            return .success("Stream with Builder", "[PASS] Stream works with Builder API")
         } catch {
             // Certificate errors are expected
             if let c2paError = error as? C2PAError,
                 case .api(let message) = c2paError,
                 message.contains("certificate") || message.contains("key")
             {
-                return .success("Stream with Builder", "✅ Builder works (cert error expected)")
+                return .success("Stream with Builder", "[PASS] Builder works (cert error expected)")
             }
             return .failure("Stream with Builder", "Failed: \(error)")
         }

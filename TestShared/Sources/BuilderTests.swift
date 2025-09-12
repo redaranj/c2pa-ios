@@ -49,11 +49,11 @@ public final class BuilderTests: TestImplementation {
                 if let manifestJSON = try? C2PA.readFile(at: destFile),
                     !manifestJSON.isEmpty
                 {
-                    return .success("Builder API", "✅ Successfully signed image with Builder")
+                    return .success("Builder API", "[PASS] Successfully signed image with Builder")
                 }
             }
 
-            return .success("Builder API", "✅ Builder created (signing may require valid certs)")
+            return .success("Builder API", "[PASS] Builder created (signing may require valid certs)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error {
@@ -61,7 +61,7 @@ public final class BuilderTests: TestImplementation {
                 if message.contains("certificate") || message.contains("cert") || message.contains("key")
                     || message.contains("signing")
                 {
-                    return .success("Builder API", "⚠️ Builder works (cert/key error expected: \(message))")
+                    return .success("Builder API", "[WARN] Builder works (cert/key error expected: \(message))")
                 }
             }
             return .failure("Builder API", "C2PAError: \(error)")
@@ -91,7 +91,7 @@ public final class BuilderTests: TestImplementation {
                 let fileSize = try FileManager.default.attributesOfItem(atPath: archiveFile.path)[.size] as? Int ?? 0
                 return .success(
                     "Builder No-Embed",
-                    "✅ Archive created with size: \(fileSize) bytes")
+                    "[PASS] Archive created with size: \(fileSize) bytes")
             }
 
             return .failure("Builder No-Embed", "Archive file not created")
@@ -136,7 +136,7 @@ public final class BuilderTests: TestImplementation {
 
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
             return fileExists
-                ? .success("Builder Add Resource", "✅ Builder with resource created archive")
+                ? .success("Builder Add Resource", "[PASS] Builder with resource created archive")
                 : .failure("Builder Add Resource", "Archive not created")
 
         } catch {
@@ -180,10 +180,10 @@ public final class BuilderTests: TestImplementation {
                     format: "image/jpeg",
                     from: ingredientStream
                 )
-                return .success("Builder Add Ingredient", "✅ Ingredient added successfully")
+                return .success("Builder Add Ingredient", "[PASS] Ingredient added successfully")
             } catch {
                 // Method might not exist or work differently
-                return .success("Builder Add Ingredient", "⚠️ Add ingredient not directly supported")
+                return .success("Builder Add Ingredient", "[WARN] Add ingredient not directly supported")
             }
 
         } catch {
@@ -223,7 +223,7 @@ public final class BuilderTests: TestImplementation {
             // Note: Creating builder from archive might not be supported
             return .success(
                 "Builder From Archive",
-                "✅ Archive created (\(fileSize) bytes)")
+                "[PASS] Archive created (\(fileSize) bytes)")
 
         } catch {
             return .failure("Builder From Archive", "Failed: \(error)")
@@ -255,7 +255,7 @@ public final class BuilderTests: TestImplementation {
 
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
             return fileExists
-                ? .success("Builder Remote URL", "✅ Builder with remote URL created archive")
+                ? .success("Builder Remote URL", "[PASS] Builder with remote URL created archive")
                 : .failure("Builder Remote URL", "Archive not created")
 
         } catch {
@@ -299,14 +299,14 @@ public final class BuilderTests: TestImplementation {
                 }
 
                 return hasIngredients
-                    ? .success("Read Ingredient", "✅ Found ingredient data")
-                    : .success("Read Ingredient", "⚠️ No ingredients (normal for test images)")
+                    ? .success("Read Ingredient", "[PASS] Found ingredient data")
+                    : .success("Read Ingredient", "[WARN] No ingredients (normal for test images)")
             }
 
-            return .success("Read Ingredient", "⚠️ No manifest (normal for basic test images)")
+            return .success("Read Ingredient", "[WARN] No manifest (normal for basic test images)")
 
         } catch {
-            return .success("Read Ingredient", "⚠️ Could not read as ingredient (expected)")
+            return .success("Read Ingredient", "[WARN] Could not read as ingredient (expected)")
         }
     }
 

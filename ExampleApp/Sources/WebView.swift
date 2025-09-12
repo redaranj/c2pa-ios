@@ -1,4 +1,3 @@
-import Photos
 import SwiftUI
 import UniformTypeIdentifiers
 import WebKit

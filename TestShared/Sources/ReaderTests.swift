@@ -37,9 +37,9 @@ public final class ReaderTests: TestImplementation {
 
             do {
                 try reader.resource(uri: resourceURI, to: resourceStream)
-                return .success("Reader Resource Error", "⚠️ Resource found (unexpected)")
+                return .success("Reader Resource Error", "[WARN] Resource found (unexpected)")
             } catch _ as C2PAError {
-                return .success("Reader Resource Error", "✅ Error handled correctly")
+                return .success("Reader Resource Error", "[PASS] Error handled correctly")
             }
 
         } catch let error as C2PAError {
@@ -48,7 +48,7 @@ public final class ReaderTests: TestImplementation {
                 if message.contains("No manifest") || message.contains("no JUMBF data found")
                     || message.contains("ManifestNotFound")
                 {
-                    return .success("Reader Resource Error", "✅ No manifest (expected)")
+                    return .success("Reader Resource Error", "[PASS] No manifest (expected)")
                 }
             }
             return .failure("Reader Resource Error", "Unexpected C2PAError: \(error)")
@@ -78,12 +78,12 @@ public final class ReaderTests: TestImplementation {
             // Try to get JSON
             let json = try reader.json()
             if !json.isEmpty {
-                return .success("Reader With Manifest", "✅ Reader with manifest data working")
+                return .success("Reader With Manifest", "[PASS] Reader with manifest data working")
             }
-            return .success("Reader With Manifest", "⚠️ Empty JSON (expected)")
+            return .success("Reader With Manifest", "[WARN] Empty JSON (expected)")
 
         } catch {
-            return .success("Reader With Manifest", "⚠️ Failed (might be expected): \(error)")
+            return .success("Reader With Manifest", "[WARN] Failed (might be expected): \(error)")
         }
     }
 
@@ -125,21 +125,21 @@ public final class ReaderTests: TestImplementation {
                             foundResource = true
                             return .success(
                                 "Resource Reading",
-                                "✅ Extracted resource of size: \(resourceData.count)")
+                                "[PASS] Extracted resource of size: \(resourceData.count)")
                         }
                     }
                 }
 
                 if !foundResource {
-                    return .success("Resource Reading", "⚠️ No resources found (normal)")
+                    return .success("Resource Reading", "[WARN] No resources found (normal)")
                 }
             }
 
-            return .success("Resource Reading", "⚠️ No manifest (normal for test images)")
+            return .success("Resource Reading", "[WARN] No manifest (normal for test images)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Resource Reading", "⚠️ No manifest (acceptable)")
+                return .success("Resource Reading", "[WARN] No manifest (acceptable)")
             }
             return .failure("Resource Reading", "Failed: \(error)")
         } catch {
@@ -167,15 +167,15 @@ public final class ReaderTests: TestImplementation {
                 let stream = try Stream(data: imageData)
                 _ = try Reader(format: format, stream: stream)
                 if shouldWork {
-                    results.append("✅ \(format)")
+                    results.append("[PASS] \(format)")
                 } else {
                     return .failure("Reader Validation", "Invalid format \(format) not rejected")
                 }
             } catch {
                 if !shouldWork {
-                    results.append("✅ Invalid \(format) rejected")
+                    results.append("[PASS] Invalid \(format) rejected")
                 } else {
-                    results.append("⚠️ \(format) failed")
+                    results.append("[WARN] \(format) failed")
                 }
             }
         }
@@ -227,14 +227,14 @@ public final class ReaderTests: TestImplementation {
 
                 return .success(
                     "Reader Thumbnail Extraction",
-                    "✅ Found \(thumbnailCount) thumbnail(s)")
+                    "[PASS] Found \(thumbnailCount) thumbnail(s)")
             }
 
-            return .success("Reader Thumbnail Extraction", "⚠️ No manifest (normal)")
+            return .success("Reader Thumbnail Extraction", "[WARN] No manifest (normal)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader Thumbnail Extraction", "⚠️ No manifest (acceptable)")
+                return .success("Reader Thumbnail Extraction", "[WARN] No manifest (acceptable)")
             }
             return .failure("Reader Thumbnail Extraction", "Failed: \(error)")
         } catch {
@@ -279,19 +279,19 @@ public final class ReaderTests: TestImplementation {
                 if ingredientCount > 0 {
                     return .success(
                         "Reader Ingredient Extraction",
-                        "✅ Found \(ingredientCount) ingredient(s)")
+                        "[PASS] Found \(ingredientCount) ingredient(s)")
                 } else {
                     return .success(
                         "Reader Ingredient Extraction",
-                        "⚠️ No ingredients (normal)")
+                        "[WARN] No ingredients (normal)")
                 }
             }
 
-            return .success("Reader Ingredient Extraction", "⚠️ No manifest (normal)")
+            return .success("Reader Ingredient Extraction", "[WARN] No manifest (normal)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader Ingredient Extraction", "⚠️ No manifest (acceptable)")
+                return .success("Reader Ingredient Extraction", "[WARN] No manifest (acceptable)")
             }
             return .failure("Reader Ingredient Extraction", "Failed: \(error)")
         } catch {
@@ -321,11 +321,11 @@ public final class ReaderTests: TestImplementation {
                 let jsonData = Data(json.utf8)
                 let parsed = try JSONSerialization.jsonObject(with: jsonData)
                 if parsed is [String: Any] || parsed is [Any] {
-                    return .success("Reader JSON Parsing", "✅ Valid JSON returned")
+                    return .success("Reader JSON Parsing", "[PASS] Valid JSON returned")
                 }
             }
 
-            return .success("Reader JSON Parsing", "⚠️ Empty JSON (normal)")
+            return .success("Reader JSON Parsing", "[WARN] Empty JSON (normal)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error {
@@ -333,7 +333,7 @@ public final class ReaderTests: TestImplementation {
                 if message.contains("No manifest") || message.contains("no JUMBF data found")
                     || message.contains("ManifestNotFound")
                 {
-                    return .success("Reader JSON Parsing", "✅ No manifest error handled")
+                    return .success("Reader JSON Parsing", "[PASS] No manifest error handled")
                 }
             }
             return .failure("Reader JSON Parsing", "Unexpected C2PAError: \(error)")
@@ -359,10 +359,10 @@ public final class ReaderTests: TestImplementation {
             _ = try? reader1.json()
             _ = try? reader2.json()
 
-            return .success("Reader Multiple Streams", "✅ Multiple readers created")
+            return .success("Reader Multiple Streams", "[PASS] Multiple readers created")
 
         } catch {
-            return .success("Reader Multiple Streams", "⚠️ Multiple readers: \(error)")
+            return .success("Reader Multiple Streams", "[WARN] Multiple readers: \(error)")
         }
     }
 

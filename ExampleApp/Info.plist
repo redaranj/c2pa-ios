@@ -48,15 +48,13 @@
     <key>NSCameraUsageDescription</key>
     <string
         >This app needs access to the camera to capture photos for C2PA signing.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string
-        >This app needs permission to save signed photos to your photo library.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string
-        >This app needs access to your photo library to save and verify C2PA signed images.</string>
+
     <key>NSLocationWhenInUseUsageDescription</key>
     <string
         >This app uses your location to add GPS metadata to photos for C2PA authenticity verification.</string>
+    <key>NSFaceIDUsageDescription</key>
+    <string
+        >This app uses Face ID to authenticate access to hardware-backed signing keys for C2PA signatures.</string>
     <key>UIFileSharingEnabled</key>
     <true />
     <key>LSSupportsOpeningDocumentsInPlace</key>

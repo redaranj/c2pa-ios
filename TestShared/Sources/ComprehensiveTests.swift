@@ -9,7 +9,7 @@ public final class ComprehensiveTests: TestImplementation {
     public func testLibraryVersion() -> TestResult {
         let version = c2paVersion
         if !version.isEmpty && version.contains(".") {
-            return .success("Library Version", "✅ C2PA Version: \(version)")
+            return .success("Library Version", "[PASS] C2PA Version: \(version)")
         }
         return .failure("Library Version", "Invalid version: \(version)")
     }
@@ -22,7 +22,7 @@ public final class ComprehensiveTests: TestImplementation {
             if case .api(let message) = error {
                 if message.contains("No such file") || message.contains("does not exist") || message.contains("Failed")
                 {
-                    return .success("Error Handling", "✅ Error handling works correctly")
+                    return .success("Error Handling", "[PASS] Error handling works correctly")
                 }
             }
             return .failure("Error Handling", "Unexpected error: \(error)")
@@ -51,15 +51,15 @@ public final class ComprehensiveTests: TestImplementation {
                 let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
 
                 if json?["manifests"] != nil {
-                    return .success("Read Image With Manifest", "✅ Read manifest from image")
+                    return .success("Read Image With Manifest", "[PASS] Read manifest from image")
                 }
-                return .success("Read Image With Manifest", "⚠️ No manifests (normal)")
+                return .success("Read Image With Manifest", "[WARN] No manifests (normal)")
             }
-            return .success("Read Image With Manifest", "⚠️ No manifest (normal)")
+            return .success("Read Image With Manifest", "[WARN] No manifest (normal)")
 
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Read Image With Manifest", "⚠️ No manifest (expected)")
+                return .success("Read Image With Manifest", "[WARN] No manifest (expected)")
             }
             return .failure("Read Image With Manifest", "Failed: \(error)")
         } catch {
@@ -72,7 +72,7 @@ public final class ComprehensiveTests: TestImplementation {
             let testData = Data("Hello C2PA Stream API".utf8)
             let stream = try Stream(data: testData)
             _ = stream
-            return .success("Stream From Data", "✅ Created stream from data")
+            return .success("Stream From Data", "[PASS] Created stream from data")
         } catch {
             return .failure("Stream From Data", "Failed: \(error)")
         }
@@ -90,7 +90,7 @@ public final class ComprehensiveTests: TestImplementation {
 
             let stream = try Stream(fileURL: tempURL, truncate: false, createIfNeeded: false)
             _ = stream
-            return .success("Stream From File", "✅ Created stream from file")
+            return .success("Stream From File", "[PASS] Created stream from file")
         } catch {
             return .failure("Stream From File", "Failed: \(error)")
         }
@@ -109,7 +109,7 @@ public final class ComprehensiveTests: TestImplementation {
         do {
             let builder = try Builder(manifestJSON: manifestJSON)
             _ = builder
-            return .success("Builder Creation", "✅ Created builder from JSON")
+            return .success("Builder Creation", "[PASS] Created builder from JSON")
         } catch {
             return .failure("Builder Creation", "Failed: \(error)")
         }
@@ -137,7 +137,7 @@ public final class ComprehensiveTests: TestImplementation {
             try builder.writeArchive(to: archiveStream)
 
             if FileManager.default.fileExists(atPath: archiveFile.path) {
-                return .success("Builder No Embed", "✅ Created archive with no-embed")
+                return .success("Builder No Embed", "[PASS] Created archive with no-embed")
             }
             return .failure("Builder No Embed", "Archive not created")
         } catch {
@@ -156,7 +156,7 @@ public final class ComprehensiveTests: TestImplementation {
         do {
             let builder = try Builder(manifestJSON: manifestJSON)
             try builder.setRemoteURL("https://example.com/manifest")
-            return .success("Builder Remote URL", "✅ Set remote URL on builder")
+            return .success("Builder Remote URL", "[PASS] Set remote URL on builder")
         } catch {
             return .failure("Builder Remote URL", "Failed: \(error)")
         }
@@ -179,9 +179,9 @@ public final class ComprehensiveTests: TestImplementation {
 
             do {
                 try builder.addResource(uri: "thumbnail", stream: thumbnailStream)
-                return .success("Builder Add Resource", "✅ Added resource to builder")
+                return .success("Builder Add Resource", "[PASS] Added resource to builder")
             } catch {
-                return .success("Builder Add Resource", "⚠️ Add resource not supported")
+                return .success("Builder Add Resource", "[WARN] Add resource not supported")
             }
         } catch {
             return .failure("Builder Add Resource", "Failed: \(error)")
@@ -199,12 +199,12 @@ public final class ComprehensiveTests: TestImplementation {
             let reader = try Reader(format: "image/jpeg", stream: stream)
             let json = try reader.json()
             if !json.isEmpty {
-                return .success("Reader Creation", "✅ Created reader and read manifest")
+                return .success("Reader Creation", "[PASS] Created reader and read manifest")
             }
-            return .success("Reader Creation", "✅ Created reader from stream")
+            return .success("Reader Creation", "[PASS] Created reader from stream")
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader Creation", "⚠️ No manifest (expected)")
+                return .success("Reader Creation", "[WARN] No manifest (expected)")
             }
             return .failure("Reader Creation", "Failed: \(error)")
         } catch {
@@ -226,14 +226,14 @@ public final class ComprehensiveTests: TestImplementation {
                 let jsonData = Data(json.utf8)
                 let manifest = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
                 if manifest?["manifests"] != nil {
-                    return .success("Reader With Test Image", "✅ Read manifest from test image")
+                    return .success("Reader With Test Image", "[PASS] Read manifest from test image")
                 }
-                return .success("Reader With Test Image", "⚠️ Empty manifests")
+                return .success("Reader With Test Image", "[WARN] Empty manifests")
             }
-            return .success("Reader With Test Image", "⚠️ Empty JSON")
+            return .success("Reader With Test Image", "[WARN] Empty JSON")
         } catch let error as C2PAError {
             if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader With Test Image", "⚠️ No manifest")
+                return .success("Reader With Test Image", "[WARN] No manifest")
             }
             return .failure("Reader With Test Image", "Failed: \(error)")
         } catch {
@@ -247,13 +247,13 @@ public final class ComprehensiveTests: TestImplementation {
 
         for algorithm in algorithms {
             if !algorithm.description.isEmpty {
-                results.append("\(algorithm.description)✅")
+                results.append("\(algorithm.description)[PASS]")
             } else {
-                results.append("\(algorithm)❌")
+                results.append("\(algorithm)[FAIL]")
             }
         }
 
-        return .success("Signing Algorithms", "✅ Verified \(algorithms.count) algorithms")
+        return .success("Signing Algorithms", "[PASS] Verified \(algorithms.count) algorithms")
     }
 
     public func testErrorEnumCases() -> TestResult {
@@ -277,7 +277,7 @@ public final class ComprehensiveTests: TestImplementation {
             return .failure("Error Enum Cases", "Negative error description mismatch")
         }
 
-        return .success("Error Enum Cases", "✅ All error cases working")
+        return .success("Error Enum Cases", "[PASS] All error cases working")
     }
 
     public func testEndToEndSigning() -> TestResult {
@@ -325,7 +325,7 @@ public final class ComprehensiveTests: TestImplementation {
             )
 
             if FileManager.default.fileExists(atPath: destFile.path) {
-                return .success("End to End Signing", "✅ Signing completed")
+                return .success("End to End Signing", "[PASS] Signing completed")
             }
             return .failure("End to End Signing", "Destination file not created")
 
@@ -368,14 +368,14 @@ public final class ComprehensiveTests: TestImplementation {
                 }
 
                 if hasIngredients {
-                    return .success("Read Ingredient", "✅ Found ingredients")
+                    return .success("Read Ingredient", "[PASS] Found ingredients")
                 }
-                return .success("Read Ingredient", "⚠️ No ingredients (normal)")
+                return .success("Read Ingredient", "[WARN] No ingredients (normal)")
             }
-            return .success("Read Ingredient", "⚠️ No manifest (normal)")
+            return .success("Read Ingredient", "[WARN] No manifest (normal)")
 
         } catch {
-            return .success("Read Ingredient", "⚠️ Could not read manifest")
+            return .success("Read Ingredient", "[WARN] Could not read manifest")
         }
     }
 
@@ -449,7 +449,7 @@ public final class ComprehensiveTests: TestImplementation {
                     testSteps.append("✓ Found ingredient: \(ingredientJSON.count) bytes")
                 }
             } catch {
-                testSteps.append("⚠️ No ingredient data (expected)")
+                testSteps.append("[WARN] No ingredient data (expected)")
             }
 
             return .success("File Operations with Data Dir", testSteps.joined(separator: "\n"))

@@ -1,4 +1,3 @@
-import PhotosUI
 import SwiftUI
 
 struct ContentView: View {
@@ -84,7 +83,7 @@ struct CameraViewWrapper: View {
     var body: some View {
         ZStack {
             CustomCameraView(capturedImage: $capturedImage) { image, location in
-                c2paManager.signAndSaveImage(image, saveToPhotos: false, location: location) { success, _, _ in
+                c2paManager.signAndSaveImage(image, location: location) { success, _, _ in
                     showingCamera = false
                     if success {
                         successMessage = "Credentials Added!"

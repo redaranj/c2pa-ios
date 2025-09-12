@@ -19,7 +19,7 @@ public final class SigningTests: TestImplementation {
                 tsaURL: nil
             )
             _ = signer
-            return .success("Signer Creation", "✅ Created PEM-based signer with valid certificates")
+            return .success("Signer Creation", "[PASS] Created PEM-based signer with valid certificates")
         } catch let error as C2PAError {
             // If certificates are invalid, this is a FAILURE not a success
             return .failure("Signer Creation", "Certificate/key error (test certs may be invalid): \(error)")
@@ -84,7 +84,7 @@ public final class SigningTests: TestImplementation {
             if callbackInvoked && dataToSign != nil {
                 return .success(
                     "Signer With Callback",
-                    "✅ Callback mechanism works - invoked with \(dataToSign?.count ?? 0) bytes")
+                    "[PASS] Callback mechanism works - invoked with \(dataToSign?.count ?? 0) bytes")
             } else {
                 return .failure(
                     "Signer With Callback",
@@ -95,7 +95,7 @@ public final class SigningTests: TestImplementation {
             if callbackInvoked && dataToSign != nil {
                 return .success(
                     "Signer With Callback",
-                    "✅ Callback mechanism works - invoked with \(dataToSign?.count ?? 0) bytes (signing failed as expected with dummy signature)"
+                    "[PASS] Callback mechanism works - invoked with \(dataToSign?.count ?? 0) bytes (signing failed as expected with dummy signature)"
                 )
             } else {
                 // The callback wasn't invoked at all - this is a real failure
@@ -122,9 +122,9 @@ public final class SigningTests: TestImplementation {
                     tsaURL: nil
                 )
                 supportedCount += 1
-                results.append("\(algorithm)✅")
+                results.append("\(algorithm)[PASS]")
             } catch {
-                results.append("\(algorithm)⚠️")
+                results.append("\(algorithm)[WARN]")
             }
         }
 
@@ -145,7 +145,7 @@ public final class SigningTests: TestImplementation {
                 tsaURL: tsaURL
             )
             _ = signer
-            return .success("Signer With TSA", "✅ Created signer with TSA URL")
+            return .success("Signer With TSA", "[PASS] Created signer with TSA URL")
         } catch {
             // Certificate or TSA errors are failures, not successes
             return .failure("Signer With TSA", "Failed to create signer with TSA: \(error)")
@@ -166,7 +166,7 @@ public final class SigningTests: TestImplementation {
             else {
                 return .success(
                     "Web Service Real Signing & Verification",
-                    "⚠️ Signing server not available (run 'make signing-server-start')")
+                    "[WARN] Signing server not available (run 'make signing-server-start')")
             }
             testSteps.append("✓ Connected to signing server")
             testsPassed += 1
@@ -242,7 +242,7 @@ public final class SigningTests: TestImplementation {
                     }
                 }
             } catch {
-                testSteps.append("⚠️ Signing with web service failed (expected in test mode): \(error)")
+                testSteps.append("[WARN] Signing with web service failed (expected in test mode): \(error)")
             }
 
         } catch {
@@ -294,7 +294,7 @@ public final class SigningTests: TestImplementation {
                 destination: destStream,
                 signer: signer
             )
-            return .success("Signer With Actual Signing", "✅ Signing operation completed successfully")
+            return .success("Signer With Actual Signing", "[PASS] Signing operation completed successfully")
 
         } catch {
             // All errors are failures - if certs are invalid, that's a real failure
