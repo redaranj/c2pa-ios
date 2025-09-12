@@ -182,7 +182,7 @@ package-swift:
 		echo "Swift sources packaged (skipped - no sources found)"; \
 	fi
 
-# Update Package.swift for release
+# Update Package.swift for release (in-place update)
 update-package-swift:
 	@echo "Updating Package.swift for release..."
 	@if [ -z "$(VERSION)" ]; then \
@@ -193,15 +193,17 @@ update-package-swift:
 		echo "::error::CHECKSUM environment variable is required"; \
 		exit 1; \
 	fi
-	@if [ -f "template/Package.swift" ]; then \
-		cp template/Package.swift ./Package.swift; \
+	@if [ -z "$(GITHUB_REPOSITORY)" ]; then \
+		echo "::error::GITHUB_REPOSITORY environment variable is required"; \
+		exit 1; \
 	fi
-	@if [ -f "./Package.swift" ]; then \
-		sed -i '' 's#            path: "Frameworks/C2PAC.xcframework"#            url: "https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip",\n            checksum: "$(CHECKSUM)"#g' ./Package.swift; \
-		sed -i '' 's#            path: "Sources/C2PA"#            path: "src"#g' ./Package.swift; \
-		echo "Package.swift updated successfully"; \
+	@if [ -f "Package.swift" ]; then \
+		sed -i '' 's#https://github.com/[^/]*/[^/]*/releases/download/v[0-9.]\+/C2PAC.xcframework.zip#https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip#g' Package.swift; \
+		sed -i '' 's#checksum: "[a-f0-9]\{64\}"#checksum: "$(CHECKSUM)"#g' Package.swift; \
+		echo "Package.swift updated successfully for release $(VERSION)"; \
 	else \
-		echo "::warning::Package.swift not found"; \
+		echo "::error::Package.swift not found"; \
+		exit 1; \
 	fi
 
 # Tests with signing server
