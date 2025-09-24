@@ -115,6 +115,17 @@ publish: library
 ios-framework:
 	@echo "Building iOS framework for device..."
 	@$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"
+	@echo "Finding and copying C2PAC.framework to Library/Frameworks..."
+	@BUILT_PRODUCTS_DIR=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration Release -showBuildSettings | grep "BUILT_PRODUCTS_DIR = " | sed 's/.*BUILT_PRODUCTS_DIR = //'); \
+	if [ -d "$$BUILT_PRODUCTS_DIR/C2PAC.framework" ]; then \
+		mkdir -p Library/Frameworks; \
+		rm -rf Library/Frameworks/C2PAC.xcframework Library/Frameworks/C2PAC.framework; \
+		cp -R "$$BUILT_PRODUCTS_DIR/C2PAC.framework" Library/Frameworks/; \
+		echo "✓ C2PAC.framework copied from $$BUILT_PRODUCTS_DIR to Library/Frameworks/"; \
+	else \
+		echo "::error::C2PAC.framework not found at $$BUILT_PRODUCTS_DIR"; \
+		exit 1; \
+	fi
 	@echo "iOS framework build completed."
 
 # Validate version format (expects VERSION environment variable)
@@ -145,14 +156,18 @@ release-tests:
 
 # Package XCFramework for distribution
 package-xcframework:
-	@echo "Packaging XCFramework..."
-	@if [ -d "Library/Frameworks/C2PAC.xcframework" ]; then \
+	@echo "Creating XCFramework from framework..."
+	@if [ -d "Library/Frameworks/C2PAC.framework" ]; then \
+		rm -rf Library/Frameworks/C2PAC.xcframework; \
+		xcodebuild -create-xcframework \
+			-framework Library/Frameworks/C2PAC.framework \
+			-output Library/Frameworks/C2PAC.xcframework; \
 		mkdir -p output; \
 		cp -R Library/Frameworks/C2PAC.xcframework output/; \
 		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
 		echo "XCFramework packaged successfully"; \
 	else \
-		echo "::error::C2PAC.xcframework not found in Library/Frameworks/"; \
+		echo "::error::C2PAC.framework not found in Library/Frameworks/"; \
 		exit 1; \
 	fi
 
@@ -169,12 +184,11 @@ compute-checksum:
 # Package Swift sources
 package-swift:
 	@echo "Packaging Swift sources..."
-	@if [ -d "output/C2PA-iOS" ]; then \
+	@if [ -d "Library/Sources" ]; then \
+		mkdir -p output/C2PA-iOS/Sources/C2PA; \
+		cp -R Library/Sources/*.swift output/C2PA-iOS/Sources/C2PA/; \
 		cd output && zip -r C2PA-Swift-Package.zip C2PA-iOS/; \
-	elif [ -d "Library/Sources/C2PA" ]; then \
-		mkdir -p output/C2PA-iOS/Sources; \
-		cp -R Library/Sources/C2PA output/C2PA-iOS/Sources/; \
-		cd output && zip -r C2PA-Swift-Package.zip C2PA-iOS/; \
+		echo "Swift sources packaged successfully"; \
 	else \
 		echo "Swift sources packaged (skipped - no sources found)"; \
 	fi
