@@ -146,16 +146,13 @@ release-tests:
 # Package XCFramework for distribution
 package-xcframework:
 	@echo "Packaging XCFramework..."
-	@if [ -d "output" ]; then \
-		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
-		echo "XCFramework packaged successfully"; \
-	elif [ -d "Library/Frameworks/C2PAC.xcframework" ]; then \
+	@if [ -d "Library/Frameworks/C2PAC.xcframework" ]; then \
 		mkdir -p output; \
 		cp -R Library/Frameworks/C2PAC.xcframework output/; \
 		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
 		echo "XCFramework packaged successfully"; \
 	else \
-		echo "::error::C2PAC.xcframework not found"; \
+		echo "::error::C2PAC.xcframework not found in Library/Frameworks/"; \
 		exit 1; \
 	fi
 
