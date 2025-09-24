@@ -217,7 +217,7 @@ update-package-swift:
 		exit 1; \
 	fi
 	@if [ -f "Package.swift" ]; then \
-		sed -i '' 's#https://github.com/[^/]*/[^/]*/releases/download/v[0-9.]\+/C2PAC.xcframework.zip#https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip#g' Package.swift; \
+		sed -i '' 's#https://github.com/[^/]*/[^/]*/releases/download/v[0-9.]*/C2PAC.xcframework.zip#https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip#g' Package.swift; \
 		sed -i '' 's#checksum: "[a-f0-9]\{64\}"#checksum: "$(CHECKSUM)"#g' Package.swift; \
 		echo "Package.swift updated successfully for release $(VERSION)"; \
 	else \
