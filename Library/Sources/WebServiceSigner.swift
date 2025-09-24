@@ -216,22 +216,43 @@ extension Signer {
             certificateChainPEM: certificateChainPEM,
             tsaURL: tsaURL
         ) { data in
-            let semaphore = DispatchSemaphore(value: 0)
-            var result: Result<Data, Error>?
-
-            Task.detached {
-                do {
-                    let signature = try await asyncSigner(data)
-                    result = .success(signature)
-                } catch {
-                    result = .failure(error)
+            // Thread-safe result container
+            final class ResultBox: @unchecked Sendable {
+                private let lock = NSLock()
+                private var _result: Result<Data, Error>?
+                
+                func setResult(_ result: Result<Data, Error>) {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    _result = result
                 }
-                semaphore.signal()
+                
+                func getResult() -> Result<Data, Error>? {
+                    lock.lock()
+                    defer { lock.unlock() }
+                    return _result
+                }
             }
-
+            
+            let resultBox = ResultBox()
+            let semaphore = DispatchSemaphore(value: 0)
+            
+            // Use a global queue to avoid main queue dependencies
+            DispatchQueue.global().async {
+                Task {
+                    do {
+                        let signature = try await asyncSigner(data)
+                        resultBox.setResult(.success(signature))
+                    } catch {
+                        resultBox.setResult(.failure(error))
+                    }
+                    semaphore.signal()
+                }
+            }
+            
             semaphore.wait()
-
-            switch result {
+            
+            switch resultBox.getResult() {
             case .success(let signature):
                 return signature
             case .failure(let error):

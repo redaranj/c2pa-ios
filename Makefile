@@ -113,8 +113,8 @@ publish: library
 
 # Build iOS Framework (alias for library with release configuration)
 ios-framework:
-	@echo "Building iOS framework..."
-	@$(MAKE) library CONFIGURATION=Release
+	@echo "Building iOS framework for device..."
+	@$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"
 	@echo "iOS framework build completed."
 
 # Validate version format (expects VERSION environment variable)
