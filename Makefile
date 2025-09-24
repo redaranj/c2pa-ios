@@ -1,7 +1,7 @@
 .PHONY: all clean library test-shared test-app example-app publish tests coverage help \
         run-test-app run-example-app signing-server-start signing-server-stop signing-server-status \
         tests-with-server workspace-build test-library lint signing-server-wait signing-server-verify \
-        test-summary coverage-lcov ios-framework validate-version release-tests package-xcframework \
+        test-summary coverage-lcov ios-framework validate-version release-tests \
         package-swift update-package-swift create-release-tag
 
 # Build configuration
@@ -111,29 +111,46 @@ publish: library
 	@xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration Release archive
 	@echo "Library archived. Ready for distribution."
 
-# Build iOS Framework (alias for library with release configuration)
+# Build iOS XCFramework for both device and simulator, then package for distribution
 ios-framework:
-	@echo "Building iOS framework for device..."
+	@echo "Building iOS XCFramework for device and simulator..."
 	@# Get the build root before building
 	@SYMROOT=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -showBuildSettings 2>/dev/null | grep "^    SYMROOT = " | head -1 | sed 's/.*SYMROOT = //'); \
 	echo "Build root: $$SYMROOT"; \
+	\
+	echo "Building for iOS device..."; \
 	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"; \
-	echo "Copying C2PAC.framework to Library/Frameworks..."; \
-	BUILT_PRODUCTS_DIR="$$SYMROOT/Release-iphoneos"; \
-	if [ -d "$$BUILT_PRODUCTS_DIR/C2PAC.framework" ]; then \
+	\
+	echo "Building for iOS simulator..."; \
+	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS Simulator"; \
+	\
+	echo "Creating XCFramework from both builds..."; \
+	DEVICE_DIR="$$SYMROOT/Release-iphoneos"; \
+	SIMULATOR_DIR="$$SYMROOT/Release-iphonesimulator"; \
+	\
+	if [ -d "$$DEVICE_DIR/C2PAC.framework" ] && [ -d "$$SIMULATOR_DIR/C2PAC.framework" ]; then \
 		mkdir -p Library/Frameworks; \
-		rm -rf Library/Frameworks/C2PAC.xcframework Library/Frameworks/C2PAC.framework; \
-		cp -R "$$BUILT_PRODUCTS_DIR/C2PAC.framework" Library/Frameworks/; \
-		echo "✓ C2PAC.framework copied from $$BUILT_PRODUCTS_DIR to Library/Frameworks/"; \
+		rm -rf Library/Frameworks/C2PAC.xcframework; \
+		xcodebuild -create-xcframework \
+			-framework "$$DEVICE_DIR/C2PAC.framework" \
+			-framework "$$SIMULATOR_DIR/C2PAC.framework" \
+			-output Library/Frameworks/C2PAC.xcframework; \
+		echo "✓ C2PAC.xcframework created in Library/Frameworks/"; \
+		\
+		echo "Packaging XCFramework for distribution..."; \
+		mkdir -p output; \
+		cp -R Library/Frameworks/C2PAC.xcframework output/; \
+		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
+		echo "✓ XCFramework packaged to output/C2PAC.xcframework.zip"; \
 	else \
-		echo "::error::C2PAC.framework not found at $$BUILT_PRODUCTS_DIR"; \
-		echo "Contents of $$SYMROOT:"; \
-		ls -la "$$SYMROOT" 2>/dev/null || true; \
-		echo "Contents of $$BUILT_PRODUCTS_DIR:"; \
-		ls -la "$$BUILT_PRODUCTS_DIR" 2>/dev/null || true; \
+		echo "::error::Failed to find frameworks for both architectures"; \
+		echo "Device framework: $$DEVICE_DIR/C2PAC.framework"; \
+		ls -la "$$DEVICE_DIR" 2>/dev/null || echo "Device directory not found"; \
+		echo "Simulator framework: $$SIMULATOR_DIR/C2PAC.framework"; \
+		ls -la "$$SIMULATOR_DIR" 2>/dev/null || echo "Simulator directory not found"; \
 		exit 1; \
 	fi
-	@echo "iOS framework build completed."
+	@echo "iOS XCFramework build and packaging completed."
 
 # Validate version format (expects VERSION environment variable)
 validate-version:
@@ -161,22 +178,6 @@ release-tests:
 		$(MAKE) test-library; \
 	fi
 
-# Package XCFramework for distribution
-package-xcframework:
-	@echo "Creating XCFramework from framework..."
-	@if [ -d "Library/Frameworks/C2PAC.framework" ]; then \
-		rm -rf Library/Frameworks/C2PAC.xcframework; \
-		xcodebuild -create-xcframework \
-			-framework Library/Frameworks/C2PAC.framework \
-			-output Library/Frameworks/C2PAC.xcframework; \
-		mkdir -p output; \
-		cp -R Library/Frameworks/C2PAC.xcframework output/; \
-		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
-		echo "XCFramework packaged successfully"; \
-	else \
-		echo "::error::C2PAC.framework not found in Library/Frameworks/"; \
-		exit 1; \
-	fi
 
 # Compute checksum for XCFramework
 compute-checksum:
