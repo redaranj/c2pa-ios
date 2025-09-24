@@ -38,9 +38,6 @@ jobs:
       - name: Build iOS Framework
         run: make ios-framework
 
-      - name: Package XCFramework for distribution
-        run: make package-xcframework
-
       - name: Compute checksum for XCFramework
         id: compute-checksum
         run: |
