@@ -114,9 +114,12 @@ publish: library
 # Build iOS Framework (alias for library with release configuration)
 ios-framework:
 	@echo "Building iOS framework for device..."
-	@$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"
-	@echo "Finding and copying C2PAC.framework to Library/Frameworks..."
-	@BUILT_PRODUCTS_DIR=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration Release -showBuildSettings | grep "BUILT_PRODUCTS_DIR = " | sed 's/.*BUILT_PRODUCTS_DIR = //'); \
+	@# Get the build root before building
+	@SYMROOT=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -showBuildSettings 2>/dev/null | grep "^    SYMROOT = " | head -1 | sed 's/.*SYMROOT = //'); \
+	echo "Build root: $$SYMROOT"; \
+	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"; \
+	echo "Copying C2PAC.framework to Library/Frameworks..."; \
+	BUILT_PRODUCTS_DIR="$$SYMROOT/Release-iphoneos"; \
 	if [ -d "$$BUILT_PRODUCTS_DIR/C2PAC.framework" ]; then \
 		mkdir -p Library/Frameworks; \
 		rm -rf Library/Frameworks/C2PAC.xcframework Library/Frameworks/C2PAC.framework; \
@@ -124,6 +127,10 @@ ios-framework:
 		echo "✓ C2PAC.framework copied from $$BUILT_PRODUCTS_DIR to Library/Frameworks/"; \
 	else \
 		echo "::error::C2PAC.framework not found at $$BUILT_PRODUCTS_DIR"; \
+		echo "Contents of $$SYMROOT:"; \
+		ls -la "$$SYMROOT" 2>/dev/null || true; \
+		echo "Contents of $$BUILT_PRODUCTS_DIR:"; \
+		ls -la "$$BUILT_PRODUCTS_DIR" 2>/dev/null || true; \
 		exit 1; \
 	fi
 	@echo "iOS framework build completed."
