@@ -1,7 +1,7 @@
 .PHONY: all clean library test-shared test-app example-app publish tests coverage help \
         run-test-app run-example-app signing-server-start signing-server-stop signing-server-status \
         tests-with-server workspace-build test-library lint signing-server-wait signing-server-verify \
-        test-summary coverage-lcov ios-framework validate-version release-tests package-xcframework \
+        test-summary coverage-lcov ios-framework validate-version release-tests \
         package-swift update-package-swift create-release-tag
 
 # Build configuration
@@ -111,11 +111,46 @@ publish: library
 	@xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration Release archive
 	@echo "Library archived. Ready for distribution."
 
-# Build iOS Framework (alias for library with release configuration)
+# Build iOS XCFramework for both device and simulator, then package for distribution
 ios-framework:
-	@echo "Building iOS framework..."
-	@$(MAKE) library CONFIGURATION=Release
-	@echo "iOS framework build completed."
+	@echo "Building iOS XCFramework for device and simulator..."
+	@# Get the build root before building
+	@SYMROOT=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -showBuildSettings 2>/dev/null | grep "^    SYMROOT = " | head -1 | sed 's/.*SYMROOT = //'); \
+	echo "Build root: $$SYMROOT"; \
+	\
+	echo "Building for iOS device..."; \
+	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS"; \
+	\
+	echo "Building for iOS simulator..."; \
+	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS Simulator"; \
+	\
+	echo "Creating XCFramework from both builds..."; \
+	DEVICE_DIR="$$SYMROOT/Release-iphoneos"; \
+	SIMULATOR_DIR="$$SYMROOT/Release-iphonesimulator"; \
+	\
+	if [ -d "$$DEVICE_DIR/C2PAC.framework" ] && [ -d "$$SIMULATOR_DIR/C2PAC.framework" ]; then \
+		mkdir -p Library/Frameworks; \
+		rm -rf Library/Frameworks/C2PAC.xcframework; \
+		xcodebuild -create-xcframework \
+			-framework "$$DEVICE_DIR/C2PAC.framework" \
+			-framework "$$SIMULATOR_DIR/C2PAC.framework" \
+			-output Library/Frameworks/C2PAC.xcframework; \
+		echo "✓ C2PAC.xcframework created in Library/Frameworks/"; \
+		\
+		echo "Packaging XCFramework for distribution..."; \
+		mkdir -p output; \
+		cp -R Library/Frameworks/C2PAC.xcframework output/; \
+		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
+		echo "✓ XCFramework packaged to output/C2PAC.xcframework.zip"; \
+	else \
+		echo "::error::Failed to find frameworks for both architectures"; \
+		echo "Device framework: $$DEVICE_DIR/C2PAC.framework"; \
+		ls -la "$$DEVICE_DIR" 2>/dev/null || echo "Device directory not found"; \
+		echo "Simulator framework: $$SIMULATOR_DIR/C2PAC.framework"; \
+		ls -la "$$SIMULATOR_DIR" 2>/dev/null || echo "Simulator directory not found"; \
+		exit 1; \
+	fi
+	@echo "iOS XCFramework build and packaging completed."
 
 # Validate version format (expects VERSION environment variable)
 validate-version:
@@ -143,21 +178,6 @@ release-tests:
 		$(MAKE) test-library; \
 	fi
 
-# Package XCFramework for distribution
-package-xcframework:
-	@echo "Packaging XCFramework..."
-	@if [ -d "output" ]; then \
-		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
-		echo "XCFramework packaged successfully"; \
-	elif [ -d "Library/Frameworks/C2PAC.xcframework" ]; then \
-		mkdir -p output; \
-		cp -R Library/Frameworks/C2PAC.xcframework output/; \
-		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
-		echo "XCFramework packaged successfully"; \
-	else \
-		echo "::error::C2PAC.xcframework not found"; \
-		exit 1; \
-	fi
 
 # Compute checksum for XCFramework
 compute-checksum:
@@ -172,12 +192,11 @@ compute-checksum:
 # Package Swift sources
 package-swift:
 	@echo "Packaging Swift sources..."
-	@if [ -d "output/C2PA-iOS" ]; then \
+	@if [ -d "Library/Sources" ]; then \
+		mkdir -p output/C2PA-iOS/Sources/C2PA; \
+		cp -R Library/Sources/*.swift output/C2PA-iOS/Sources/C2PA/; \
 		cd output && zip -r C2PA-Swift-Package.zip C2PA-iOS/; \
-	elif [ -d "Library/Sources/C2PA" ]; then \
-		mkdir -p output/C2PA-iOS/Sources; \
-		cp -R Library/Sources/C2PA output/C2PA-iOS/Sources/; \
-		cd output && zip -r C2PA-Swift-Package.zip C2PA-iOS/; \
+		echo "Swift sources packaged successfully"; \
 	else \
 		echo "Swift sources packaged (skipped - no sources found)"; \
 	fi
@@ -198,7 +217,7 @@ update-package-swift:
 		exit 1; \
 	fi
 	@if [ -f "Package.swift" ]; then \
-		sed -i '' 's#https://github.com/[^/]*/[^/]*/releases/download/v[0-9.]\+/C2PAC.xcframework.zip#https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip#g' Package.swift; \
+		sed -i '' 's#https://github.com/[^/]*/[^/]*/releases/download/v[0-9.]*/C2PAC.xcframework.zip#https://github.com/$(GITHUB_REPOSITORY)/releases/download/$(VERSION)/C2PAC.xcframework.zip#g' Package.swift; \
 		sed -i '' 's#checksum: "[a-f0-9]\{64\}"#checksum: "$(CHECKSUM)"#g' Package.swift; \
 		echo "Package.swift updated successfully for release $(VERSION)"; \
 	else \
