@@ -10,6 +10,12 @@ struct C2PAConfiguration: Content {
 
 struct C2PAConfigurationController {
     func getConfiguration(req: Request) async throws -> C2PAConfiguration {
+        req.logger.info("=== C2PA Configuration Request Headers ===")
+        for (name, value) in req.headers {
+            req.logger.info("Header: \(name) = \(value)")
+        }
+        req.logger.info("=== End Headers ===")
+
         let certPath = FileManager.default.currentDirectoryPath + "/Resources/es256_certs.pem"
         let certificateChain = try String(contentsOfFile: certPath, encoding: .utf8)
         let encodedCertChain = Data(certificateChain.utf8).base64EncodedString()
