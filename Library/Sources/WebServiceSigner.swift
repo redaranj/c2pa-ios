@@ -7,11 +7,13 @@ import X509
 public final class WebServiceSigner: @unchecked Sendable {
     private let configurationURL: String
     private let bearerToken: String?
+    private let customHeaders: [String: String]
     private var signingURL: String?
 
-    public init(configurationURL: String, bearerToken: String? = nil) {
+    public init(configurationURL: String, bearerToken: String? = nil, headers: [String: String] = [:]) {
         self.configurationURL = configurationURL
         self.bearerToken = bearerToken
+        self.customHeaders = headers
     }
 
     @MainActor
@@ -63,6 +65,12 @@ public final class WebServiceSigner: @unchecked Sendable {
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
+        // Apply custom headers first
+        for (key, value) in customHeaders {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+
+        // Bearer token can override Authorization header if provided
         if let bearerToken = bearerToken {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
@@ -95,6 +103,12 @@ public final class WebServiceSigner: @unchecked Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
+        // Apply custom headers first
+        for (key, value) in customHeaders {
+            request.setValue(value, forHTTPHeaderField: key)
+        }
+
+        // Bearer token can override Authorization header if provided
         if let bearerToken = bearerToken {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
             print("[WebServiceSigner] Added bearer token to request")
@@ -220,23 +234,23 @@ extension Signer {
             final class ResultBox: @unchecked Sendable {
                 private let lock = NSLock()
                 private var _result: Result<Data, Error>?
-                
+
                 func setResult(_ result: Result<Data, Error>) {
                     lock.lock()
                     defer { lock.unlock() }
                     _result = result
                 }
-                
+
                 func getResult() -> Result<Data, Error>? {
                     lock.lock()
                     defer { lock.unlock() }
                     return _result
                 }
             }
-            
+
             let resultBox = ResultBox()
             let semaphore = DispatchSemaphore(value: 0)
-            
+
             // Use a global queue to avoid main queue dependencies
             DispatchQueue.global().async {
                 Task {
@@ -249,9 +263,9 @@ extension Signer {
                     semaphore.signal()
                 }
             }
-            
+
             semaphore.wait()
-            
+
             switch resultBox.getResult() {
             case .success(let signature):
                 return signature

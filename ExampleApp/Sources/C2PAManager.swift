@@ -924,8 +924,8 @@ final class C2PAManager: ObservableObject {
     // MARK: - Certificate Enrollment
 
     private func enrollCertificate(csrPEM: String) async throws -> String {
-        var serverURL = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteSigningURL) ?? ""
-        var bearerToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteBearerToken) ?? ""
+        let serverURL = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteSigningURL) ?? ""
+        let bearerToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteBearerToken) ?? ""
 
         guard !serverURL.isEmpty else {
             throw C2PAManagerError.remoteSigningNotConfigured
@@ -1004,7 +1004,7 @@ final class C2PAManager: ObservableObject {
 
     private func createRemoteSigner() async throws -> Signer {
         let remoteURL = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteSigningURL) ?? ""
-        var bearerToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteBearerToken)
+        let bearerToken = UserDefaults.standard.string(forKey: Constants.UserDefaultsKeys.remoteBearerToken)
 
         guard !remoteURL.isEmpty else {
             throw C2PAManagerError.remoteSigningNotConfigured
@@ -1022,8 +1022,16 @@ final class C2PAManager: ObservableObject {
             "Creating remote service signer with configuration URL: %{public}@", log: Logger.signing, type: .info,
             configurationURL)
 
-        // Use the new WebServiceSigner with configuration URL
-        let webServiceSigner = WebServiceSigner(configurationURL: configurationURL, bearerToken: bearerToken)
+        let customHeaders = [
+            "X-Client-Version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0",
+            "X-Client-Platform": "iOS-\(UIDevice.current.systemVersion)"
+        ]
+
+        let webServiceSigner = WebServiceSigner(
+            configurationURL: configurationURL,
+            bearerToken: bearerToken,
+            headers: customHeaders
+        )
 
         os_log("Fetching configuration and creating signer from remote service", log: Logger.signing, type: .info)
 
@@ -1129,6 +1137,7 @@ final class C2PAManager: ObservableObject {
 
         var assertions = manifest["assertions"] as! [[String: Any]]
         assertions.append(creationAssertion)
+        manifest["assertions"] = assertions
 
         // Add custom assertion with signing method metadata
         let signingMethodAssertion: [String: Any] = [

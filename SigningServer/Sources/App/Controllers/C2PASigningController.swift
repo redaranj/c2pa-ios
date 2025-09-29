@@ -2,6 +2,12 @@ import Vapor
 
 struct C2PASigningController {
     func signManifest(req: Request) async throws -> C2PASigningResponse {
+        req.logger.info("=== C2PA Signing Request Headers ===")
+        for (name, value) in req.headers {
+            req.logger.info("Header: \(name) = \(value)")
+        }
+        req.logger.info("=== End Headers ===")
+
         let signingRequest = try req.content.decode(C2PASigningRequest.self)
 
         print("[C2PA Controller] Received signing request")
