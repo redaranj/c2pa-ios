@@ -16,15 +16,26 @@ C2PA iOS offers:
 - Stream-based APIs for flexible data handling
 - Builder APIs for creating custom manifests
 - Comprehensive test suite with example application
+- Hardware-backed signing with Secure Enclave (iOS devices)
 
 ## Repository Structure
 
-- `/src` - Swift wrapper source code
-- `/template` - Swift package template
-- `/example` - Example iOS application
-- `/output` - Build output artifacts
-- `/build` - Temporary build files and external dependencies
-- `/Makefile` - Build system commands
+```
+c2pa-ios/
+├── Library/              # Swift Package containing the C2PA library
+│   ├── Sources/         # Library source code
+│   │   └── C2PA/       # Main library implementation
+│   ├── Frameworks/     # Pre-built XCFramework
+│   │   └── C2PAC.xcframework/
+│   └── Tests/          # Unit tests
+│       └── C2PATests/  # Test implementations
+├── TestApp/            # iOS app for running tests with UI
+├── ExampleApp/         # Sample iOS app for implementation reference
+├── TestShared/         # Shared test utilities and fixtures
+├── SigningServer/      # Local test server for signing operations
+├── C2PA.xcworkspace/   # Xcode workspace tying everything together
+└── Makefile           # Build automation (wraps xcodebuild/swift commands)
+```
 
 ## Requirements
 
@@ -32,13 +43,62 @@ C2PA iOS offers:
 
 - iOS 15.0+ / macOS 11.0+
 - Xcode 13.0+
-- Swift 5.7+
+- Swift 5.9+
 
 ### Development
 
-- Rust (latest stable version)
 - Xcode Command Line Tools
 - Make
+
+## Quick Start
+
+### Building the Library
+
+```bash
+# Build the complete library with XCFramework
+make library
+
+# Build iOS framework (release configuration)
+make ios-framework
+
+# Run all tests
+make test
+
+# Run library tests only
+make test-library
+
+# Generate test coverage
+make coverage
+```
+
+### Running Applications
+
+```bash
+# Run the test app in iOS Simulator
+make run-test-app
+
+# Run the example app in iOS Simulator
+make run-example-app
+
+# Build entire workspace
+make workspace-build
+```
+
+### Working with the Signing Server
+
+```bash
+# Start the local signing server
+make signing-server-start
+
+# Check server status
+make signing-server-status
+
+# Stop the server
+make signing-server-stop
+
+# Run tests with signing server
+make tests-with-server
+```
 
 ## Installation
 
@@ -67,12 +127,9 @@ targets: [
 
 For local development without using a released version:
 
-1. Build the iOS framework with `make ios-framework` (or `make ios-dev` for faster Apple Silicon development builds)
-2. Add the resulting package in `output/C2PA-iOS` to your project:
-   - In Xcode: File ??? Add Package Dependencies ??? Add Local...
-   - Navigate to the `output/C2PA-iOS` directory and add it
-
-The Makefile downloads pre-built binaries from GitHub releases, eliminating the need to build the Rust components locally.
+1. Clone the repository
+2. Open `C2PA.xcworkspace` in Xcode
+3. Build using the workspace schemes or use the Makefile commands
 
 ## Usage
 
@@ -148,42 +205,50 @@ let manifestData = try builder.sign(
    cd c2pa-ios
    ```
 
-2. Build the iOS framework (downloads pre-built binaries automatically):
+2. Build the iOS framework:
 
    ```bash
-   # iOS framework (device + simulator)
-   make ios-framework
+   # Build library framework
+   make library
 
-   # For faster development on Apple Silicon Macs
-   make ios-dev          # Only builds for arm64 simulator
+   # Or build entire workspace
+   make workspace-build
    ```
 
-3. Check built outputs:
+3. Run tests:
 
    ```bash
-   # iOS Swift Package
-   open output/C2PA-iOS
+   # Run all tests
+   make test
 
-   # Example App
-   open example
+   # Run with coverage
+   make coverage
    ```
 
 ## Makefile Targets
 
 The project includes a comprehensive Makefile with various targets:
 
-- `setup` - Create necessary directories
-- `download-binaries` - Download pre-built binaries from GitHub releases
-- `ios-framework` - Create iOS XCFramework (default target)
-- `ios-dev` - Build iOS library for arm64 simulator only (optimized for Apple Silicon)
-- `clean` - Remove build artifacts
+- `library` - Build the C2PA library framework
+- `ios-framework` - Build iOS framework (release configuration)
+- `test` - Run all tests (alias for test-library)
+- `test-library` - Run library unit tests only
+- `tests` - Run all tests including UI tests
+- `coverage` - Generate test coverage report
+- `workspace-build` - Build entire workspace
+- `run-test-app` - Run test app in simulator
+- `run-example-app` - Run example app in simulator
+- `signing-server-start` - Start signing server
+- `signing-server-stop` - Stop signing server
+- `signing-server-status` - Check server status
+- `tests-with-server` - Run tests with signing server
+- `clean` - Clean build artifacts
+- `lint` - Run SwiftLint on the codebase
 - `help` - Show all available targets
 
-The build system downloads pre-built Rust binaries from GitHub releases, eliminating the need for local Rust compilation.
+## Test App
 
-## Example App
-
-The example iOS application in the `example` directory demonstrates comprehensive C2PA functionality:
+The app includes comprehensive tests covering all major C2PA operations. Run the app and tap "Run All Tests" to see the library in action.
 
 - **C2PA Library Version** - Display current library version
 - **Error Handling** - Proper error handling for invalid files
@@ -195,23 +260,22 @@ The example iOS application in the `example` directory demonstrates comprehensiv
 - **Ingredient Support** - Handle ingredient relationships
 - **Archive Operations** - Work with C2PA archives
 - **Custom Signers** - Implement callback-based signing
-
-The app includes 19 comprehensive tests covering all major C2PA operations. Run the app and tap "Run All Tests" to see the library in action.
+- **Hardware Signing** - Use Secure Enclave for signing (iOS devices)
 
 ## Test Signing Server
 
-For testing certificate enrollment and C2PA signing, a simple Swift-based signing server is included:
+For testing certificate enrollment and C2PA signing, a Swift-based signing server is included:
 
 ```bash
 # Start the test server
-make server
+make signing-server-start
 ```
 
 The server runs on `http://localhost:8080` and provides:
 
 - **Certificate Authority**: Signs Certificate Signing Requests (CSRs) for testing
 - **C2PA Signing**: Server-side C2PA manifest signing
-- **No Authentication**: Simplified for development/testing only
+- **Bearer Token Authentication**: For development/testing only
 
 ### Key Endpoints
 
@@ -219,7 +283,7 @@ The server runs on `http://localhost:8080` and provides:
 - `POST /api/v1/certificates/sign` - Sign a CSR
 - `POST /api/v1/c2pa/sign` - Sign image with C2PA manifest
 
-**⚠️ Testing Only**: This server has no authentication and is intended for development and testing only. For production use, implement proper authentication and security measures.
+**⚠️ Testing Only**: This server is intended for development and testing only. For production use, implement proper authentication and security measures.
 
 ## License
 
