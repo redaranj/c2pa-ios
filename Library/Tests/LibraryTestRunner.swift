@@ -295,3 +295,24 @@ final class HardwareSigningTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 }
+
+// MARK: - Manifest Tests
+
+final class ManifestTests: XCTestCase {
+    private let tests = TestShared.ManifestTests()
+
+    func testMinimal() throws {
+        let result = tests.testMinimal()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCreated() throws {
+        let result = tests.testCreated()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testEnumRendering() throws {
+        let result = tests.testEnumRendering()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
