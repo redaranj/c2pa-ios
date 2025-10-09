@@ -45,7 +45,6 @@ public struct ClaimGeneratorInfo: Codable, Equatable {
      */
     public var version: String?
 
-
     /**
      - parameter icon: Hashed URI to the icon (either embedded or remote).
      - parameter name: A human readable string naming the claim_generator. *(This is automatically evaluated by default. You should not set this yourself!)*
@@ -76,7 +75,7 @@ public struct ClaimGeneratorInfo: Codable, Equatable {
 #endif
 
     public static var appName: String {
-            Bundle.main.object(forInfoDictionaryKey: kCFBundleNameKey as String) as? String
+        Bundle.main.object(forInfoDictionaryKey: kCFBundleNameKey as String) as? String
             ?? ""
     }
 

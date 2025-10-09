@@ -42,7 +42,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
     /**
      Claim Generator Info is always required with at least one entry.
      */
-    public var claimGeneratorInfo: [ClaimGeneratorInfo] 
+    public var claimGeneratorInfo: [ClaimGeneratorInfo]
 
     /**
      The version of the claim. Defaults to 1.
@@ -143,8 +143,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
             let data = try Self.jsonEncoder.encode(self)
 
             return String(data: data, encoding: .utf8) ?? "<ERROR encoding: Could not convert to UTF-8>"
-        }
-        catch {
+        } catch {
             return "<ERROR encoding: \(error.localizedDescription)>"
         }
     }

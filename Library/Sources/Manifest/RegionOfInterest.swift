@@ -18,12 +18,12 @@ open class RegionOfInterest: Codable, Equatable {
 
     public static func == (lhs: RegionOfInterest, rhs: RegionOfInterest) -> Bool {
         lhs.description == rhs.description
-        && lhs.identifier == rhs.identifier
-        && lhs.metadata == rhs.metadata
-        && lhs.name == rhs.name
-        && lhs.region == rhs.region
-        && lhs.role == rhs.role
-        && lhs.type == rhs.type
+            && lhs.identifier == rhs.identifier
+            && lhs.metadata == rhs.metadata
+            && lhs.name == rhs.name
+            && lhs.region == rhs.region
+            && lhs.role == rhs.role
+            && lhs.type == rhs.type
     }
 
 
@@ -118,8 +118,6 @@ open class RegionOfInterest: Codable, Equatable {
             name: name,
             region: region,
             role: role,
-            type: type.rawValue
-        )
+            type: type.rawValue)
     }
-
 }

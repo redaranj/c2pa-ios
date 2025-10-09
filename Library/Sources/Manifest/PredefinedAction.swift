@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  PredefinedAction
+//  PredefinedAction.swift
+//  C2PA
 //
 //  Created by Benjamin Erhart on 08.10.25.
 //

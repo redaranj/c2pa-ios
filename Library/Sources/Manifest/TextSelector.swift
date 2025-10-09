@@ -31,10 +31,10 @@ public struct TextSelector: Codable, Equatable {
 
 
     /**
-     - parameter end: The end character offset or the end of the fragment if not present.
-     - parameter fragment: Fragment identifier as per RFC3023 (XML) or ISO 32000-2 (PDF), Annex O.
-     - parameter start: The start character offset or the start of the fragment if not present.
-   */
+       - parameter end: The end character offset or the end of the fragment if not present.
+       - parameter fragment: Fragment identifier as per RFC3023 (XML) or ISO 32000-2 (PDF), Annex O.
+       - parameter start: The start character offset or the start of the fragment if not present.
+     */
     public init(end: Int32? = nil, fragment: String, start: Int32? = nil) {
         self.end = end
         self.fragment = fragment

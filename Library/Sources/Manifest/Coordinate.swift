@@ -34,4 +34,3 @@ public struct Coordinate: Codable, Equatable {
         self.y = y
     }
 }
-

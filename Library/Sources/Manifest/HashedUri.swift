@@ -52,8 +52,7 @@ open class HashedUri: UriOrResource {
         try super.init(from: decoder)
     }
 
-
-    open override func encode(to encoder: Encoder) throws {
+    override open func encode(to encoder: Encoder) throws {
         try super.encode(to: encoder)
 
         var container = encoder.container(keyedBy: CodingKeys.self)

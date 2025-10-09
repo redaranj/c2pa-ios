@@ -62,7 +62,6 @@ open class ResourceRef: UriOrResource {
         super.init(alg: alg)
     }
 
-
     public required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
 
@@ -75,7 +74,7 @@ open class ResourceRef: UriOrResource {
     }
 
 
-    open override func encode(to encoder: Encoder) throws {
+    override open func encode(to encoder: Encoder) throws {
         try super.encode(to: encoder)
 
         var container = encoder.container(keyedBy: CodingKeys.self)
