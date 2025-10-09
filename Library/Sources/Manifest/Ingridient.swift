@@ -50,7 +50,7 @@ public struct Ingridient: Codable, Equatable {
     /**
      Additional information about the data’s type to the ingredient V2 structure.
      */
-    public var dataTypes: [AssetType]? 
+    public var dataTypes: [AssetType]?
 
     /**
      Additional description of the ingredient.
@@ -107,7 +107,7 @@ public struct Ingridient: Codable, Equatable {
 
      There can only be one parent ingredient in the ingredients.
      */
-    public var relationship: Relationship? 
+    public var relationship: Relationship?
 
     /**
      A thumbnail image capturing the visual state at the time of import.

@@ -17,7 +17,7 @@ public struct DataSource: Codable, Equatable {
     /**
      A list of actors associated with this source.
      */
-    public var actors: [MetadataActor]? 
+    public var actors: [MetadataActor]?
 
     /**
      A human-readable string giving details about the source of the assertion data.

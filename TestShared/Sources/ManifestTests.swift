@@ -62,8 +62,7 @@ public final class ManifestTests: TestImplementation {
 
         do {
             regex = try NSRegularExpression(pattern: "^[\\d.]+$")
-        }
-        catch {
+        } catch {
             return .failure("Manifest", "Error: \(error)")
         }
 
@@ -87,13 +86,11 @@ public final class ManifestTests: TestImplementation {
 
             if shape == s2 {
                 return .success("Manifest", "[PASS] enums rendered as expected.")
-            }
-            else {
+            } else {
                 return .failure("Manifest", "JSON rendering unexpected: \(json ?? "(nil)")")
             }
 
-        }
-        catch {
+        } catch {
             return .failure("Manifest", "Error: \(error)")
         }
     }
@@ -119,8 +116,7 @@ public final class ManifestTests: TestImplementation {
 
         do {
             m2 = try JSONDecoder().decode(ManifestDefinition.self, from: data)
-        }
-        catch {
+        } catch {
             return .failure("Manifest", "Error: \(error)")
         }
 

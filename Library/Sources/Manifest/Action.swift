@@ -44,7 +44,7 @@ public struct Action: Codable, Equatable {
         action: String,
         digitalSourceType: String? = nil,
         softwareAgent: String? = ClaimGeneratorInfo.appName,
-        parameters: [String : String]? = nil
+        parameters: [String: String]? = nil
     ) {
         self.action = action
         self.digitalSourceType = digitalSourceType
@@ -62,7 +62,7 @@ public struct Action: Codable, Equatable {
         action: PredefinedAction,
         digitalSourceType: DigitalSourceType,
         softwareAgent: String? = ClaimGeneratorInfo.appName,
-        parameters: [String : String]? = nil
+        parameters: [String: String]? = nil
     ) {
         self.init(
             action: action.rawValue,
