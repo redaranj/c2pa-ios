@@ -11,71 +11,179 @@ import Foundation
  Defines an assertion that consists of a label that can be either a C2PA-defined assertion label or a custom label in reverse domain format.
 
  https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-def#assertiondefinition
+
+ The standard C2PA assertions are currently available:
+ https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html#_standard_c2pa_assertion_summary
+
+ But only `actions` is actually implemented!
+
  */
-open class AssertionDefinition: Codable, Equatable, CustomStringConvertible {
+public enum AssertionDefinition: Codable, Equatable {
 
-    // MARK: Equatable
-
-    public static func == (lhs: AssertionDefinition, rhs: AssertionDefinition) -> Bool {
-        lhs.data == rhs.data && lhs.label == rhs.label && lhs.kind == rhs.kind
+    public enum CodingKeys: CodingKey {
+        case label
+        case data
     }
 
-
-    // MARK: AssertionDefinition
-
     /**
-     This allows the assertion to be expressed as CBOR or JSON. The default is CBOR unless you specify that an assertion should be JSON.
+     https://opensource.contentauthenticity.org/docs/manifest/writing/assertions-actions#actions
      */
-    public private(set) var data: String = ""
+    case actions(actions: [Action])
 
-    /**
-     This is typically one of ``StandardAssertionLabel``.
-     */
-    public let label: String
+    case assertionMetadata
+    case assetRef
+    case assetType
+    case bmffBasedHash
+    case certificateStatus
+    case cloudData
+    case collectionDataHash
+    case dataHash
+    case depthmap
+    case embeddedData
+    case fontInfo
+    case generalBoxHash
+    case ingredient
+    case metadata
+    case multiAssetHash
+    case softBinding
+    case thumbnailClaim
+    case thumbnailIngredient
+    case timeStamps
 
-    /**
-     The data type of ``data``. Defaults to JSON for now, because we don't have a CBOR encoder at hand.
-     */
-    public private(set) var kind: AssertionKind = .json
 
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let label = try container.decode(StandardAssertionLabel.self, forKey: .label)
 
-    public init(label: String) {
-        self.label = label
-    }
+        switch label {
+        case .actions:
+            let actions = try container.decode([Action].self, forKey: .data)
 
-    func getJsonData<T: Decodable>() -> T? {
-        guard kind == .json,
-              let data = data.data(using: .utf8)
-        else {
-            return nil
+            self = .actions(actions: actions)
+
+        case .assertionMetadata:
+            self = .assertionMetadata
+
+        case .assetRef:
+            self = .assetRef
+
+        case .assetType:
+            self = .assetType
+
+        case .bmffBasedHash:
+            self = .bmffBasedHash
+
+        case .certificateStatus:
+            self = .certificateStatus
+
+        case .cloudData:
+            self = .cloudData
+
+        case .collectionDataHash:
+            self = .collectionDataHash
+
+        case .dataHash:
+            self = .dataHash
+
+        case .depthmap:
+            self = .depthmap
+
+        case .embeddedData:
+            self = .embeddedData
+
+        case .fontInfo:
+            self = .fontInfo
+
+        case .generalBoxHash:
+            self = .generalBoxHash
+
+        case .ingredient:
+            self = .ingredient
+
+        case .metadata:
+            self = .metadata
+
+        case .multiAssetHash:
+            self = .multiAssetHash
+
+        case .softBinding:
+            self = .softBinding
+
+        case .thumbnailClaim:
+            self = .thumbnailClaim
+
+        case .thumbnailIngredient:
+            self = .thumbnailIngredient
+
+        case .timeStamps:
+            self = .timeStamps
         }
-
-        return try? ManifestDefinition.jsonDecoder.decode(T.self, from: data)
     }
 
-    func setJsonData<T: Encodable>(content: T) {
-        kind = .json
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
 
-        guard let data = try? ManifestDefinition.jsonEncoder.encode(content) else {
-            data = ""
+        switch self {
+        case .actions(let actions):
+            try container.encode(StandardAssertionLabel.actions, forKey: .label)
+            try container.encode(["actions": actions], forKey: .data)
 
-            return
+        case .assertionMetadata:
+            try container.encode(StandardAssertionLabel.assertionMetadata, forKey: .label)
+
+        case .assetRef:
+            try container.encode(StandardAssertionLabel.assetRef, forKey: .label)
+
+        case .assetType:
+            try container.encode(StandardAssertionLabel.assetType, forKey: .label)
+
+        case .bmffBasedHash:
+            try container.encode(StandardAssertionLabel.bmffBasedHash, forKey: .label)
+
+        case .certificateStatus:
+            try container.encode(StandardAssertionLabel.certificateStatus, forKey: .label)
+
+        case .cloudData:
+            try container.encode(StandardAssertionLabel.cloudData, forKey: .label)
+
+        case .collectionDataHash:
+            try container.encode(StandardAssertionLabel.collectionDataHash, forKey: .label)
+
+        case .dataHash:
+            try container.encode(StandardAssertionLabel.dataHash, forKey: .label)
+
+        case .depthmap:
+            try container.encode(StandardAssertionLabel.depthmap, forKey: .label)
+
+        case .embeddedData:
+            try container.encode(StandardAssertionLabel.embeddedData, forKey: .label)
+
+        case .fontInfo:
+            try container.encode(StandardAssertionLabel.fontInfo, forKey: .label)
+
+        case .generalBoxHash:
+            try container.encode(StandardAssertionLabel.generalBoxHash, forKey: .label)
+
+        case .ingredient:
+            try container.encode(StandardAssertionLabel.ingredient, forKey: .label)
+
+        case .metadata:
+            try container.encode(StandardAssertionLabel.metadata, forKey: .label)
+
+        case .multiAssetHash:
+            try container.encode(StandardAssertionLabel.multiAssetHash, forKey: .label)
+
+        case .softBinding:
+            try container.encode(StandardAssertionLabel.softBinding, forKey: .label)
+
+        case .thumbnailClaim:
+            try container.encode(StandardAssertionLabel.thumbnailClaim, forKey: .label)
+
+        case .thumbnailIngredient:
+            try container.encode(StandardAssertionLabel.thumbnailIngredient, forKey: .label)
+
+        case .timeStamps:
+            try container.encode(StandardAssertionLabel.timeStamps, forKey: .label)
         }
-
-        self.data = String(data: data, encoding: .utf8) ?? ""
     }
-
-
-    // MARK: CustomStringConvertible
-
-    public var description: String {
-        "[\(String(describing: type(of: self)))] label=\(label), kind=\(kind), data=\(data)"
-    }
-}
-
-public enum AssertionKind: String, Codable {
-    case cbor = "Cbor"
-    case json = "Json"
-    case binary = "Binary"
-    case uri = "Uri"
 }
