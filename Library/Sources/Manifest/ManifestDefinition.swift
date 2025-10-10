@@ -19,7 +19,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
         case claimGeneratorInfo = "claim_generator_info"
         case claimVersion = "claim_version"
         case format
-        case ingridients
+        case ingredients
         case instanceId = "instance_id"
         case label
         case metadata
@@ -57,7 +57,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
     /**
      A list of ingredients.
      */
-    public var ingridients: [Ingridient]
+    public var ingredients: [Ingredient]
 
     /**
      Instance ID from xmpMM:InstanceID in XMP metadata.
@@ -101,7 +101,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
      - parameter claimGeneratorInfo: Claim Generator Info is always required with at least one entry.
      - parameter claimVersion: The version of the claim. Defaults to 1.
      - parameter format: The format of the source file as a MIME type.
-     - parameter ingridients: A list of ingredients.
+     - parameter ingredients: A list of ingredients.
      - parameter instanceId: Instance ID from xmpMM:InstanceID in XMP metadata.
      - parameter label: Allows you to pre-define the manifest label, which must be unique. Not intended for general use. If not set, it will be assigned automatically.
      - parameter redactions: A list of redactions - URIs to redacted assertions.
@@ -114,7 +114,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
         claimGeneratorInfo: [ClaimGeneratorInfo],
         claimVersion: UInt8 = 1,
         format: String = "application/octet-stream",
-        ingridients: [Ingridient] = [],
+        ingredients: [Ingredient] = [],
         instanceId: String? = nil,
         label: String? = nil,
         redactions: [String]? = nil,
@@ -126,7 +126,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
         self.claimGeneratorInfo = claimGeneratorInfo
         self.claimVersion = claimVersion
         self.format = format
-        self.ingridients = ingridients
+        self.ingredients = ingredients
         self.instanceId = instanceId
         self.label = label
         self.redactions = redactions
