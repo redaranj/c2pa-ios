@@ -1,5 +1,5 @@
 //
-//  Ingridient.swift
+//  Ingredient.swift
 //  C2PA
 //
 //  Created by Benjamin Erhart on 06.10.25.
@@ -12,7 +12,7 @@ import Foundation
 
  https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-def#ingredient
  */
-public struct Ingridient: Codable, Equatable {
+public struct Ingredient: Codable, Equatable {
 
     public enum CodingKeys: String, CodingKey {
         case activeManifest = "active_manifest"
