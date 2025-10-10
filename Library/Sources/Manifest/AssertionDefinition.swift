@@ -57,9 +57,9 @@ public enum AssertionDefinition: Codable, Equatable {
 
         switch label {
         case .actions:
-            let actions = try container.decode([Action].self, forKey: .data)
+            let actions = try container.decode([String: [Action]].self, forKey: .data)
 
-            self = .actions(actions: actions)
+            self = .actions(actions: actions["actions"] ?? [])
 
         case .assertionMetadata:
             self = .assertionMetadata

@@ -26,15 +26,15 @@ public final class ManifestTests: TestImplementation {
 
     public func testCreated() -> TestResult {
         let manifest = ManifestDefinition(
-            assertions: [ActionsAssertion(actions: [.init(action: .created, digitalSourceType: .digitalCapture)])],
+            assertions: [.actions(actions: [.init(action: .created, digitalSourceType: .digitalCapture)])],
             claimGeneratorInfo: [.init()],
             title: "test")
 
-        guard let actions = manifest.assertions.first as? ActionsAssertion else {
-            return .failure("Manifest", "manifest.assertions.first !is ActionsAssertion, got \(manifest.assertions.first?.description ?? "(nil)")")
+        guard case .actions(let actions) = manifest.assertions.first! else {
+            return .failure("Manifest", "manifest.assertions.first != .actions")
         }
 
-        guard let action = actions.actions.first else {
+        guard let action = actions.first else {
             return .failure("Manifest", "actions.first == nil")
         }
 
