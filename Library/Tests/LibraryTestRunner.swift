@@ -315,4 +315,29 @@ final class ManifestTests: XCTestCase {
         let result = tests.testEnumRendering()
         XCTAssertTrue(result.passed, result.message)
     }
+
+    func testRegionOfInterest() throws {
+        let result = tests.testRegionOfInterest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testResourceRef() throws {
+        let result = tests.testResourceRef()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testHashedUri() throws {
+        let result = tests.testHashedUri()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testUriOrResource() throws {
+        let result = tests.testUriOrResource()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testMassInit() throws {
+        let result = tests.testMassInit()
+        XCTAssertTrue(result.passed, result.message)
+    }
 }
