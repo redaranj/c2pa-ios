@@ -103,8 +103,7 @@ public final class ManifestTests: TestImplementation {
 
         if roi1 == roi2 {
             return .success("Manifest", "[PASS] RegionOfInterests equal.")
-        }
-        else {
+        } else {
             return .failure("Manifest", "RegionOfInterests unexpectedly unequal.")
         }
     }
@@ -119,8 +118,7 @@ public final class ManifestTests: TestImplementation {
 
             if r1 == r2 {
                 return .success("Manifest", "[PASS] ResourceRefs equal.")
-            }
-            else {
+            } else {
                 return .failure("Manifest", "ResourceRefs unexpectedly unequal.")
             }
         } catch {
@@ -138,8 +136,7 @@ public final class ManifestTests: TestImplementation {
 
             if hu1 == hu2 {
                 return .success("Manifest", "[PASS] HashedUris equal.")
-            }
-            else {
+            } else {
                 return .failure("Manifest", "HashedUris unexpectedly unequal.")
             }
         } catch {
@@ -153,8 +150,7 @@ public final class ManifestTests: TestImplementation {
 
         if uor1 == uor2 {
             return .success("Manifest", "[PASS] UriOrResources equal.")
-        }
-        else {
+        } else {
             return .failure("Manifest", "UriOrResources unexpectedly unequal.")
         }
     }
@@ -205,7 +201,7 @@ public final class ManifestTests: TestImplementation {
             testResourceRef(),
             testHashedUri(),
             testUriOrResource(),
-            testMassInit(),
+            testMassInit()
         ]
     }
 
