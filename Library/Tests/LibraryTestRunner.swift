@@ -106,6 +106,26 @@ final class BuilderTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 
+    func testBuilderAddActionEdited() throws {
+        let result = tests.testBuilderAddActionEdited()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testBuilderAddActionWithParameters() throws {
+        let result = tests.testBuilderAddActionWithParameters()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testBuilderAddActionCustom() throws {
+        let result = tests.testBuilderAddActionCustom()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testBuilderAddMultipleActions() throws {
+        let result = tests.testBuilderAddMultipleActions()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
     func testReadIngredient() throws {
         let result = tests.testReadIngredient()
         XCTAssertTrue(result.passed, result.message)

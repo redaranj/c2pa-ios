@@ -20,6 +20,7 @@ import Foundation
 ///
 /// ### Configuring the Manifest
 /// - ``setIntent(_:)``
+/// - ``addAction(_:)``
 /// - ``setNoEmbed()``
 /// - ``setRemoteURL(_:)``
 ///
@@ -102,6 +103,33 @@ public final class Builder {
         let (cIntent, cSourceType) = intent.toCIntent()
         _ = try guardNonNegative(
             Int64(c2pa_builder_set_intent(ptr, cIntent, cSourceType))
+        )
+    }
+
+    /// Adds an action to the manifest being constructed.
+    ///
+    /// Actions describe operations performed on the content, such as editing,
+    /// cropping, or applying filters. Multiple actions can be added to a single
+    /// manifest to document the complete editing history.
+    ///
+    /// - Parameter action: The ``Action`` to add to the manifest.
+    ///
+    /// - Throws: ``C2PAError`` if the action cannot be added.
+    ///
+    /// ## Example
+    ///
+    /// ```swift
+    /// let builder = try Builder(manifestJSON: manifestJSON)
+    /// try builder.addAction(.edited)
+    /// try builder.addAction(.cropped(parameters: ["width": "800", "height": "600"]))
+    /// try builder.addAction(.custom("com.example.ai-enhance", parameters: ["model": "v2"]))
+    /// ```
+    ///
+    /// - SeeAlso: ``Action``
+    public func addAction(_ action: Action) throws {
+        let actionJSON = try action.toJSON()
+        _ = try guardNonNegative(
+            Int64(c2pa_builder_add_action(ptr, actionJSON))
         )
     }
 

@@ -359,6 +359,136 @@ public final class BuilderTests: TestImplementation {
         }
     }
 
+    public func testBuilderAddActionEdited() -> TestResult {
+        let manifestJSON = """
+            {
+                "claim_generator": "test_app/1.0",
+                "title": "Test Add Action Edited",
+                "assertions": []
+            }
+            """
+
+        do {
+            let builder = try Builder(manifestJSON: manifestJSON)
+            try builder.addAction(.edited)
+
+            let archiveFile = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "action_edited_\(UUID().uuidString).c2pa")
+            defer {
+                try? FileManager.default.removeItem(at: archiveFile)
+            }
+
+            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            try builder.writeArchive(to: archiveStream)
+
+            let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
+            return fileExists
+                ? .success("Builder Add Action Edited", "[PASS] Builder with edited action created archive")
+                : .failure("Builder Add Action Edited", "Archive not created")
+
+        } catch {
+            return .failure("Builder Add Action Edited", "Failed: \(error)")
+        }
+    }
+
+    public func testBuilderAddActionWithParameters() -> TestResult {
+        let manifestJSON = """
+            {
+                "claim_generator": "test_app/1.0",
+                "title": "Test Add Action With Parameters",
+                "assertions": []
+            }
+            """
+
+        do {
+            let builder = try Builder(manifestJSON: manifestJSON)
+            try builder.addAction(.cropped(parameters: ["width": "800", "height": "600"]))
+
+            let archiveFile = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "action_params_\(UUID().uuidString).c2pa")
+            defer {
+                try? FileManager.default.removeItem(at: archiveFile)
+            }
+
+            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            try builder.writeArchive(to: archiveStream)
+
+            let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
+            return fileExists
+                ? .success("Builder Add Action With Params", "[PASS] Builder with parameterized action created archive")
+                : .failure("Builder Add Action With Params", "Archive not created")
+
+        } catch {
+            return .failure("Builder Add Action With Params", "Failed: \(error)")
+        }
+    }
+
+    public func testBuilderAddActionCustom() -> TestResult {
+        let manifestJSON = """
+            {
+                "claim_generator": "test_app/1.0",
+                "title": "Test Add Custom Action",
+                "assertions": []
+            }
+            """
+
+        do {
+            let builder = try Builder(manifestJSON: manifestJSON)
+            try builder.addAction(.custom("com.example.test-action", parameters: ["key1": "value1", "key2": "value2"]))
+
+            let archiveFile = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "action_custom_\(UUID().uuidString).c2pa")
+            defer {
+                try? FileManager.default.removeItem(at: archiveFile)
+            }
+
+            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            try builder.writeArchive(to: archiveStream)
+
+            let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
+            return fileExists
+                ? .success("Builder Add Custom Action", "[PASS] Builder with custom action created archive")
+                : .failure("Builder Add Custom Action", "Archive not created")
+
+        } catch {
+            return .failure("Builder Add Custom Action", "Failed: \(error)")
+        }
+    }
+
+    public func testBuilderAddMultipleActions() -> TestResult {
+        let manifestJSON = """
+            {
+                "claim_generator": "test_app/1.0",
+                "title": "Test Add Multiple Actions",
+                "assertions": []
+            }
+            """
+
+        do {
+            let builder = try Builder(manifestJSON: manifestJSON)
+            try builder.addAction(.edited)
+            try builder.addAction(.cropped)
+            try builder.addAction(.filtered)
+
+            let archiveFile = FileManager.default.temporaryDirectory.appendingPathComponent(
+                "action_multiple_\(UUID().uuidString).c2pa")
+            defer {
+                try? FileManager.default.removeItem(at: archiveFile)
+            }
+
+            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            try builder.writeArchive(to: archiveStream)
+
+            let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
+            return fileExists
+                ? .success("Builder Add Multiple Actions", "[PASS] Builder with multiple actions created archive")
+                : .failure("Builder Add Multiple Actions", "Archive not created")
+
+        } catch {
+            return .failure("Builder Add Multiple Actions", "Failed: \(error)")
+        }
+    }
+
     public func testReadIngredient() -> TestResult {
         let testFile = FileManager.default.temporaryDirectory.appendingPathComponent(
             "ingredient_test_\(UUID().uuidString).jpg")
@@ -417,6 +547,10 @@ public final class BuilderTests: TestImplementation {
             testBuilderSetIntentCreate(),
             testBuilderSetIntentEdit(),
             testBuilderSetIntentUpdate(),
+            testBuilderAddActionEdited(),
+            testBuilderAddActionWithParameters(),
+            testBuilderAddActionCustom(),
+            testBuilderAddMultipleActions(),
             testReadIngredient()
         ]
     }
