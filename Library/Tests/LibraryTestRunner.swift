@@ -91,6 +91,21 @@ final class BuilderTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 
+    func testBuilderSetIntentCreate() throws {
+        let result = tests.testBuilderSetIntentCreate()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testBuilderSetIntentEdit() throws {
+        let result = tests.testBuilderSetIntentEdit()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testBuilderSetIntentUpdate() throws {
+        let result = tests.testBuilderSetIntentUpdate()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
     func testReadIngredient() throws {
         let result = tests.testReadIngredient()
         XCTAssertTrue(result.passed, result.message)
