@@ -1,4 +1,3 @@
-import C2PA
 import Vapor
 
 func routes(_ app: Application) throws {
@@ -6,8 +5,7 @@ func routes(_ app: Application) throws {
         return [
             "status": "C2PA Signing Server is running",
             "version": "1.0.0",
-            "mode": "testing",
-            "c2pa_version": c2paVersion
+            "mode": "testing"
         ]
     }
 
