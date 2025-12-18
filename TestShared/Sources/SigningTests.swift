@@ -1,3 +1,13 @@
+// This file is licensed to you under the Apache License, Version 2.0 
+// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license 
+// (http://opensource.org/licenses/MIT), at your option.
+//
+// Unless required by applicable law or agreed to in writing, this software is 
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF 
+// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE 
+// files for the specific language governing permissions and limitations under
+// each license.
+
 import C2PA
 import Foundation
 
@@ -70,8 +80,8 @@ public final class SigningTests: TestImplementation {
 
             try imageData.write(to: sourceFile)
 
-            let sourceStream = try Stream(fileURL: sourceFile, truncate: false, createIfNeeded: false)
-            let destStream = try Stream(fileURL: destFile, truncate: true, createIfNeeded: true)
+            let sourceStream = try Stream(readFrom: sourceFile)
+            let destStream = try Stream(writeTo: destFile)
 
             _ = try builder.sign(
                 format: "image/jpeg",
@@ -208,8 +218,8 @@ public final class SigningTests: TestImplementation {
 
                 try testImageData.write(to: sourceFile)
 
-                let sourceStream = try Stream(fileURL: sourceFile, truncate: false, createIfNeeded: false)
-                let destStream = try Stream(fileURL: destFile, truncate: true, createIfNeeded: true)
+                let sourceStream = try Stream(readFrom: sourceFile)
+                let destStream = try Stream(writeTo: destFile)
 
                 _ = try builder.sign(
                     format: "image/jpeg",
@@ -282,9 +292,8 @@ public final class SigningTests: TestImplementation {
             try sourceData.write(to: sourceFile)
 
             // Create file-based streams
-            let sourceStream = try Stream(
-                fileURL: sourceFile, truncate: false, createIfNeeded: false)
-            let destStream = try Stream(fileURL: destFile, truncate: true, createIfNeeded: true)
+            let sourceStream = try Stream(readFrom: sourceFile)
+            let destStream = try Stream(writeTo: destFile)
 
             let signer = try TestUtilities.createTestSigner()
 

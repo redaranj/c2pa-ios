@@ -1,3 +1,13 @@
+// This file is licensed to you under the Apache License, Version 2.0 
+// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license 
+// (http://opensource.org/licenses/MIT), at your option.
+//
+// Unless required by applicable law or agreed to in writing, this software is 
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF 
+// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE 
+// files for the specific language governing permissions and limitations under
+// each license.
+
 import C2PA
 import Foundation
 
@@ -29,8 +39,8 @@ public final class BuilderTests: TestImplementation {
             try imageData.write(to: sourceFile)
 
             // Create streams
-            let sourceStream = try Stream(fileURL: sourceFile, truncate: false, createIfNeeded: false)
-            let destStream = try Stream(fileURL: destFile, truncate: true, createIfNeeded: true)
+            let sourceStream = try Stream(readFrom: sourceFile)
+            let destStream = try Stream(writeTo: destFile)
 
             let signer = try TestUtilities.createTestSigner()
 
@@ -83,7 +93,7 @@ public final class BuilderTests: TestImplementation {
                 try? FileManager.default.removeItem(at: archiveFile)
             }
 
-            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            let archiveStream = try Stream(writeTo: archiveFile)
             try builder.writeArchive(to: archiveStream)
 
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
@@ -131,7 +141,7 @@ public final class BuilderTests: TestImplementation {
                 try? FileManager.default.removeItem(at: archiveFile)
             }
 
-            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            let archiveStream = try Stream(writeTo: archiveFile)
             try builder.writeArchive(to: archiveStream)
 
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
@@ -169,7 +179,7 @@ public final class BuilderTests: TestImplementation {
             }
 
             // Try to add ingredient
-            let ingredientStream = try Stream(fileURL: ingredientFile, truncate: false, createIfNeeded: false)
+            let ingredientStream = try Stream(readFrom: ingredientFile)
             let ingredientJSON = """
                 {"title": "Test Ingredient", "format": "image/jpeg"}
                 """
@@ -209,7 +219,7 @@ public final class BuilderTests: TestImplementation {
                 try? FileManager.default.removeItem(at: archiveFile)
             }
 
-            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            let archiveStream = try Stream(writeTo: archiveFile)
             try firstBuilder.writeArchive(to: archiveStream)
 
             // Check archive was created
@@ -250,7 +260,7 @@ public final class BuilderTests: TestImplementation {
                 try? FileManager.default.removeItem(at: archiveFile)
             }
 
-            let archiveStream = try Stream(fileURL: archiveFile, truncate: true, createIfNeeded: true)
+            let archiveStream = try Stream(writeTo: archiveFile)
             try builder.writeArchive(to: archiveStream)
 
             let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
