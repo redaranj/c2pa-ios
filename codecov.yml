@@ -1,0 +1,5 @@
+ignore:
+  - "TestShared"
+  - "TestApp"
+  - "ExampleApp"
+  - "SigningServer"
