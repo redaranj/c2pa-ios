@@ -3,3 +3,4 @@ ignore:
   - "TestApp"
   - "ExampleApp"
   - "SigningServer"
+  - "Library/Tests"
