@@ -8,7 +8,7 @@
 import Foundation
 
 /**
- https://spec.c2pa.org/specifications/specifications/1.0/specs/C2PA_Specification.html#_existing_manifests
+https://spec.c2pa.org/specifications/specifications/2.2/specs/C2PA_Specification.html#_returning_validation_results
  */
 public enum ValidationStatusCode: String, Codable {
 
