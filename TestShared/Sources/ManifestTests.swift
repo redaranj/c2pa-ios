@@ -11,6 +11,13 @@
 //  ManifestTests.swift
 //
 
+import C2PA
+import Foundation
+
+// Manifest tests - pure Swift implementation
+public final class ManifestTests: TestImplementation {
+
+    public init() {}
 
     public func testMinimal() -> TestResult {
         let manifest = ManifestDefinition(claimGeneratorInfo: [], title: "test")
@@ -49,7 +56,10 @@
         }
 
         if action.digitalSourceType != "http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture" {
-            return .failure("Manifest", "action.digitalSourceType != http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture, got \(action.digitalSourceType ?? "(nil)")")
+            return .failure(
+                "Manifest",
+                "action.digitalSourceType != http://cv.iptc.org/newscodes/digitalsourcetype/digitalCapture, got \(action.digitalSourceType ?? "(nil)")"
+            )
         }
 
         guard let info = manifest.claimGeneratorInfo.first else {
@@ -57,7 +67,9 @@
         }
 
         if info.name != "xctest" {
-            return .failure("Manifest", "claimGeneratorInfo.name != xctest, got \(manifest.claimGeneratorInfo.first?.name ?? "(nil)")")
+            return .failure(
+                "Manifest",
+                "claimGeneratorInfo.name != xctest, got \(manifest.claimGeneratorInfo.first?.name ?? "(nil)")")
         }
 
         guard let version = info.version else {
@@ -72,8 +84,9 @@
             return .failure("Manifest", "Error: \(error)")
         }
 
-        guard let match = regex.firstMatch(in: version, range: .init(version.startIndex ..< version.endIndex, in: version)),
-              match.range.lowerBound == 0 && match.range.upperBound == version.count
+        guard
+            let match = regex.firstMatch(in: version, range: .init(version.startIndex..<version.endIndex, in: version)),
+            match.range.lowerBound == 0 && match.range.upperBound == version.count
         else {
             return .failure("Manifest", "claimGeneratorInfo.version !~ /^[\\d.]+$/")
         }
