@@ -107,7 +107,7 @@ public struct ManifestDefinition: Codable, CustomStringConvertible, Equatable {
      - parameter redactions: A list of redactions - URIs to redacted assertions.
      - parameter thumbnail: An optional ``ResourceRef`` to a thumbnail image that represents the asset that was signed. Must be available when the manifest is signed.
      - parameter title: A human-readable title, generally source filename.
-     - parameter vendor: Optional prefix added to the generated Manifest Label This is typically a reverse domain name.
+     - parameter vendor: Optional prefix added to the generated Manifest Label. This is typically a reverse domain name.
      */
     public init(
         assertions: [AssertionDefinition] = [],
