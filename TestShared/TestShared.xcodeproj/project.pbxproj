@@ -13,6 +13,13 @@
 		95BBD7C12E6EE13D00F0BC7C /* es256_certs.pem in Resources */ = {isa = PBXBuildFile; fileRef = 95BBD7BB2E6EDDF700F0BC7C /* es256_certs.pem */; };
 		95BBD7C22E6EE13D00F0BC7C /* es256_private.key in Resources */ = {isa = PBXBuildFile; fileRef = 95BBD7BC2E6EDDF700F0BC7C /* es256_private.key */; };
 		95BBD7C32E6EE13D00F0BC7C /* pexels-asadphoto-457882.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 95BBD7BD2E6EDDF700F0BC7C /* pexels-asadphoto-457882.jpg */; };
+		95COV0012E9700000000001 /* CertificateManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV0022E9700000000001 /* CertificateManagerTests.swift */; };
+		95COV0032E9700000000002 /* KeychainSignerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV0042E9700000000002 /* KeychainSignerTests.swift */; };
+		95COV0052E9700000000003 /* SecureEnclaveSignerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV0062E9700000000003 /* SecureEnclaveSignerTests.swift */; };
+		95COV0072E9700000000004 /* ConvenienceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV0082E9700000000004 /* ConvenienceTests.swift */; };
+		95COV0092E9700000000005 /* SignerExtendedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00A2E9700000000005 /* SignerExtendedTests.swift */; };
+		95COV00B2E9700000000006 /* WebServiceSignerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00C2E9700000000006 /* WebServiceSignerTests.swift */; };
+		95COV00D2E9700000000007 /* AssertionDefinitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00E2E9700000000007 /* AssertionDefinitionTests.swift */; };
 
 		95C99A3C2E68D83F00C54D0E /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; };
 		95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A542E695DF100C54D0E /* StreamTests.swift */; };
@@ -44,6 +51,13 @@
 		7A1234501234567890ABCDEF /* TestShared.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = TestShared.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		953416042E6EBAF400A97957 /* TestUtilities.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestUtilities.swift; sourceTree = "<group>"; };
 		95A782472E6F0BB8001E9748 /* HardwareSigningTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HardwareSigningTests.swift; sourceTree = "<group>"; };
+		95COV0022E9700000000001 /* CertificateManagerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CertificateManagerTests.swift; sourceTree = "<group>"; };
+		95COV0042E9700000000002 /* KeychainSignerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainSignerTests.swift; sourceTree = "<group>"; };
+		95COV0062E9700000000003 /* SecureEnclaveSignerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SecureEnclaveSignerTests.swift; sourceTree = "<group>"; };
+		95COV0082E9700000000004 /* ConvenienceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConvenienceTests.swift; sourceTree = "<group>"; };
+		95COV00A2E9700000000005 /* SignerExtendedTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignerExtendedTests.swift; sourceTree = "<group>"; };
+		95COV00C2E9700000000006 /* WebServiceSignerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebServiceSignerTests.swift; sourceTree = "<group>"; };
+		95COV00E2E9700000000007 /* AssertionDefinitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssertionDefinitionTests.swift; sourceTree = "<group>"; };
 		95BBD7BA2E6EDDF700F0BC7C /* adobe-20220124-CI.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "adobe-20220124-CI.jpg"; sourceTree = "<group>"; };
 		95BBD7BB2E6EDDF700F0BC7C /* es256_certs.pem */ = {isa = PBXFileReference; lastKnownFileType = text; path = es256_certs.pem; sourceTree = "<group>"; };
 		95BBD7BC2E6EDDF700F0BC7C /* es256_private.key */ = {isa = PBXFileReference; lastKnownFileType = text; path = es256_private.key; sourceTree = "<group>"; };
@@ -96,15 +110,22 @@
 		7A1234541234567890ABCDEF /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				95COV00E2E9700000000007 /* AssertionDefinitionTests.swift */,
 				95C99A4F2E695DF100C54D0E /* BuilderTests.swift */,
+				95COV0082E9700000000004 /* ConvenienceTests.swift */,
+				95COV0022E9700000000001 /* CertificateManagerTests.swift */,
 				95C99A502E695DF100C54D0E /* ComprehensiveTests.swift */,
 				95A782472E6F0BB8001E9748 /* HardwareSigningTests.swift */,
+				95COV0042E9700000000002 /* KeychainSignerTests.swift */,
 				A0B3CF4E2E96AC2C00F2F938 /* ManifestTests.swift */,
 				95C99A522E695DF100C54D0E /* ReaderTests.swift */,
+				95COV0062E9700000000003 /* SecureEnclaveSignerTests.swift */,
+				95COV00A2E9700000000005 /* SignerExtendedTests.swift */,
 				95C99A532E695DF100C54D0E /* SigningTests.swift */,
 				95C99A542E695DF100C54D0E /* StreamTests.swift */,
 				95C99A622E696CBF00C54D0E /* TestResult.swift */,
 				953416042E6EBAF400A97957 /* TestUtilities.swift */,
+				95COV00C2E9700000000006 /* WebServiceSignerTests.swift */,
 			);
 			path = Sources;
 			sourceTree = "<group>";
@@ -226,15 +247,22 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A0B3CF4F2E96AC2C00F2F938 /* ManifestTests.swift in Sources */,
-				95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */,
-				95A782492E6F0BB8001E9748 /* HardwareSigningTests.swift in Sources */,
-				95C99A562E695DF100C54D0E /* ComprehensiveTests.swift in Sources */,
-				953416052E6EBAF400A97957 /* TestUtilities.swift in Sources */,
+				95COV00D2E9700000000007 /* AssertionDefinitionTests.swift in Sources */,
 				95C99A572E695DF100C54D0E /* BuilderTests.swift in Sources */,
+				95COV0072E9700000000004 /* ConvenienceTests.swift in Sources */,
+				95COV0012E9700000000001 /* CertificateManagerTests.swift in Sources */,
+				95C99A562E695DF100C54D0E /* ComprehensiveTests.swift in Sources */,
+				95A782492E6F0BB8001E9748 /* HardwareSigningTests.swift in Sources */,
+				95COV0032E9700000000002 /* KeychainSignerTests.swift in Sources */,
+				A0B3CF4F2E96AC2C00F2F938 /* ManifestTests.swift in Sources */,
 				95C99A592E695DF100C54D0E /* ReaderTests.swift in Sources */,
+				95COV0052E9700000000003 /* SecureEnclaveSignerTests.swift in Sources */,
+				95COV0092E9700000000005 /* SignerExtendedTests.swift in Sources */,
 				95C99A5A2E695DF100C54D0E /* SigningTests.swift in Sources */,
+				95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */,
 				95C99A692E696CBF00C54D0E /* TestResult.swift in Sources */,
+				953416052E6EBAF400A97957 /* TestUtilities.swift in Sources */,
+				95COV00B2E9700000000006 /* WebServiceSignerTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

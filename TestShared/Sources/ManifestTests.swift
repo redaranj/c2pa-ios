@@ -156,39 +156,121 @@ public final class ManifestTests: TestImplementation {
     }
 
     public func testMassInit() -> TestResult {
-        _ = Ingredient()
+        var testSteps: [String] = []
 
-        let s = StatusCodes(failure: [], informational: [], success: [])
+        // Test Ingredient default values
+        let ingredient = Ingredient()
+        guard ingredient.title == nil else {
+            return .failure("Mass Init", "Ingredient.title should be nil by default")
+        }
+        testSteps.append("Ingredient: defaults verified")
 
-        _ = Metadata()
+        // Test StatusCodes with empty arrays
+        let statusCodes = StatusCodes(failure: [], informational: [], success: [])
+        guard statusCodes.failure.isEmpty && statusCodes.informational.isEmpty && statusCodes.success.isEmpty else {
+            return .failure("Mass Init", "StatusCodes arrays should be empty")
+        }
+        testSteps.append("StatusCodes: empty arrays verified")
 
-        _ = ValidationStatus(code: .algorithmUnsupported)
+        // Test Metadata default
+        let metadata = Metadata()
+        guard metadata.dateTime == nil else {
+            return .failure("Mass Init", "Metadata.dateTime should be nil by default")
+        }
+        testSteps.append("Metadata: defaults verified")
 
-        _ = Time()
+        // Test ValidationStatus with specific code
+        let validationStatus = ValidationStatus(code: .algorithmUnsupported)
+        guard validationStatus.code == .algorithmUnsupported else {
+            return .failure("Mass Init", "ValidationStatus.code mismatch: expected .algorithmUnsupported, got '\(validationStatus.code)'")
+        }
+        testSteps.append("ValidationStatus: code verified")
 
-        let ts = TextSelector(fragment: "")
+        // Test Time default
+        let time = Time()
+        guard time.start == nil && time.end == nil else {
+            return .failure("Mass Init", "Time.start and .end should be nil by default")
+        }
+        testSteps.append("Time: defaults verified")
 
-        _ = ReviewRating(explanation: "", value: 1)
+        // Test TextSelector with fragment
+        let textSelector = TextSelector(fragment: "test-fragment")
+        guard textSelector.fragment == "test-fragment" else {
+            return .failure("Mass Init", "TextSelector.fragment mismatch")
+        }
+        testSteps.append("TextSelector: fragment verified")
 
-        _ = DataSource(type: "")
+        // Test ReviewRating with values
+        let reviewRating = ReviewRating(explanation: "test explanation", value: 5)
+        guard reviewRating.explanation == "test explanation" && reviewRating.value == 5 else {
+            return .failure("Mass Init", "ReviewRating values mismatch")
+        }
+        testSteps.append("ReviewRating: values verified")
 
-        _ = MetadataActor()
+        // Test DataSource with type
+        let dataSource = DataSource(type: "test-type")
+        guard dataSource.type == "test-type" else {
+            return .failure("Mass Init", "DataSource.type mismatch")
+        }
+        testSteps.append("DataSource: type verified")
 
-        _ = ValidationResults()
+        // Test MetadataActor default
+        let metadataActor = MetadataActor()
+        guard metadataActor.identifier == nil else {
+            return .failure("Mass Init", "MetadataActor.identifier should be nil by default")
+        }
+        testSteps.append("MetadataActor: defaults verified")
 
-        _ = IngredientDeltaValidationResult(ingredientAssertionUri: "", validationDeltas: s)
+        // Test ValidationResults default
+        let validationResults = ValidationResults()
+        guard validationResults.activeManifest == nil else {
+            return .failure("Mass Init", "ValidationResults.activeManifest should be nil by default")
+        }
+        testSteps.append("ValidationResults: defaults verified")
 
-        _ = Item(identifier: "track_id", value: "2")
+        // Test IngredientDeltaValidationResult
+        let deltaResult = IngredientDeltaValidationResult(ingredientAssertionUri: "test-uri", validationDeltas: statusCodes)
+        guard deltaResult.ingredientAssertionUri == "test-uri" else {
+            return .failure("Mass Init", "IngredientDeltaValidationResult.ingredientAssertionUri mismatch")
+        }
+        testSteps.append("IngredientDeltaValidationResult: values verified")
 
-        _ = AssetType(type: "")
+        // Test Item with values
+        let item = Item(identifier: "track_id", value: "2")
+        guard item.identifier == "track_id" && item.value == "2" else {
+            return .failure("Mass Init", "Item values mismatch")
+        }
+        testSteps.append("Item: values verified")
 
-        _ = Frame()
+        // Test AssetType with type
+        let assetType = AssetType(type: "image/jpeg")
+        guard assetType.type == "image/jpeg" else {
+            return .failure("Mass Init", "AssetType.type mismatch")
+        }
+        testSteps.append("AssetType: type verified")
 
-        let tsr = TextSelectorRange(selector: ts)
+        // Test Frame default
+        let frame = Frame()
+        guard frame.start == nil && frame.end == nil else {
+            return .failure("Mass Init", "Frame.start and .end should be nil by default")
+        }
+        testSteps.append("Frame: defaults verified")
 
-        _ = Text(selectors: [tsr])
+        // Test TextSelectorRange with selector
+        let textSelectorRange = TextSelectorRange(selector: textSelector)
+        guard textSelectorRange.selector.fragment == "test-fragment" else {
+            return .failure("Mass Init", "TextSelectorRange.selector.fragment mismatch")
+        }
+        testSteps.append("TextSelectorRange: selector verified")
 
-        return .success("Manifest", "[PASS] Objects initialize correctly.")
+        // Test Text with selectors
+        let text = Text(selectors: [textSelectorRange])
+        guard text.selectors.count == 1 else {
+            return .failure("Mass Init", "Text.selectors should have 1 element")
+        }
+        testSteps.append("Text: selectors count verified")
+
+        return .success("Mass Init", testSteps.joined(separator: "\n"))
     }
 
     @MainActor

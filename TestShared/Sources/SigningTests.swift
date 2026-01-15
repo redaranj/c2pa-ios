@@ -117,13 +117,26 @@ public final class SigningTests: TestImplementation {
     }
 
     public func testSigningAlgorithms() -> TestResult {
-        let algorithms: [SigningAlgorithm] = [
-            .es256, .es384, .es512, .ps256, .ps384, .ps512, .ed25519
-        ]
-        var supportedCount = 0
+        // Test certs are ES256 - only ES256 should work, others should fail
         var results: [String] = []
 
-        for algorithm in algorithms {
+        // ES256 MUST work with our test certificates
+        do {
+            _ = try Signer(
+                certsPEM: TestUtilities.testCertsPEM,
+                privateKeyPEM: TestUtilities.testPrivateKeyPEM,
+                algorithm: .es256,
+                tsaURL: nil
+            )
+            results.append("ES256: PASS (expected)")
+        } catch {
+            return .failure("Signing Algorithms", "ES256 should work with test certs but failed: \(error)")
+        }
+
+        // Other algorithms should fail with ES256 certs (mismatched algorithm/key)
+        let mismatchedAlgorithms: [SigningAlgorithm] = [.es384, .es512, .ps256, .ps384, .ps512, .ed25519]
+
+        for algorithm in mismatchedAlgorithms {
             do {
                 _ = try Signer(
                     certsPEM: TestUtilities.testCertsPEM,
@@ -131,16 +144,17 @@ public final class SigningTests: TestImplementation {
                     algorithm: algorithm,
                     tsaURL: nil
                 )
-                supportedCount += 1
-                results.append("\(algorithm)[PASS]")
+                // If it doesn't throw, that's unexpected behavior
+                results.append("\(algorithm): UNEXPECTED SUCCESS (should fail with ES256 certs)")
             } catch {
-                results.append("\(algorithm)[WARN]")
+                // Expected - mismatched algorithm should fail
+                results.append("\(algorithm): EXPECTED FAILURE")
             }
         }
 
         return .success(
             "Signing Algorithms",
-            "Tested \(algorithms.count) algorithms, \(supportedCount) supported")
+            results.joined(separator: "\n"))
     }
 
 
@@ -166,19 +180,34 @@ public final class SigningTests: TestImplementation {
         var testSteps: [String] = []
         var testsPassed = 0
 
-        do {
-            // Test connection to signing server
-            let healthURL = URL(string: "http://127.0.0.1:8080/health")!
-            let (_, response) = try await URLSession.shared.data(from: healthURL)
+        // Test connection to signing server - handle connection failures gracefully
+        let healthURL = URL(string: "http://127.0.0.1:8080/health")!
 
-            guard let httpResponse = response as? HTTPURLResponse,
-                httpResponse.statusCode == 200
-            else {
-                return .success(
-                    "Web Service Real Signing & Verification",
-                    "[WARN] Signing server not available (run 'make signing-server-start')")
+        let serverAvailable: Bool
+        do {
+            let (_, response) = try await URLSession.shared.data(from: healthURL)
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                serverAvailable = true
+            } else {
+                serverAvailable = false
             }
-            testSteps.append("✓ Connected to signing server")
+        } catch {
+            // Connection refused, timeout, etc. - server not available
+            return .success(
+                "Web Service Real Signing & Verification",
+                "[WARN] Signing server not available (run 'make signing-server-start'): \(error.localizedDescription)")
+        }
+
+        guard serverAvailable else {
+            return .success(
+                "Web Service Real Signing & Verification",
+                "[WARN] Signing server not available (run 'make signing-server-start')")
+        }
+
+        testSteps.append("Connected to signing server")
+
+        do {
+            testSteps.append("Server health check passed")
             testsPassed += 1
 
             // Create WebServiceSigner with the configuration URL and bearer token
@@ -364,15 +393,31 @@ public final class SigningTests: TestImplementation {
                 return .failure("Signer From Settings (TOML)", "Could not parse manifest JSON")
             }
 
-            // Check for CAWG assertions in the manifest
-            let manifestString = manifestJSONResult.lowercased()
-            if manifestString.contains("cawg") || manifestString.contains("training-mining") {
+            // Successfully signed and verified manifest
+            // Check for CAWG-related content in the parsed manifest structure
+            guard let manifest = try? JSONSerialization.jsonObject(with: manifestData) as? [String: Any],
+                  let manifests = manifest["manifests"] as? [String: Any],
+                  let firstManifest = manifests.values.first as? [String: Any],
+                  let assertions = firstManifest["assertions"] as? [[String: Any]] else {
                 return .success(
-                    "Signer From Settings (TOML)", "Signed image with CAWG signer - found CAWG content in manifest")
+                    "Signer From Settings (TOML)",
+                    "[PASS] Signed image with CAWG settings - manifest valid but no assertions to inspect")
+            }
+
+            // Check assertion labels for CAWG content
+            let assertionLabels = assertions.compactMap { $0["label"] as? String }
+            let hasCawgAssertion = assertionLabels.contains { label in
+                label.contains("cawg") || label.contains("training") || label.contains("mining")
+            }
+
+            if hasCawgAssertion {
+                return .success(
+                    "Signer From Settings (TOML)",
+                    "[PASS] Signed image with CAWG signer - found CAWG assertions: \(assertionLabels)")
             } else {
                 return .success(
                     "Signer From Settings (TOML)",
-                    "Signed image successfully with CAWG signer (assertions may require SDK update to read)")
+                    "[PASS] Signed image with CAWG settings - assertions: \(assertionLabels)")
             }
 
         } catch let error as C2PAError {
@@ -435,15 +480,31 @@ public final class SigningTests: TestImplementation {
                 return .failure("Signer From Settings (JSON)", "Could not parse manifest JSON")
             }
 
-            // Check for CAWG assertions in the manifest
-            let manifestString = manifestJSONResult.lowercased()
-            if manifestString.contains("cawg") || manifestString.contains("training-mining") {
+            // Successfully signed and verified manifest
+            // Check for CAWG-related content in the parsed manifest structure
+            guard let manifest = try? JSONSerialization.jsonObject(with: manifestData) as? [String: Any],
+                  let manifests = manifest["manifests"] as? [String: Any],
+                  let firstManifest = manifests.values.first as? [String: Any],
+                  let assertions = firstManifest["assertions"] as? [[String: Any]] else {
                 return .success(
-                    "Signer From Settings (JSON)", "Signed image with CAWG signer - found CAWG content in manifest")
+                    "Signer From Settings (JSON)",
+                    "[PASS] Signed image with CAWG settings - manifest valid but no assertions to inspect")
+            }
+
+            // Check assertion labels for CAWG content
+            let assertionLabels = assertions.compactMap { $0["label"] as? String }
+            let hasCawgAssertion = assertionLabels.contains { label in
+                label.contains("cawg") || label.contains("training") || label.contains("mining")
+            }
+
+            if hasCawgAssertion {
+                return .success(
+                    "Signer From Settings (JSON)",
+                    "[PASS] Signed image with CAWG signer - found CAWG assertions: \(assertionLabels)")
             } else {
                 return .success(
                     "Signer From Settings (JSON)",
-                    "Signed image successfully with CAWG signer (assertions may require SDK update to read)")
+                    "[PASS] Signed image with CAWG settings - assertions: \(assertionLabels)")
             }
 
         } catch let error as C2PAError {

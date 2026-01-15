@@ -396,3 +396,385 @@ final class ManifestTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 }
+
+// MARK: - Certificate Manager Tests
+
+final class CertificateManagerTests: XCTestCase {
+    private let tests = TestShared.CertificateManagerTests()
+
+    func testCertificateConfigCreation() throws {
+        let result = tests.testCertificateConfigCreation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCertificateErrorDescriptions() throws {
+        let result = tests.testCertificateErrorDescriptions()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSelfSignedCertificateChainCreation() throws {
+        let result = tests.testSelfSignedCertificateChainCreation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCSRCreationWithPublicKey() throws {
+        let result = tests.testCSRCreationWithPublicKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCSRCreationWithKeyTag() throws {
+        let result = tests.testCSRCreationWithKeyTag()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCSRCreationWithInvalidKeyTag() throws {
+        let result = tests.testCSRCreationWithInvalidKeyTag()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSelfSignedChainDirectCall() throws {
+        let result = tests.testSelfSignedChainDirectCall()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCSRDirectWithPublicKey() throws {
+        let result = tests.testCSRDirectWithPublicKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testUnsupportedKeyFormatError() throws {
+        let result = tests.testUnsupportedKeyFormatError()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSigningFailedError() throws {
+        let result = tests.testSigningFailedError()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCertificateConfigVariations() throws {
+        let result = tests.testCertificateConfigVariations()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testPersistentKeychainKey() throws {
+        let result = tests.testPersistentKeychainKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSelfSignedChainWithPersistentKey() throws {
+        let result = tests.testSelfSignedChainWithPersistentKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - Keychain Signer Tests
+
+final class KeychainSignerTests: XCTestCase {
+    private let tests = TestShared.KeychainSignerTests()
+
+    func testEd25519RejectedByKeychainSigner() throws {
+        let result = tests.testEd25519RejectedByKeychainSigner()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testNonExistentKeyFailure() throws {
+        let result = tests.testNonExistentKeyFailure()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testES256WithKeychainKey() throws {
+        let result = tests.testES256WithKeychainKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testES384AlgorithmMismatchDetection() throws {
+        let result = tests.testES384AlgorithmMismatchDetection()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testES512AlgorithmMismatchDetection() throws {
+        let result = tests.testES512AlgorithmMismatchDetection()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testPS256AlgorithmMismatchDetection() throws {
+        let result = tests.testPS256AlgorithmMismatchDetection()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testPS384AlgorithmMismatchDetection() throws {
+        let result = tests.testPS384AlgorithmMismatchDetection()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testPS512AlgorithmMismatchDetection() throws {
+        let result = tests.testPS512AlgorithmMismatchDetection()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testKeychainSigningWorkflow() throws {
+        let result = tests.testKeychainSigningWorkflow()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - Secure Enclave Signer Tests
+
+final class SecureEnclaveSignerTests: XCTestCase {
+    private let tests = TestShared.SecureEnclaveSignerTests()
+
+    func testSecureEnclaveSignerConfigCreation() throws {
+        let result = tests.testSecureEnclaveSignerConfigCreation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testNonES256RejectedBySecureEnclave() throws {
+        let result = tests.testNonES256RejectedBySecureEnclave()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testDeleteNonExistentKey() throws {
+        let result = tests.testDeleteNonExistentKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testDeleteKeyIdempotent() throws {
+        let result = tests.testDeleteKeyIdempotent()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSecureEnclaveAvailabilityCheck() throws {
+        let result = tests.testSecureEnclaveAvailabilityCheck()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCreateKeyAccessControlValidation() throws {
+        let result = tests.testCreateKeyAccessControlValidation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testES256AcceptedBySecureEnclave() throws {
+        let result = tests.testES256AcceptedBySecureEnclave()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - C2PA Convenience Tests
+
+final class ConvenienceTests: XCTestCase {
+    private let tests = TestShared.ConvenienceTests()
+
+    func testReadFileWithManifest() throws {
+        let result = tests.testReadFileWithManifest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadFileWithDataDir() throws {
+        let result = tests.testReadFileWithDataDir()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadFileWithoutManifest() throws {
+        let result = tests.testReadFileWithoutManifest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadFileNonExistent() throws {
+        let result = tests.testReadFileNonExistent()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadIngredientWithManifest() throws {
+        let result = tests.testReadIngredientWithManifest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadIngredientWithoutManifest() throws {
+        let result = tests.testReadIngredientWithoutManifest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReadIngredientWithoutDataDir() throws {
+        let result = tests.testReadIngredientWithoutDataDir()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignFile() throws {
+        let result = tests.testSignFile()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignFileWithDataDir() throws {
+        let result = tests.testSignFileWithDataDir()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignFileWithInvalidManifest() throws {
+        let result = tests.testSignFileWithInvalidManifest()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testC2PAErrorDescriptions() throws {
+        let result = tests.testC2PAErrorDescriptions()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - Signer Extended Tests
+
+final class SignerExtendedTests: XCTestCase {
+    private let tests = TestShared.SignerExtendedTests()
+
+    func testReserveSizeES256() throws {
+        let result = tests.testReserveSizeES256()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReserveSizeWithTSA() throws {
+        let result = tests.testReserveSizeWithTSA()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testReserveSizeWithCallback() throws {
+        let result = tests.testReserveSizeWithCallback()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testExportPublicKeyPEM() throws {
+        let result = tests.testExportPublicKeyPEM()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testExportPublicKeyPEMNonExistentKey() throws {
+        let result = tests.testExportPublicKeyPEMNonExistentKey()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testLoadSettingsJSON() throws {
+        let result = tests.testLoadSettingsJSON()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testLoadSettingsTOML() throws {
+        let result = tests.testLoadSettingsTOML()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testLoadSettingsInvalidJSON() throws {
+        let result = tests.testLoadSettingsInvalidJSON()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testLoadSettingsInvalidFormat() throws {
+        let result = tests.testLoadSettingsInvalidFormat()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignerFromSignerInfo() throws {
+        let result = tests.testSignerFromSignerInfo()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignerFromSignerInfoWithTSA() throws {
+        let result = tests.testSignerFromSignerInfoWithTSA()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignerCallbackInvocation() throws {
+        let result = tests.testSignerCallbackInvocation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignerCallbackError() throws {
+        let result = tests.testSignerCallbackError()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - Web Service Signer Tests
+
+final class WebServiceSignerTests: XCTestCase {
+    private let tests = TestShared.WebServiceSignerTests()
+
+    func testWebServiceSignerCreation() throws {
+        let result = tests.testWebServiceSignerCreation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testSignerErrorDescriptions() throws {
+        let result = tests.testSignerErrorDescriptions()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCreateSignerInvalidURL() async throws {
+        let result = await tests.testCreateSignerInvalidURL()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testCreateSignerConnectionFailure() async throws {
+        let result = await tests.testCreateSignerConnectionFailure()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAsyncSignerCreation() async throws {
+        let result = await tests.testAsyncSignerCreation()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAsyncSignerWithTSA() throws {
+        let result = tests.testAsyncSignerWithTSA()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testWebServiceSignerWithLocalServer() async throws {
+        let result = await tests.testWebServiceSignerWithLocalServer()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}
+
+// MARK: - Assertion Definition Tests
+
+final class AssertionDefinitionTests: XCTestCase {
+    private let tests = TestShared.AssertionDefinitionTests()
+
+    func testActionsAssertionDecoding() throws {
+        let result = tests.testActionsAssertionDecoding()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testActionsAssertionEncoding() throws {
+        let result = tests.testActionsAssertionEncoding()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testEmptyActionsAssertion() throws {
+        let result = tests.testEmptyActionsAssertion()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAssertionMetadataDecoding() throws {
+        let result = tests.testAssertionMetadataDecoding()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAssetRefDecoding() throws {
+        let result = tests.testAssetRefDecoding()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAllAssertionTypesEncoding() throws {
+        let result = tests.testAllAssertionTypesEncoding()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAllAssertionTypesRoundTrip() throws {
+        let result = tests.testAllAssertionTypesRoundTrip()
+        XCTAssertTrue(result.passed, result.message)
+    }
+
+    func testAssertionEquality() throws {
+        let result = tests.testAssertionEquality()
+        XCTAssertTrue(result.passed, result.message)
+    }
+}

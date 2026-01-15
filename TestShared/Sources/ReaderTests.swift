@@ -68,6 +68,8 @@ public final class ReaderTests: TestImplementation {
     }
 
     public func testReaderWithManifestData() -> TestResult {
+        // Test the Reader API with external manifest data
+        // Using invalid/mismatched manifest should cause C2PAError - this tests error handling
         let manifestJSON = """
             {
                 "claim_generator": "test/1.0",
@@ -82,18 +84,20 @@ public final class ReaderTests: TestImplementation {
             }
             let stream = try Stream(data: imageData)
 
-            // Create reader with manifest data
+            // Create reader with mismatched manifest data - this should fail
             let reader = try Reader(format: "image/jpeg", stream: stream, manifest: manifestData)
 
-            // Try to get JSON
-            let json = try reader.json()
-            if !json.isEmpty {
-                return .success("Reader With Manifest", "[PASS] Reader with manifest data working")
-            }
-            return .success("Reader With Manifest", "[WARN] Empty JSON (expected)")
+            // If we get here, try to get JSON
+            _ = try reader.json()
+            // If this succeeds with mismatched data, something is wrong
+            return .failure("Reader With Manifest", "Expected error for mismatched manifest but operation succeeded")
 
+        } catch let error as C2PAError {
+            // C2PAError is expected for mismatched/invalid manifest data
+            return .success("Reader With Manifest", "[PASS] Mismatched manifest correctly rejected with C2PAError: \(error)")
         } catch {
-            return .success("Reader With Manifest", "[WARN] Failed (might be expected): \(error)")
+            // Any other error type is also acceptable - the API correctly rejects invalid input
+            return .success("Reader With Manifest", "[PASS] Mismatched manifest rejected with error: \(error)")
         }
     }
 
@@ -353,26 +357,41 @@ public final class ReaderTests: TestImplementation {
     }
 
     public func testReaderWithMultipleStreams() -> TestResult {
-        do {
-            // Test creating multiple readers from different streams
-            guard let imageData1 = TestUtilities.loadPexelsTestImage() else {
-                return .failure("Reader Multiple Streams", "Could not load test image")
-            }
-            let imageData2 = imageData1
+        // Test creating multiple readers from different streams
+        // Use Adobe test image which has a manifest (Reader requires manifest to exist)
+        guard let imageData1 = TestUtilities.loadAdobeTestImage() else {
+            return .failure("Reader Multiple Streams", "Could not load Adobe test image")
+        }
+        let imageData2 = imageData1
 
+        do {
             let stream1 = try Stream(data: imageData1)
             let stream2 = try Stream(data: imageData2)
 
             let reader1 = try Reader(format: "image/jpeg", stream: stream1)
             let reader2 = try Reader(format: "image/jpeg", stream: stream2)
 
-            _ = try? reader1.json()
-            _ = try? reader2.json()
+            // Verify both readers can read JSON independently
+            let json1 = try reader1.json()
+            let json2 = try reader2.json()
 
-            return .success("Reader Multiple Streams", "[PASS] Multiple readers created")
+            guard !json1.isEmpty else {
+                return .failure("Reader Multiple Streams", "Reader 1 returned empty JSON")
+            }
+
+            guard !json2.isEmpty else {
+                return .failure("Reader Multiple Streams", "Reader 2 returned empty JSON")
+            }
+
+            // Verify both readers returned the same manifest data
+            guard json1 == json2 else {
+                return .failure("Reader Multiple Streams", "Readers returned different JSON for same image")
+            }
+
+            return .success("Reader Multiple Streams", "[PASS] Multiple readers created and read identical manifests")
 
         } catch {
-            return .success("Reader Multiple Streams", "[WARN] Multiple readers: \(error)")
+            return .failure("Reader Multiple Streams", "Failed to create/use multiple readers: \(error)")
         }
     }
 
