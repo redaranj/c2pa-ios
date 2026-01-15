@@ -84,10 +84,10 @@ public final class StreamTests: TestImplementation {
             let archiveStream = try Stream(writeTo: archiveFile)
             try builder.writeArchive(to: archiveStream)
 
-            let fileExists = FileManager.default.fileExists(atPath: archiveFile.path)
-            return .success(
-                "Write-Only Streams",
-                fileExists ? "[PASS] Write-only stream working" : "[WARN] Archive not created")
+            guard FileManager.default.fileExists(atPath: archiveFile.path) else {
+                return .failure("Write-Only Streams", "Archive file was not created")
+            }
+            return .success("Write-Only Streams", "[PASS] Write-only stream working, archive created")
         } catch {
             return .failure("Write-Only Streams", "Failed: \(error)")
         }
@@ -131,8 +131,20 @@ public final class StreamTests: TestImplementation {
                 }
             )
 
-            _ = customStream
-            return .success("Custom Stream Callbacks", "[PASS] Custom callbacks configured")
+            // Actually use the stream with a Reader to verify callbacks are invoked
+            do {
+                let reader = try Reader(format: "image/jpeg", stream: customStream)
+                _ = try? reader.json()  // May fail due to no manifest, that's fine
+            } catch {
+                // Reader creation may fail, but callbacks should have been invoked
+            }
+
+            // Verify callbacks were actually called
+            guard readCount > 0 || seekCount > 0 else {
+                return .failure("Custom Stream Callbacks", "Callbacks were never invoked (read=\(readCount), seek=\(seekCount))")
+            }
+
+            return .success("Custom Stream Callbacks", "[PASS] Callbacks invoked: read=\(readCount), seek=\(seekCount)")
         } catch {
             return .failure("Custom Stream Callbacks", "Failed: \(error)")
         }
@@ -196,48 +208,62 @@ public final class StreamTests: TestImplementation {
     }
 
     public func testStreamWithReader() -> TestResult {
+        // Use the Pexels image which is a real JPEG without C2PA manifest
+        guard let imageData = TestUtilities.loadPexelsTestImage() else {
+            return .failure("Stream with Reader", "Could not load test image")
+        }
+
         do {
-            // Use the Pexels image which is a real JPEG without C2PA manifest
-            guard let imageData = TestUtilities.loadPexelsTestImage() else {
-                return .failure("Stream with Reader", "Could not load test image")
-            }
-
             let stream = try Stream(data: imageData)
-
             let reader = try Reader(format: "image/jpeg", stream: stream)
-            _ = try? reader.json()  // Expected to fail since Pexels image has no manifest
 
-            return .success("Stream with Reader", "[PASS] Stream works with Reader API")
-        } catch {
-            // No manifest is expected for the Pexels image
-            if let c2paError = error as? C2PAError,
-                case .api(let message) = c2paError,
-                message.contains("no JUMBF data found") || message.contains("ManifestNotFound")
-                    || message.contains("No manifest")
-            {
-                return .success("Stream with Reader", "[PASS] Reader created (no manifest in test image)")
+            // Attempting to read JSON from a file without manifest should fail
+            do {
+                let json = try reader.json()
+                // If we get here with JSON, verify it's valid (shouldn't happen for Pexels image)
+                guard !json.isEmpty else {
+                    return .failure("Stream with Reader", "Got empty JSON from image without manifest")
+                }
+                return .success("Stream with Reader", "[PASS] Stream works with Reader API (JSON length: \(json.count))")
+            } catch let jsonError as C2PAError {
+                // Expected: no manifest in test image
+                if case .api(let message) = jsonError,
+                   message.contains("no JUMBF data found") || message.contains("ManifestNotFound")
+                       || message.contains("No manifest") {
+                    return .success("Stream with Reader", "[PASS] Reader correctly reports no manifest")
+                }
+                return .failure("Stream with Reader", "Unexpected C2PAError reading JSON: \(jsonError)")
             }
+        } catch let error as C2PAError {
+            // Reader creation may fail for images without C2PA data
+            if case .api(let message) = error,
+               message.contains("no JUMBF data found") || message.contains("ManifestNotFound")
+                   || message.contains("No manifest") {
+                return .success("Stream with Reader", "[PASS] Reader correctly detects no manifest")
+            }
+            return .failure("Stream with Reader", "C2PAError: \(error)")
+        } catch {
             return .failure("Stream with Reader", "Failed: \(error)")
         }
     }
 
     public func testStreamWithBuilder() -> TestResult {
+        // Use real image for source
+        guard let sourceData = TestUtilities.loadPexelsTestImage() else {
+            return .failure("Stream with Builder", "Could not load test image")
+        }
+
+        // Use file-based streams to avoid crashes
+        let tempDir = FileManager.default.temporaryDirectory
+        let sourceFile = tempDir.appendingPathComponent("stream_builder_src_\(UUID().uuidString).jpg")
+        let destFile = tempDir.appendingPathComponent("stream_builder_dst_\(UUID().uuidString).jpg")
+
+        defer {
+            try? FileManager.default.removeItem(at: sourceFile)
+            try? FileManager.default.removeItem(at: destFile)
+        }
+
         do {
-            // Use real image for source
-            guard let sourceData = TestUtilities.loadPexelsTestImage() else {
-                return .failure("Stream with Builder", "Could not load test image")
-            }
-
-            // Use file-based streams to avoid crashes
-            let tempDir = FileManager.default.temporaryDirectory
-            let sourceFile = tempDir.appendingPathComponent("stream_builder_src_\(UUID().uuidString).jpg")
-            let destFile = tempDir.appendingPathComponent("stream_builder_dst_\(UUID().uuidString).jpg")
-
-            defer {
-                try? FileManager.default.removeItem(at: sourceFile)
-                try? FileManager.default.removeItem(at: destFile)
-            }
-
             // Write source image to file
             try sourceData.write(to: sourceFile)
 
@@ -251,7 +277,6 @@ public final class StreamTests: TestImplementation {
 
             let builder = try Builder(manifestJSON: manifestJSON)
 
-            // Note: This will fail without valid certificates
             let signer = try Signer(
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
@@ -259,17 +284,16 @@ public final class StreamTests: TestImplementation {
                 tsaURL: nil
             )
 
-            _ = try? builder.sign(format: "image/jpeg", source: sourceStream, destination: destStream, signer: signer)
+            // Actually sign and verify result
+            let manifestBytes = try builder.sign(format: "image/jpeg", source: sourceStream, destination: destStream, signer: signer)
 
-            return .success("Stream with Builder", "[PASS] Stream works with Builder API")
-        } catch {
-            // Certificate errors are expected
-            if let c2paError = error as? C2PAError,
-                case .api(let message) = c2paError,
-                message.contains("certificate") || message.contains("key")
-            {
-                return .success("Stream with Builder", "[PASS] Builder works (cert error expected)")
+            // Verify output file was created
+            guard FileManager.default.fileExists(atPath: destFile.path) else {
+                return .failure("Stream with Builder", "Signed file was not created")
             }
+
+            return .success("Stream with Builder", "[PASS] Stream signing successful, manifest bytes: \(manifestBytes.count)")
+        } catch {
             return .failure("Stream with Builder", "Failed: \(error)")
         }
     }
