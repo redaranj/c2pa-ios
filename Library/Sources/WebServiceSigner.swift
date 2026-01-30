@@ -102,24 +102,11 @@ public final class WebServiceSigner: @unchecked Sendable {
     }
 
     private func mapAlgorithm(_ algorithmString: String) throws -> SigningAlgorithm {
-        switch algorithmString.lowercased() {
-        case "es256":
-            return .es256
-        case "es384":
-            return .es384
-        case "es512":
-            return .es512
-        case "ps256":
-            return .ps256
-        case "ps384":
-            return .ps384
-        case "ps512":
-            return .ps512
-        case "ed25519":
-            return .ed25519
-        default:
+        guard let alg = SigningAlgorithm(rawValue: algorithmString.lowercased()) else {
             throw SignerError.unsupportedAlgorithm(algorithmString)
         }
+
+        return alg
     }
 
     private func fetchConfiguration() async throws -> SignerConfiguration {
