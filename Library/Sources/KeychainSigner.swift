@@ -63,21 +63,7 @@ extension Signer {
         tsaURL: String? = nil,
         keychainKeyTag: String
     ) throws {
-        let secAlgorithm: SecKeyAlgorithm
-        switch algorithm {
-        case .es256:
-            secAlgorithm = .ecdsaSignatureMessageX962SHA256
-        case .es384:
-            secAlgorithm = .ecdsaSignatureMessageX962SHA384
-        case .es512:
-            secAlgorithm = .ecdsaSignatureMessageX962SHA512
-        case .ps256:
-            secAlgorithm = .rsaSignatureMessagePSSSHA256
-        case .ps384:
-            secAlgorithm = .rsaSignatureMessagePSSSHA384
-        case .ps512:
-            secAlgorithm = .rsaSignatureMessagePSSSHA512
-        case .ed25519:
+        guard let secAlgorithm = algorithm.secKeyAlgo else {
             throw C2PAError.api("Ed25519 not supported by iOS Keychain")
         }
 

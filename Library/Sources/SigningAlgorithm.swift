@@ -11,8 +11,9 @@
 //  SigningAlgorithm.swift
 //
 
-import C2PAC
 import Foundation
+import C2PAC
+import Security
 
 /// Cryptographic algorithms supported for C2PA signing.
 ///
@@ -69,6 +70,26 @@ public enum SigningAlgorithm: String, CaseIterable {
         case .ps384: return Ps384
         case .ps512: return Ps512
         case .ed25519: return Ed25519
+        }
+    }
+
+    var secKeyAlgo: SecKeyAlgorithm? {
+        switch self {
+        case .es256:
+            return .ecdsaSignatureMessageX962SHA256
+        case .es384:
+            return .ecdsaSignatureMessageX962SHA384
+        case .es512:
+            return .ecdsaSignatureMessageX962SHA512
+        case .ps256:
+            return .rsaSignatureMessagePSSSHA256
+        case .ps384:
+            return .rsaSignatureMessagePSSSHA384
+        case .ps512:
+            return .rsaSignatureMessagePSSSHA512
+
+        default:
+            return nil
         }
     }
 }
