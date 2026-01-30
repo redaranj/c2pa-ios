@@ -63,6 +63,17 @@ import Foundation
 ///
 /// - SeeAlso: ``KeychainSigner``, ``SecureEnclaveSigner``, ``WebServiceSigner``
 public final class Signer {
+
+    /// The possible formats a settings string can have.
+    public enum SettingsFormat: String {
+
+        /// Settings are provided as a JSON formatted string
+        case json
+
+        /// Settings are provided as a TOML formatted string
+        case toml
+    }
+
     let ptr: UnsafeMutablePointer<C2paSigner>
     private var retainedContext: Unmanaged<AnyObject>?
 
@@ -179,7 +190,7 @@ public final class Signer {
     ///
     /// - SeeAlso: ``init(certsPEM:privateKeyPEM:algorithm:tsaURL:)``
     public convenience init(settingsJSON: String) throws {
-        try self.init(settings: settingsJSON, format: "json")
+        try self.init(settings: settingsJSON, format: .json)
     }
 
     /// Creates a signer from TOML settings configuration.
@@ -219,7 +230,7 @@ public final class Signer {
     ///
     /// - SeeAlso: ``init(settingsJSON:)``
     public convenience init(settingsTOML: String) throws {
-        try self.init(settings: settingsTOML, format: "toml")
+        try self.init(settings: settingsTOML, format: .toml)
     }
 
     /// Creates a signer from settings configuration in the specified format.
@@ -229,9 +240,9 @@ public final class Signer {
     ///   - format: The format of the settings string ("json" or "toml").
     ///
     /// - Throws: ``C2PAError`` if the settings are invalid or the signer cannot be created.
-    private convenience init(settings: String, format: String) throws {
+    private convenience init(settings: String, format: SettingsFormat) throws {
         let raw = try settings.withCString { settingsPtr in
-            try format.withCString { formatPtr in
+            try format.rawValue.withCString { formatPtr in
                 let result = c2pa_load_settings(settingsPtr, formatPtr)
                 guard result == 0 else {
                     throw C2PAError.api(lastC2PAError())
@@ -252,9 +263,9 @@ public final class Signer {
     ///   - format: The format of the settings string ("json" or "toml").
     ///
     /// - Throws: ``C2PAError`` if the settings are invalid.
-    public static func loadSettings(_ settings: String, format: String) throws {
+    public static func loadSettings(_ settings: String, format: SettingsFormat) throws {
         try settings.withCString { settingsPtr in
-            try format.withCString { formatPtr in
+            try format.rawValue.withCString { formatPtr in
                 let result = c2pa_load_settings(settingsPtr, formatPtr)
                 guard result == 0 else {
                     throw C2PAError.api(lastC2PAError())
