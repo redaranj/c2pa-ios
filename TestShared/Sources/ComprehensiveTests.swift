@@ -17,7 +17,7 @@ public final class ComprehensiveTests: TestImplementation {
     public init() {}
 
     public func testLibraryVersion() -> TestResult {
-        let version = c2paVersion
+        let version = C2PA.version
         if !version.isEmpty && version.contains(".") {
             return .success("Library Version", "[PASS] C2PA Version: \(version)")
         }

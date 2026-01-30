@@ -83,10 +83,3 @@ func withOptionalCString<R>(
 func asStreamCtx(_ p: UnsafeMutableRawPointer) -> UnsafeMutablePointer<StreamContext> {
     UnsafeMutablePointer<StreamContext>(OpaquePointer(p))
 }
-
-// C2PA version fetched once
-public let c2paVersion: String = {
-    let p = c2pa_version()!
-    defer { c2pa_string_free(p) }
-    return String(cString: p)
-}()

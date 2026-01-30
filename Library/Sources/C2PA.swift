@@ -28,6 +28,13 @@ import Foundation
 /// ### Signing Files
 /// - ``signFile(source:destination:manifestJSON:signerInfo:dataDir:)``
 public enum C2PA {
+
+    public static var version: String {
+        let p = c2pa_version()!
+        defer { c2pa_string_free(p) }
+        return String(cString: p)
+    }
+
     /// Reads the C2PA manifest from a file and returns it as JSON.
     ///
     /// This method extracts and validates the C2PA manifest embedded in a media file,
