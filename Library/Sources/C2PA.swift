@@ -180,7 +180,7 @@ public enum C2PA {
 ///
 /// `C2PAError` represents various error conditions that may arise when working
 /// with the C2PA library, from low-level C API errors to data validation failures.
-public enum C2PAError: Error, CustomStringConvertible {
+public enum C2PAError: LocalizedError {
     /// An error reported by the underlying C2PA library.
     ///
     /// - Parameter message: The error message from the Rust/C layer.
@@ -198,12 +198,16 @@ public enum C2PAError: Error, CustomStringConvertible {
     case negative(Int64)
 
     /// A human-readable description of the error.
-    public var description: String {
+    public var errorDescription: String? {
         switch self {
-        case .api(let m): return "C2PA-API error: \(m)"
-        case .nilPointer: return "Unexpected NULL pointer"
-        case .utf8: return "Invalid UTF-8 from C2PA"
-        case .negative(let v): return "C2PA negative status \(v)"
+        case .api(let m):
+            return "C2PA-API error: \(m)"
+        case .nilPointer: 
+            return "Unexpected NULL pointer"
+        case .utf8: 
+            return "Invalid UTF-8 from C2PA"
+        case .negative(let v): 
+            return "C2PA negative status \(v)"
         }
     }
 }
