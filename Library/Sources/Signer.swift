@@ -92,7 +92,7 @@ public final class Signer {
     ) throws {
         var raw: UnsafeMutablePointer<C2paSigner>!
         try withSignerInfo(
-            alg: algorithm.description,
+            alg: algorithm.rawValue,
             cert: certsPEM,
             key: privateKeyPEM,
             tsa: tsaURL

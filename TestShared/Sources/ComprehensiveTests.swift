@@ -252,12 +252,12 @@ public final class ComprehensiveTests: TestImplementation {
     }
 
     public func testSigningAlgorithms() -> TestResult {
-        let algorithms: [SigningAlgorithm] = [.es256, .es384, .es512, .ps256, .ps384, .ps512, .ed25519]
+        let algorithms = SigningAlgorithm.allCases
         var results: [String] = []
 
         for algorithm in algorithms {
-            if !algorithm.description.isEmpty {
-                results.append("\(algorithm.description)[PASS]")
+            if !algorithm.rawValue.isEmpty {
+                results.append("\(algorithm.rawValue)[PASS]")
             } else {
                 results.append("\(algorithm)[FAIL]")
             }

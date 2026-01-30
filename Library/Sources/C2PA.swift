@@ -151,7 +151,7 @@ public enum C2PA {
     ) throws {
         var maybeErr: UnsafeMutablePointer<CChar>?
         withSignerInfo(
-            alg: signerInfo.algorithm.description,
+            alg: signerInfo.algorithm.rawValue,
             cert: signerInfo.certificatePEM,
             key: signerInfo.privateKeyPEM,
             tsa: signerInfo.tsaURL

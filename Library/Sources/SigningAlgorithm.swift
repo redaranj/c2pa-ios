@@ -33,7 +33,7 @@ import Foundation
 ///
 /// ### EdDSA Algorithm
 /// - ``ed25519``
-public enum SigningAlgorithm {
+public enum SigningAlgorithm: String, CaseIterable {
     /// ECDSA with SHA-256 using the P-256 curve.
     ///
     /// This is the most widely supported algorithm and is recommended for most use cases.
@@ -69,18 +69,6 @@ public enum SigningAlgorithm {
         case .ps384: return Ps384
         case .ps512: return Ps512
         case .ed25519: return Ed25519
-        }
-    }
-
-    public var description: String {
-        switch self {
-        case .es256: return "es256"
-        case .es384: return "es384"
-        case .es512: return "es512"
-        case .ps256: return "ps256"
-        case .ps384: return "ps384"
-        case .ps512: return "ps512"
-        case .ed25519: return "ed25519"
         }
     }
 }
