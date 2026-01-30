@@ -12,6 +12,7 @@ import Crypto
 import Foundation
 import SwiftASN1
 import X509
+import OSLog
 
 /// A signer that delegates cryptographic operations to a remote web service.
 ///
@@ -58,6 +59,8 @@ public final class WebServiceSigner: @unchecked Sendable {
     private let customHeaders: [String: String]
     private var signingURL: String?
 
+    private lazy var log = Logger(subsystem: "C2PA", category: String(describing: type(of: self)))
+
     /// Creates a new web service signer client.
     ///
     /// - Parameters:
@@ -95,7 +98,7 @@ public final class WebServiceSigner: @unchecked Sendable {
             certificateChainPEM: certificateChain,
             tsaURL: configuration.timestampUrl,
             asyncSigner: { [self] data in
-                print("[WebServiceSigner] AsyncSigner called with data size: \(data.count)")
+                log.info("AsyncSigner called with data size: \(data.count)")
                 return try await self.signData(data, signingURL: configuration.signingUrl)
             }
         )
@@ -143,11 +146,11 @@ public final class WebServiceSigner: @unchecked Sendable {
     }
 
     private func signData(_ data: Data, signingURL: String) async throws -> Data {
-        print("[WebServiceSigner] Starting signData with URL: \(signingURL)")
-        print("[WebServiceSigner] Data size to sign: \(data.count) bytes")
+        log.info("Starting signData with URL: \(signingURL)")
+        log.info("Data size to sign: \(data.count) bytes")
 
         guard let url = URL(string: signingURL) else {
-            print("[WebServiceSigner] ERROR: Invalid signing URL: \(signingURL)")
+            log.error("Invalid signing URL: \(signingURL)")
             throw SignerError.invalidURL
         }
 
@@ -164,29 +167,29 @@ public final class WebServiceSigner: @unchecked Sendable {
         // Bearer token can override Authorization header if provided
         if let bearerToken = bearerToken {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
-            print("[WebServiceSigner] Added bearer token to request")
+            log.info("Added bearer token to request")
         }
 
         let requestBody = SignRequest(claim: data.base64EncodedString())
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
-        print("[WebServiceSigner] Request body size: \(request.httpBody?.count ?? 0) bytes")
-        print("[WebServiceSigner] Making POST request to: \(url.absoluteString)")
+        log.info("Request body size: \(request.httpBody?.count ?? 0) bytes")
+        log.info("Making POST request to: \(url.absoluteString)")
 
         let (responseData, response) = try await URLSession.shared.data(for: request)
-        print("[WebServiceSigner] Received response")
+        log.info("Received response")
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("[WebServiceSigner] ERROR: Response is not HTTPURLResponse")
+            log.error("Response is not HTTPURLResponse")
             throw SignerError.invalidResponse
         }
 
-        print("[WebServiceSigner] Response status code: \(httpResponse.statusCode)")
+        log.info("Response status code: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
-            print("[WebServiceSigner] ERROR: HTTP error \(httpResponse.statusCode)")
+            log.error("HTTP error \(httpResponse.statusCode)")
             if let errorBody = String(data: responseData, encoding: .utf8) {
-                print("[WebServiceSigner] Error response body: \(errorBody)")
+                log.error("Error response body: \(errorBody)")
             }
             throw SignerError.httpError(statusCode: httpResponse.statusCode)
         }
@@ -195,11 +198,11 @@ public final class WebServiceSigner: @unchecked Sendable {
         let signResponse = try decoder.decode(SignResponse.self, from: responseData)
 
         guard let signatureData = Data(base64Encoded: signResponse.signature) else {
-            print("[WebServiceSigner] ERROR: Failed to decode signature from base64")
+            log.error("Failed to decode signature from base64")
             throw SignerError.invalidSignature
         }
 
-        print("[WebServiceSigner] Successfully decoded signature, size: \(signatureData.count) bytes")
+        log.error("Successfully decoded signature, size: \(signatureData.count) bytes")
         return signatureData
     }
 
