@@ -51,7 +51,7 @@ public struct StreamOptions: OptionSet, Sendable {
 /// ### File-based Stream
 ///
 /// ```swift
-/// let stream = try Stream(fileURL: fileURL)
+/// let stream = try Stream(readFrom: fileURL)
 /// ```
 ///
 /// ### In-memory Stream
@@ -110,7 +110,7 @@ public final class Stream {
         let s: Seeker?
         let w: Writer?
         let f: Flusher?
-        // Also store the FileHandle Box if created by Stream(fileURL:)
+        // Also store the FileHandle Box if created by Stream(readFrom:) and others
         // to ensure its lifetime is tied to the Stream object itself.
         var fileHandleBox: AnyObject?
 

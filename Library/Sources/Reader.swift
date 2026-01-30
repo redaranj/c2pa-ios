@@ -40,7 +40,7 @@ import Foundation
 /// ## Example
 ///
 /// ```swift
-/// let stream = try Stream(fileURL: imageURL)
+/// let stream = try Stream(readFrom: imageURL)
 /// let reader = try Reader(format: "image/jpeg", stream: stream)
 /// let manifestJSON = try reader.json()
 /// print("Manifest: \(manifestJSON)")
@@ -117,7 +117,7 @@ public final class Reader {
     /// ## Example
     ///
     /// ```swift
-    /// let stream = try Stream(fileURL: imageURL)
+    /// let stream = try Stream(readFrom: imageURL)
     /// let reader = try Reader(format: "image/jpeg", stream: stream)
     ///
     /// // Standard JSON for typical use
@@ -143,7 +143,7 @@ public final class Reader {
     /// ## Example
     ///
     /// ```swift
-    /// let stream = try Stream(fileURL: imageURL)
+    /// let stream = try Stream(readFrom: imageURL)
     /// let reader = try Reader(format: "image/jpeg", stream: stream)
     /// if let remoteURL = reader.remoteURL() {
     ///     print("Manifest hosted at: \(remoteURL)")
@@ -171,7 +171,7 @@ public final class Reader {
     /// ## Example
     ///
     /// ```swift
-    /// let stream = try Stream(fileURL: imageURL)
+    /// let stream = try Stream(readFrom: imageURL)
     /// let reader = try Reader(format: "image/jpeg", stream: stream)
     /// if reader.isEmbedded() {
     ///     print("Manifest is embedded in the file")

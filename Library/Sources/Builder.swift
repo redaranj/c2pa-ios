@@ -244,8 +244,8 @@ public final class Builder {
     /// ```swift
     /// let builder = try Builder(manifestJSON: manifestJSON)
     /// let signer = try Signer(info: signerInfo)
-    /// let sourceStream = try Stream(fileURL: sourceURL)
-    /// let destStream = try Stream(fileURL: destURL)
+    /// let sourceStream = try Stream(readFrom: sourceURL)
+    /// let destStream = try Stream(writeTo: destURL)
     ///
     /// let manifestData = try builder.sign(
     ///     format: "image/jpeg",
