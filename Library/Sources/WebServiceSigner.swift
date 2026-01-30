@@ -86,17 +86,17 @@ public final class WebServiceSigner: @unchecked Sendable {
     public func createSigner() async throws -> Signer {
         let configuration = try await fetchConfiguration()
         let signingAlgorithm = try mapAlgorithm(configuration.algorithm)
-        self.signingURL = configuration.signing_url
-        let certificateChain = try parseCertificateChain(configuration.certificate_chain)
+        self.signingURL = configuration.signingUrl
+        let certificateChain = try parseCertificateChain(configuration.certificateChain)
 
         // Use strong self capture to keep WebServiceSigner alive
         return try Signer(
             algorithm: signingAlgorithm,
             certificateChainPEM: certificateChain,
-            tsaURL: configuration.timestamp_url,
+            tsaURL: configuration.timestampUrl,
             asyncSigner: { [self] data in
                 print("[WebServiceSigner] AsyncSigner called with data size: \(data.count)")
-                return try await self.signData(data, signingURL: configuration.signing_url)
+                return try await self.signData(data, signingURL: configuration.signingUrl)
             }
         )
     }
@@ -222,10 +222,18 @@ public final class WebServiceSigner: @unchecked Sendable {
 }
 
 private struct SignerConfiguration: Codable {
+    enum CodingKeys: String, CodingKey {
+        case algorithm
+        case timestampUrl = "timestamp_url"
+        case signingUrl = "signing_url"
+        case certificateChain = "certificate_chain"
+    }
+
+
     let algorithm: String
-    let timestamp_url: String
-    let signing_url: String
-    let certificate_chain: String
+    let timestampUrl: String
+    let signingUrl: String
+    let certificateChain: String
 }
 
 private struct SignRequest: Codable {
