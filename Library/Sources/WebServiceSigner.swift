@@ -57,6 +57,7 @@ public final class WebServiceSigner: @unchecked Sendable {
     private let configurationURL: String
     private let bearerToken: String?
     private let customHeaders: [String: String]
+    private let urlSession: URLSession
     private var signingURL: String?
 
     private lazy var log = Logger(subsystem: "C2PA", category: String(describing: type(of: self)))
@@ -67,10 +68,12 @@ public final class WebServiceSigner: @unchecked Sendable {
     ///   - configurationURL: The URL of the signing service configuration endpoint.
     ///   - bearerToken: Optional bearer token for authentication.
     ///   - headers: Additional custom HTTP headers to include in requests.
-    public init(configurationURL: String, bearerToken: String? = nil, headers: [String: String] = [:]) {
+    ///   - urlSession: Optional ``URLSession`` object. If not given ``URLSession.shared`` will be used.
+    public init(configurationURL: String, bearerToken: String? = nil, headers: [String: String] = [:], urlSession: URLSession = .shared) {
         self.configurationURL = configurationURL
         self.bearerToken = bearerToken
         self.customHeaders = headers
+        self.urlSession = urlSession
     }
 
     /// Creates a ``Signer`` instance configured to use this web service.
@@ -131,7 +134,7 @@ public final class WebServiceSigner: @unchecked Sendable {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
         }
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await urlSession.data(for: request)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw SignerError.invalidResponse
@@ -176,7 +179,7 @@ public final class WebServiceSigner: @unchecked Sendable {
         log.info("Request body size: \(request.httpBody?.count ?? 0) bytes")
         log.info("Making POST request to: \(url.absoluteString)")
 
-        let (responseData, response) = try await URLSession.shared.data(for: request)
+        let (responseData, response) = try await urlSession.data(for: request)
         log.info("Received response")
 
         guard let httpResponse = response as? HTTPURLResponse else {
