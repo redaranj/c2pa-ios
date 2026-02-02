@@ -262,7 +262,7 @@ public enum C2PAError: LocalizedError {
             return "Failed to find key '\(tag)' in \(isSecureEnclave ? "Secure Enclave" : "keychain"): \(status)"
 
         case .unsupportedAlgorithm(let algorithm, let isSecureEnclave):
-            return "\(isSecureEnclave ? "Secure Enclave key": "Key") doesn't support algorithm \(algorithm)"
+            return "\(isSecureEnclave ? "Secure Enclave key" : "Key") doesn't support algorithm \(algorithm)"
 
         case .signingFailed(let error, let isSecureEnclave):
             return "\(isSecureEnclave ? "Secure Enclave signing" : "Signing") failed\(error != nil ? ": \(error!)" : ""))"
