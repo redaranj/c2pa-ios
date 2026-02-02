@@ -253,13 +253,48 @@ public final class ComprehensiveTests: TestImplementation {
 
     public func testSigningAlgorithms() -> TestResult {
         let algorithms = SigningAlgorithm.allCases
-        var results: [String] = []
 
         for algorithm in algorithms {
-            if !algorithm.rawValue.isEmpty {
-                results.append("\(algorithm.rawValue)[PASS]")
-            } else {
-                results.append("\(algorithm)[FAIL]")
+            if algorithm.rawValue.isEmpty {
+                return .failure("Signing Algorithms", "[FAIL] \(algorithm).rawValue.isEmpty")
+            }
+
+            // Needed for Codecov
+            switch algorithm {
+            case .es256:
+                if algorithm.secKeyAlgo != .ecdsaSignatureMessageX962SHA256 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .ecdsaSignatureMessageX962SHA256")
+                }
+
+            case .es384:
+                if algorithm.secKeyAlgo != .ecdsaSignatureMessageX962SHA384 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .ecdsaSignatureMessageX962SHA384")
+                }
+
+            case .es512:
+                if algorithm.secKeyAlgo != .ecdsaSignatureMessageX962SHA512 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .ecdsaSignatureMessageX962SHA512")
+                }
+
+            case .ps256:
+                if algorithm.secKeyAlgo != .rsaSignatureMessagePSSSHA256 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .rsaSignatureMessagePSSSHA256")
+                }
+
+            case .ps384:
+                if algorithm.secKeyAlgo != .rsaSignatureMessagePSSSHA384 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .rsaSignatureMessagePSSSHA384")
+                }
+
+            case .ps512:
+                if algorithm.secKeyAlgo != .rsaSignatureMessagePSSSHA512 {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != .rsaSignatureMessagePSSSHA512")
+                }
+
+            default:
+                if algorithm.secKeyAlgo != nil {
+                    return .failure("Signing Algorithms", "[FAIL] \(algorithm).secKeyAlgo != nil")
+                }
             }
         }
 

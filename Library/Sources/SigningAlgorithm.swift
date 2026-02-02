@@ -73,7 +73,7 @@ public enum SigningAlgorithm: String, CaseIterable {
         }
     }
 
-    var secKeyAlgo: SecKeyAlgorithm? {
+    public var secKeyAlgo: SecKeyAlgorithm? {
         switch self {
         case .es256:
             return .ecdsaSignatureMessageX962SHA256
