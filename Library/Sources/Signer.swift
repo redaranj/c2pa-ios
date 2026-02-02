@@ -27,9 +27,9 @@ import Foundation
 /// ## Topics
 ///
 /// ### Creating a Signer
-/// - ``init(certsPEM:privateKeyPEM:algorithm:tsaURL:)``
+/// - ``init(certsPEM:privateKeyPEM:algorithm:tsa:)``
 /// - ``init(info:)``
-/// - ``init(algorithm:certificateChainPEM:tsaURL:sign:)``
+/// - ``init(algorithm:certificateChainPEM:tsa:sign:)``
 ///
 /// ### Signing Operations
 /// - ``reserveSize()``
@@ -44,7 +44,7 @@ import Foundation
 ///     certsPEM: certificateChainPEM,
 ///     privateKeyPEM: privateKeyPEM,
 ///     algorithm: .es256,
-///     tsaURL: "http://timestamp.digicert.com"
+///     tsa: URL(string: "http://timestamp.digicert.com")
 /// )
 /// ```
 ///
@@ -54,7 +54,7 @@ import Foundation
 /// let signer = try Signer(
 ///     algorithm: .es256,
 ///     certificateChainPEM: certChainPEM,
-///     tsaURL: "http://timestamp.digicert.com"
+///     tsa: URL(string: "http://timestamp.digicert.com")
 /// ) { dataToSign in
 ///     // Custom signing logic (e.g., hardware key, remote service)
 ///     return try signWithHardwareKey(dataToSign)
@@ -90,7 +90,7 @@ public final class Signer {
     ///   - certsPEM: The certificate chain in PEM format.
     ///   - privateKeyPEM: The private key in PEM format.
     ///   - algorithm: The signing algorithm to use.
-    ///   - tsaURL: Optional URL of a timestamp authority for trusted timestamps.
+    ///   - tsa: Optional URL of a timestamp authority for trusted timestamps.
     ///
     /// - Throws: ``C2PAError`` if the credentials are invalid or incompatible.
     ///
@@ -99,14 +99,14 @@ public final class Signer {
         certsPEM: String,
         privateKeyPEM: String,
         algorithm: SigningAlgorithm,
-        tsaURL: String? = nil
+        tsa: URL? = nil
     ) throws {
         var raw: UnsafeMutablePointer<C2paSigner>!
         try withSignerInfo(
             alg: algorithm.rawValue,
             cert: certsPEM,
             key: privateKeyPEM,
-            tsa: tsaURL
+            tsa: tsa
         ) { algPtr, certPtr, keyPtr, tsaPtr in
             var info = C2paSignerInfo(
                 alg: algPtr,
@@ -133,7 +133,7 @@ public final class Signer {
             certsPEM: info.certificatePEM,
             privateKeyPEM: info.privateKeyPEM,
             algorithm: info.algorithm,
-            tsaURL: info.tsaURL)
+            tsa: info.tsa)
     }
 
     /// Creates a signer from JSON settings configuration.
@@ -188,7 +188,7 @@ public final class Signer {
     ///
     /// - Note: This method requires C2PAC framework v0.71.0 or later.
     ///
-    /// - SeeAlso: ``init(certsPEM:privateKeyPEM:algorithm:tsaURL:)``
+    /// - SeeAlso: ``init(certsPEM:privateKeyPEM:algorithm:tsa:)``
     public convenience init(settingsJSON: String) throws {
         try self.init(settings: settingsJSON, format: .json)
     }
@@ -290,7 +290,7 @@ public final class Signer {
     /// - Parameters:
     ///   - algorithm: The signing algorithm that matches your closure's implementation.
     ///   - certificateChainPEM: The certificate chain in PEM format.
-    ///   - tsaURL: Optional URL of a timestamp authority for trusted timestamps.
+    ///   - tsa: Optional URL of a timestamp authority for trusted timestamps.
     ///   - sign: A closure that accepts data to sign and returns the signature.
     ///
     /// - Throws: ``C2PAError`` if the signer cannot be created.
@@ -301,7 +301,7 @@ public final class Signer {
     /// let signer = try Signer(
     ///     algorithm: .es256,
     ///     certificateChainPEM: certChain,
-    ///     tsaURL: "http://timestamp.digicert.com"
+    ///     tsa: URL(string: "http://timestamp.digicert.com")
     /// ) { dataToSign in
     ///     let signature = try SecKeyCreateSignature(
     ///         privateKeyRef,
@@ -317,7 +317,7 @@ public final class Signer {
     public convenience init(
         algorithm: SigningAlgorithm,
         certificateChainPEM: String,
-        tsaURL: String? = nil,
+        tsa: URL? = nil,
         sign: @escaping (Data) throws -> Data
     ) throws {
         // keep closure alive
@@ -347,7 +347,7 @@ public final class Signer {
 
         var raw: UnsafeMutablePointer<C2paSigner>!
         try certificateChainPEM.withCString { certPtr in
-            try withOptionalCString(tsaURL) { tsaPtr in
+            try withOptionalCString(tsa?.absoluteString) { tsaPtr in
                 raw = try guardNotNull(
                     c2pa_signer_create(
                         ref.toOpaque(),  // Pass opaque pointer to Box instance

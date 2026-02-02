@@ -53,7 +53,7 @@ extension Signer {
     /// - Parameters:
     ///   - algorithm: Must be `.es256` (the only algorithm supported by Secure Enclave).
     ///   - certificateChainPEM: The certificate chain in PEM format.
-    ///   - tsaURL: Optional URL of a timestamp authority.
+    ///   - tsa: Optional URL of a timestamp authority.
     ///   - secureEnclaveConfig: Configuration specifying the key tag and access control.
     ///
     /// - Throws: ``C2PAError`` if the algorithm is not ES256, if the Secure Enclave is
@@ -70,7 +70,7 @@ extension Signer {
     /// let signer = try Signer(
     ///     algorithm: .es256,
     ///     certificateChainPEM: certChainPEM,
-    ///     tsaURL: "http://timestamp.digicert.com",
+    ///     tsa: URL(string: "http://timestamp.digicert.com"),
     ///     secureEnclaveConfig: config
     /// )
     /// ```
@@ -85,7 +85,7 @@ extension Signer {
     public convenience init(
         algorithm: SigningAlgorithm,
         certificateChainPEM: String,
-        tsaURL: String? = nil,
+        tsa: URL? = nil,
         secureEnclaveConfig: SecureEnclaveSignerConfig
     ) throws {
         guard algorithm == .es256 else {
@@ -95,7 +95,7 @@ extension Signer {
         try self.init(
             algorithm: algorithm,
             certificateChainPEM: certificateChainPEM,
-            tsaURL: tsaURL
+            tsa: tsa
         ) { data in
             let query: [String: Any] = [
                 kSecClass as String: kSecClassKey,

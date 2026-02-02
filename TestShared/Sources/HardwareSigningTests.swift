@@ -163,7 +163,7 @@ public final class HardwareSigningTests: TestImplementation {
                 _ = try Signer(
                     algorithm: .es256,
                     certificateChainPEM: TestUtilities.testCertsPEM,
-                    tsaURL: nil,
+                    tsa: nil,
                     secureEnclaveConfig: config
                 )
             } catch {
@@ -296,7 +296,7 @@ public final class HardwareSigningTests: TestImplementation {
                         let signer = try Signer(
                             algorithm: .es256,
                             certificateChainPEM: certChain,
-                            tsaURL: nil,
+                            tsa: nil,
                             secureEnclaveConfig: config
                         )
                         _ = signer
@@ -444,7 +444,7 @@ public final class HardwareSigningTests: TestImplementation {
             let keychainSigner = try Signer(
                 algorithm: .es256,
                 certificateChainPEM: certificateChain,
-                tsaURL: nil,
+                tsa: nil,
                 keychainKeyTag: keyTag
             )
             testSteps.append("✓ Created keychain signer successfully")

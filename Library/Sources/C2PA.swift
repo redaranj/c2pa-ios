@@ -134,7 +134,7 @@ public enum C2PA {
     ///     certificatePEM: certPEM,
     ///     privateKeyPEM: keyPEM,
     ///     algorithm: .es256,
-    ///     tsaURL: "http://timestamp.digicert.com"
+    ///     tsa: URL(string: "http://timestamp.digicert.com")
     /// )
     ///
     /// try C2PA.signFile(
@@ -161,7 +161,7 @@ public enum C2PA {
             alg: signerInfo.algorithm.rawValue,
             cert: signerInfo.certificatePEM,
             key: signerInfo.privateKeyPEM,
-            tsa: signerInfo.tsaURL
+            tsa: signerInfo.tsa
         ) { algPtr, certPtr, keyPtr, tsaPtr in
             var sInfo = C2paSignerInfo(
                 alg: algPtr,

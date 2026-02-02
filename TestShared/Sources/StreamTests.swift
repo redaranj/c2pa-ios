@@ -256,7 +256,7 @@ public final class StreamTests: TestImplementation {
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                 algorithm: .es256,
-                tsaURL: nil
+                tsa: nil
             )
 
             _ = try? builder.sign(format: "image/jpeg", source: sourceStream, destination: destStream, signer: signer)

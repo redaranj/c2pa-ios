@@ -165,7 +165,7 @@ public final class ComprehensiveTests: TestImplementation {
 
         do {
             let builder = try Builder(manifestJSON: manifestJSON)
-            try builder.setRemoteURL("https://example.com/manifest")
+            try builder.setRemote(url: URL(string: "https://example.com/manifest")!)
             return .success("Builder Remote URL", "[PASS] Set remote URL on builder")
         } catch {
             return .failure("Builder Remote URL", "Failed: \(error)")
@@ -359,7 +359,7 @@ public final class ComprehensiveTests: TestImplementation {
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                 algorithm: .es256,
-                tsaURL: nil
+                tsa: nil
             )
 
             _ = try builder.sign(

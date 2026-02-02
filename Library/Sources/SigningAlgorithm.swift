@@ -106,7 +106,7 @@ public enum SigningAlgorithm: String, CaseIterable {
 ///     algorithm: .es256,
 ///     certificatePEM: certChainPEM,
 ///     privateKeyPEM: privateKeyPEM,
-///     tsaURL: "http://timestamp.digicert.com"
+///     tsa: URL(string: "http://timestamp.digicert.com")
 /// )
 ///
 /// let signer = try Signer(info: signerInfo)
@@ -124,7 +124,7 @@ public struct SignerInfo {
     public let privateKeyPEM: String
 
     /// Optional URL of a timestamp authority for trusted timestamps.
-    public let tsaURL: String?
+    public let tsa: URL?
 
     /// Creates a new signer info structure.
     ///
@@ -132,16 +132,16 @@ public struct SignerInfo {
     ///   - algorithm: The signing algorithm.
     ///   - certificatePEM: The certificate chain in PEM format.
     ///   - privateKeyPEM: The private key in PEM format.
-    ///   - tsaURL: Optional timestamp authority URL.
+    ///   - tsa: Optional timestamp authority URL.
     public init(
         algorithm: SigningAlgorithm,
         certificatePEM: String,
         privateKeyPEM: String,
-        tsaURL: String? = nil
+        tsa: URL? = nil
     ) {
         self.algorithm = algorithm
         self.certificatePEM = certificatePEM
         self.privateKeyPEM = privateKeyPEM
-        self.tsaURL = tsaURL
+        self.tsa = tsa
     }
 }

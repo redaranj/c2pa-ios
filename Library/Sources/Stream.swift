@@ -38,7 +38,9 @@ public struct StreamOptions: OptionSet, Sendable {
 /// ### Creating Streams
 /// - ``init(read:seek:write:flush:)``
 /// - ``init(data:)``
-/// - ``init(fileURL:truncate:createIfNeeded:)``
+/// - ``init(writeTo:)``
+/// - ``init(update:)``
+/// - ``init(readFrom:)``
 ///
 /// ### Stream Callbacks
 /// - ``Reader``

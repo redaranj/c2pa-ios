@@ -25,7 +25,7 @@ extension Signer {
     /// - Parameters:
     ///   - algorithm: The signing algorithm (ES256, ES384, ES512, PS256, PS384, or PS512).
     ///   - certificateChainPEM: The certificate chain in PEM format.
-    ///   - tsaURL: Optional URL of a timestamp authority.
+    ///   - tsa: Optional URL of a timestamp authority.
     ///   - keychainKeyTag: The keychain tag identifying the private key.
     ///
     /// - Throws: ``C2PAError`` if the key cannot be found, doesn't support the algorithm,
@@ -38,7 +38,7 @@ extension Signer {
     /// let signer = try Signer(
     ///     algorithm: .es256,
     ///     certificateChainPEM: certChainPEM,
-    ///     tsaURL: "http://timestamp.digicert.com",
+    ///     tsa: URL(string: "http://timestamp.digicert.com"),
     ///     keychainKeyTag: "com.example.c2pa.signing.key"
     /// )
     ///
@@ -60,7 +60,7 @@ extension Signer {
     public convenience init(
         algorithm: SigningAlgorithm,
         certificateChainPEM: String,
-        tsaURL: String? = nil,
+        tsa: URL? = nil,
         keychainKeyTag: String
     ) throws {
         guard let secAlgorithm = algorithm.secKeyAlgo else {
@@ -70,7 +70,7 @@ extension Signer {
         try self.init(
             algorithm: algorithm,
             certificateChainPEM: certificateChainPEM,
-            tsaURL: tsaURL
+            tsa: tsa
         ) { data in
             let query: [String: Any] = [
                 kSecClass as String: kSecClassKey,

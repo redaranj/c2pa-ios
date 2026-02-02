@@ -26,7 +26,7 @@ public final class SigningTests: TestImplementation {
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                 algorithm: .es256,
-                tsaURL: nil
+                tsa: nil
             )
             _ = signer
             return .success("Signer Creation", "[PASS] Created PEM-based signer with valid certificates")
@@ -57,7 +57,7 @@ public final class SigningTests: TestImplementation {
             let signer = try Signer(
                 algorithm: .es256,
                 certificateChainPEM: TestUtilities.testCertsPEM,
-                tsaURL: nil,
+                tsa: nil,
                 sign: signCallback
             )
 
@@ -129,7 +129,7 @@ public final class SigningTests: TestImplementation {
                     certsPEM: TestUtilities.testCertsPEM,
                     privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                     algorithm: algorithm,
-                    tsaURL: nil
+                    tsa: nil
                 )
                 supportedCount += 1
                 results.append("\(algorithm)[PASS]")
@@ -145,14 +145,14 @@ public final class SigningTests: TestImplementation {
 
 
     public func testSignerWithTimestampAuthority() -> TestResult {
-        let tsaURL = "http://timestamp.digecert.com"
+        let tsa = URL(string: "http://timestamp.digecert.com")
 
         do {
             let signer = try Signer(
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                 algorithm: .es256,
-                tsaURL: tsaURL
+                tsa: tsa
             )
             _ = signer
             return .success("Signer With TSA", "[PASS] Created signer with TSA URL")
@@ -185,7 +185,7 @@ public final class SigningTests: TestImplementation {
             let configurationURL = ProcessInfo.processInfo.environment["SIGNING_SERVER_URL"] ?? "http://127.0.0.1:8080"
             let bearerToken = ProcessInfo.processInfo.environment["SIGNING_SERVER_TOKEN"] ?? "test-bearer-token-12345"
             let webServiceSigner = WebServiceSigner(
-                configurationURL: "\(configurationURL)/api/v1/c2pa/configuration",
+                confEndpoint: URL(string: "\(configurationURL)/api/v1/c2pa/configuration")!,
                 bearerToken: bearerToken
             )
             testSteps.append("✓ Created WebServiceSigner with configuration URL")

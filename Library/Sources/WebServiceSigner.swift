@@ -30,14 +30,14 @@ import OSLog
 /// ## Topics
 ///
 /// ### Creating a Web Service Signer
-/// - ``init(configurationURL:bearerToken:headers:)``
+/// - ``init(confEndpoint:bearerToken:headers:urlSession:)``
 /// - ``createSigner()``
 ///
 /// ## Example
 ///
 /// ```swift
 /// let webServiceSigner = WebServiceSigner(
-///     configurationURL: "https://signing.example.com/config",
+///     configuration: URL(string: "https://signing.example.com/config"),
 ///     bearerToken: "your-auth-token"
 /// )
 ///
@@ -54,23 +54,23 @@ import OSLog
 ///
 /// - SeeAlso: ``Signer``, ``SignerError``
 public final class WebServiceSigner: @unchecked Sendable {
-    private let configurationURL: String
+    private let confEndpoint: URL
     private let bearerToken: String?
     private let customHeaders: [String: String]
     private let urlSession: URLSession
-    private var signingURL: String?
+    private var signingEndpoint: URL?
 
     private lazy var log = Logger(subsystem: "C2PA", category: String(describing: type(of: self)))
 
     /// Creates a new web service signer client.
     ///
     /// - Parameters:
-    ///   - configurationURL: The URL of the signing service configuration endpoint.
+    ///   - confEndpoint: The URL of the signing service configuration endpoint.
     ///   - bearerToken: Optional bearer token for authentication.
     ///   - headers: Additional custom HTTP headers to include in requests.
     ///   - urlSession: Optional ``URLSession`` object. If not given ``URLSession.shared`` will be used.
-    public init(configurationURL: String, bearerToken: String? = nil, headers: [String: String] = [:], urlSession: URLSession = .shared) {
-        self.configurationURL = configurationURL
+    public init(confEndpoint: URL, bearerToken: String? = nil, headers: [String: String] = [:], urlSession: URLSession = .shared) {
+        self.confEndpoint = confEndpoint
         self.bearerToken = bearerToken
         self.customHeaders = headers
         self.urlSession = urlSession
@@ -92,17 +92,17 @@ public final class WebServiceSigner: @unchecked Sendable {
     public func createSigner() async throws -> Signer {
         let configuration = try await fetchConfiguration()
         let signingAlgorithm = try mapAlgorithm(configuration.algorithm)
-        self.signingURL = configuration.signingUrl
+        self.signingEndpoint = configuration.signingEndpoint
         let certificateChain = try parseCertificateChain(configuration.certificateChain)
 
         // Use strong self capture to keep WebServiceSigner alive
         return try Signer(
             algorithm: signingAlgorithm,
             certificateChainPEM: certificateChain,
-            tsaURL: configuration.timestampUrl,
+            tsa: configuration.timestamp,
             asyncSigner: { [self] data in
                 log.info("AsyncSigner called with data size: \(data.count)")
-                return try await self.signData(data, signingURL: configuration.signingUrl)
+                return try await self.signData(data, signing: configuration.signingEndpoint)
             }
         )
     }
@@ -116,11 +116,7 @@ public final class WebServiceSigner: @unchecked Sendable {
     }
 
     private func fetchConfiguration() async throws -> SignerConfiguration {
-        guard let url = URL(string: configurationURL) else {
-            throw SignerError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: confEndpoint)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -148,16 +144,11 @@ public final class WebServiceSigner: @unchecked Sendable {
         return try decoder.decode(SignerConfiguration.self, from: data)
     }
 
-    private func signData(_ data: Data, signingURL: String) async throws -> Data {
-        log.info("Starting signData with URL: \(signingURL)")
+    private func signData(_ data: Data, signing: URL) async throws -> Data {
+        log.info("Starting signData with URL: \(signing)")
         log.info("Data size to sign: \(data.count) bytes")
 
-        guard let url = URL(string: signingURL) else {
-            log.error("Invalid signing URL: \(signingURL)")
-            throw SignerError.invalidURL
-        }
-
-        var request = URLRequest(url: url)
+        var request = URLRequest(url: signing)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -177,7 +168,7 @@ public final class WebServiceSigner: @unchecked Sendable {
         let encoder = JSONEncoder()
         request.httpBody = try encoder.encode(requestBody)
         log.info("Request body size: \(request.httpBody?.count ?? 0) bytes")
-        log.info("Making POST request to: \(url.absoluteString)")
+        log.info("Making POST request to: \(signing.absoluteString)")
 
         let (responseData, response) = try await urlSession.data(for: request)
         log.info("Received response")
@@ -230,15 +221,15 @@ public final class WebServiceSigner: @unchecked Sendable {
 private struct SignerConfiguration: Codable {
     enum CodingKeys: String, CodingKey {
         case algorithm
-        case timestampUrl = "timestamp_url"
-        case signingUrl = "signing_url"
+        case timestamp = "timestamp_url"
+        case signingEndpoint = "signing_url"
         case certificateChain = "certificate_chain"
     }
 
 
     let algorithm: String
-    let timestampUrl: String
-    let signingUrl: String
+    let timestamp: URL
+    let signingEndpoint: URL
     let certificateChain: String
 }
 
@@ -313,7 +304,7 @@ extension Signer {
     /// - Parameters:
     ///   - algorithm: The signing algorithm.
     ///   - certificateChainPEM: The certificate chain in PEM format.
-    ///   - tsaURL: Optional URL of a timestamp authority.
+    ///   - tsa: Optional URL of a timestamp authority.
     ///   - asyncSigner: An async closure that accepts data to sign and returns the signature.
     ///
     /// - Throws: ``C2PAError`` if the signer cannot be created.
@@ -325,13 +316,13 @@ extension Signer {
     public convenience init(
         algorithm: SigningAlgorithm,
         certificateChainPEM: String,
-        tsaURL: String? = nil,
+        tsa: URL? = nil,
         asyncSigner: @escaping @Sendable (Data) async throws -> Data
     ) throws {
         try self.init(
             algorithm: algorithm,
             certificateChainPEM: certificateChainPEM,
-            tsaURL: tsaURL
+            tsa: tsa
         ) { data in
             // Thread-safe result container
             final class ResultBox: @unchecked Sendable {

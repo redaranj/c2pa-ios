@@ -45,7 +45,7 @@ func guardNonNegative(_ v: Int64) throws -> Int64 {
 // Borrow 4 strings for one call (alg, cert, key, tsa)
 @inline(__always)
 func withSignerInfo<R>(
-    alg: String, cert: String, key: String, tsa: String?,
+    alg: String, cert: String, key: String, tsa: URL?,
     _ body: (
         UnsafePointer<CChar>, UnsafePointer<CChar>,
         UnsafePointer<CChar>, UnsafePointer<CChar>?
@@ -54,7 +54,7 @@ func withSignerInfo<R>(
     try alg.withCString { algPtr in
         try cert.withCString { certPtr in
             try key.withCString { keyPtr in
-                if let tsa {
+                if let tsa = tsa?.absoluteString {
                     return try tsa.withCString { tsaPtr in
                         try body(algPtr, certPtr, keyPtr, tsaPtr)
                     }

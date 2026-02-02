@@ -135,30 +135,30 @@ public final class Reader {
     /// Returns the remote URL where the manifest is hosted, if available.
     ///
     /// This method returns the URL specified when the manifest was created with
-    /// ``Builder/setNoEmbed()`` and ``Builder/setRemoteURL(_:)``. The URL indicates
+    /// ``Builder/setNoEmbed()`` and ``Builder/setRemote(url:)``. The URL indicates
     /// where the manifest can be retrieved separately from the media file.
     ///
-    /// - Returns: The remote URL string, or `nil` if the manifest is embedded.
+    /// - Returns: The remote URL, or `nil` if the manifest is embedded.
     ///
     /// ## Example
     ///
     /// ```swift
     /// let stream = try Stream(readFrom: imageURL)
     /// let reader = try Reader(format: "image/jpeg", stream: stream)
-    /// if let remoteURL = reader.remoteURL() {
-    ///     print("Manifest hosted at: \(remoteURL)")
+    /// if let remote = reader.remote() {
+    ///     print("Manifest hosted at: \(remote.absoluteString)")
     /// } else {
     ///     print("Manifest is embedded")
     /// }
     /// ```
     ///
     /// - SeeAlso: ``isEmbedded()``
-    public func remoteURL() -> String? {
+    public func remote() -> URL? {
         guard let cString = c2pa_reader_remote_url(ptr) else {
             return nil
         }
         defer { c2pa_string_free(UnsafeMutablePointer(mutating: cString)) }
-        return String(cString: cString)
+        return URL(string: String(cString: cString))
     }
 
     /// Returns whether the manifest is embedded in the media file.
@@ -180,7 +180,7 @@ public final class Reader {
     /// }
     /// ```
     ///
-    /// - SeeAlso: ``remoteURL()``
+    /// - SeeAlso: ``remote()``
     public func isEmbedded() -> Bool {
         c2pa_reader_is_embedded(ptr)
     }
