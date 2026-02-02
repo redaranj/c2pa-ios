@@ -114,7 +114,7 @@ public final class HardwareSigningTests: TestImplementation {
 
             // Test 2: Extract public key
             guard let publicKey = SecKeyCopyPublicKey(secureEnclaveKey) else {
-                throw C2PAError.api("Failed to extract public key")
+                throw C2PAError.publicKeyExtractionFailed
             }
             testSteps.append("✓ Extracted public key from Secure Enclave key")
 
@@ -122,10 +122,7 @@ public final class HardwareSigningTests: TestImplementation {
             var error: Unmanaged<CFError>?
             guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data?
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Failed to export public key: \(error)")
-                }
-                throw C2PAError.api("Failed to export public key")
+                throw C2PAError.publicKeyExportFailed(error?.takeRetainedValue())
             }
             testSteps.append("✓ Exported public key data: \(publicKeyData.count) bytes")
 
@@ -151,10 +148,7 @@ public final class HardwareSigningTests: TestImplementation {
                     &error
                 ) as Data?
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Signing failed: \(error)")
-                }
-                throw C2PAError.api("Signing failed")
+                throw C2PAError.signingFailed(error?.takeRetainedValue())
             }
             testSteps.append("✓ Successfully signed test data: \(signature.count) bytes")
 
@@ -219,7 +213,7 @@ public final class HardwareSigningTests: TestImplementation {
 
             // Extract public key
             guard let publicKey = SecKeyCopyPublicKey(secureEnclaveKey) else {
-                throw C2PAError.api("Failed to extract public key")
+                throw C2PAError.publicKeyExtractionFailed
             }
             testSteps.append("✓ Extracted public key")
 
@@ -372,17 +366,14 @@ public final class HardwareSigningTests: TestImplementation {
 
             // Get public key
             guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
-                throw C2PAError.api("Failed to extract public key")
+                throw C2PAError.publicKeyExtractionFailed
             }
             testSteps.append("✓ Retrieved public key from keychain")
 
             // Export public key
             guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data?
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Failed to export public key: \(error)")
-                }
-                throw C2PAError.api("Failed to export public key")
+                throw C2PAError.publicKeyExportFailed(error?.takeRetainedValue())
             }
             testSteps.append("✓ Exported public key: \(publicKeyData.count) bytes")
 
@@ -396,10 +387,7 @@ public final class HardwareSigningTests: TestImplementation {
                     &error
                 ) as Data?
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Signing failed: \(error)")
-                }
-                throw C2PAError.api("Signing failed")
+                throw C2PAError.signingFailed(error?.takeRetainedValue())
             }
             testSteps.append("✓ Successfully signed test data: \(signature.count) bytes")
 

@@ -138,7 +138,7 @@ public final class Builder {
         let encoder = JSONEncoder()
         let data = try encoder.encode(action)
         guard let actionJSON = String(data: data, encoding: .utf8) else {
-            throw C2PAError.api("Failed to encode action to JSON")
+            throw C2PAError.utf8
         }
         _ = try guardNonNegative(
             Int64(c2pa_builder_add_action(ptr, actionJSON))

@@ -34,7 +34,7 @@ import Security
 ///
 /// ### EdDSA Algorithm
 /// - ``ed25519``
-public enum SigningAlgorithm: String, CaseIterable {
+public enum SigningAlgorithm: String, CaseIterable, Sendable {
     /// ECDSA with SHA-256 using the P-256 curve.
     ///
     /// This is the most widely supported algorithm and is recommended for most use cases.

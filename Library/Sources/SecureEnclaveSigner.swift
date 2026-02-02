@@ -89,7 +89,7 @@ extension Signer {
         secureEnclaveConfig: SecureEnclaveSignerConfig
     ) throws {
         guard algorithm == .es256 else {
-            throw C2PAError.api("Secure Enclave only supports ES256 (P-256)")
+            throw C2PAError.unsupportedAlgorithm(algorithm, true)
         }
 
         try self.init(
@@ -116,27 +116,22 @@ extension Signer {
             {
                 privateKey = key
             } else {
-                throw C2PAError.api("Failed to access Secure Enclave key: \(status)")
+                throw C2PAError.keySearchFailed(secureEnclaveConfig.keyTag, status, true)
             }
 
-            let algorithm = SecKeyAlgorithm.ecdsaSignatureMessageX962SHA256
-
-            guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm) else {
-                throw C2PAError.api("Secure Enclave key doesn't support required algorithm")
+            guard SecKeyIsAlgorithmSupported(privateKey, .sign, algorithm.secKeyAlgo!) else {
+                throw C2PAError.unsupportedAlgorithm(algorithm, true)
             }
 
             var error: Unmanaged<CFError>?
             guard
                 let signature = SecKeyCreateSignature(
                     privateKey,
-                    algorithm,
+                    algorithm.secKeyAlgo!,
                     data as CFData,
                     &error)
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Secure Enclave signing failed: \(error)")
-                }
-                throw C2PAError.api("Secure Enclave signing failed")
+                throw C2PAError.signingFailed(error?.takeRetainedValue(), true)
             }
 
             return signature as Data
@@ -168,7 +163,7 @@ extension Signer {
                 nil
             )
         else {
-            throw C2PAError.api("Failed to create access control")
+            throw C2PAError.accessControlCreationFailed
         }
 
         let attributes: [String: Any] = [
@@ -184,10 +179,7 @@ extension Signer {
 
         var error: Unmanaged<CFError>?
         guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-            if let error = error?.takeRetainedValue() {
-                throw C2PAError.api("Failed to create Secure Enclave key: \(error)")
-            }
-            throw C2PAError.api("Failed to create Secure Enclave key")
+            throw C2PAError.keyCreationFailed(error?.takeRetainedValue(), true)
         }
 
         return privateKey

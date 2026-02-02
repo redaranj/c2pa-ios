@@ -64,7 +64,7 @@ extension Signer {
         keychainKeyTag: String
     ) throws {
         guard let secAlgorithm = algorithm.secKeyAlgo else {
-            throw C2PAError.api("Ed25519 not supported by iOS Keychain")
+            throw C2PAError.ed25519NotSupported
         }
 
         try self.init(
@@ -85,11 +85,11 @@ extension Signer {
             guard status == errSecSuccess,
                 let privateKey = item as! SecKey?
             else {
-                throw C2PAError.api("Failed to find key '\(keychainKeyTag)' in keychain: \(status)")
+                throw C2PAError.keySearchFailed(keychainKeyTag, status)
             }
 
             guard SecKeyIsAlgorithmSupported(privateKey, .sign, secAlgorithm) else {
-                throw C2PAError.api("Key doesn't support algorithm \(algorithm)")
+                throw C2PAError.unsupportedAlgorithm(algorithm)
             }
 
             var error: Unmanaged<CFError>?
@@ -100,10 +100,7 @@ extension Signer {
                     data as CFData,
                     &error)
             else {
-                if let error = error?.takeRetainedValue() {
-                    throw C2PAError.api("Signing failed: \(error)")
-                }
-                throw C2PAError.api("Signing failed")
+                throw C2PAError.signingFailed(error?.takeRetainedValue())
             }
 
             return signature as Data

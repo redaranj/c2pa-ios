@@ -419,20 +419,17 @@ extension Signer {
         guard status == errSecSuccess,
             let privateKey = item as! SecKey?
         else {
-            throw C2PAError.api("Failed to find key '\(keyTag)' in keychain: \(status)")
+            throw C2PAError.keySearchFailed(keyTag, status)
         }
 
         guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            throw C2PAError.api("Failed to extract public key")
+            throw C2PAError.publicKeyExtractionFailed
         }
 
         var error: Unmanaged<CFError>?
         guard let publicKeyData = SecKeyCopyExternalRepresentation(publicKey, &error) as Data?
         else {
-            if let error = error?.takeRetainedValue() {
-                throw C2PAError.api("Failed to export public key: \(error)")
-            }
-            throw C2PAError.api("Failed to export public key")
+            throw C2PAError.publicKeyExportFailed(error?.takeRetainedValue())
         }
 
         let base64 = publicKeyData.base64EncodedString(options: [

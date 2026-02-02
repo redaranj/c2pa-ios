@@ -366,7 +366,7 @@ extension Signer {
             case .failure(let error):
                 throw error
             case .none:
-                throw C2PAError.api("Async signing operation failed")
+                throw C2PAError.asyncSigningFailed
             }
         }
     }
