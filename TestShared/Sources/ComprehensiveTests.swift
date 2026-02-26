@@ -56,24 +56,23 @@ public final class ComprehensiveTests: TestImplementation {
 
             let manifestJSON = try C2PA.readFile(at: tempFile)
 
-            if !manifestJSON.isEmpty {
-                let jsonData = Data(manifestJSON.utf8)
-                let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
-
-                if json?["manifests"] != nil {
-                    return .success("Read Image With Manifest", "[PASS] Read manifest from image")
-                }
-                return .success("Read Image With Manifest", "[WARN] No manifests (normal)")
+            // Adobe test image SHOULD have a manifest - fail if empty
+            guard !manifestJSON.isEmpty else {
+                return .failure("Read Image With Manifest", "Adobe test image returned empty manifest JSON")
             }
-            return .success("Read Image With Manifest", "[WARN] No manifest (normal)")
 
-        } catch let error as C2PAError {
-            if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Read Image With Manifest", "[WARN] No manifest (expected)")
+            let jsonData = Data(manifestJSON.utf8)
+            let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+
+            // Adobe test image SHOULD have manifests field
+            guard json?["manifests"] != nil else {
+                return .failure("Read Image With Manifest", "Adobe test image manifest has no 'manifests' field")
             }
-            return .failure("Read Image With Manifest", "Failed: \(error)")
+
+            return .success("Read Image With Manifest", "[PASS] Read manifest from Adobe test image")
+
         } catch {
-            return .failure("Read Image With Manifest", "Failed: \(error)")
+            return .failure("Read Image With Manifest", "Failed to read Adobe test image: \(error)")
         }
     }
 
@@ -208,17 +207,16 @@ public final class ComprehensiveTests: TestImplementation {
             let stream = try Stream(data: imageData)
             let reader = try Reader(format: "image/jpeg", stream: stream)
             let json = try reader.json()
-            if !json.isEmpty {
-                return .success("Reader Creation", "[PASS] Created reader and read manifest")
+
+            // Adobe test image SHOULD have manifest
+            guard !json.isEmpty else {
+                return .failure("Reader Creation", "Adobe test image returned empty JSON from Reader")
             }
-            return .success("Reader Creation", "[PASS] Created reader from stream")
-        } catch let error as C2PAError {
-            if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader Creation", "[WARN] No manifest (expected)")
-            }
-            return .failure("Reader Creation", "Failed: \(error)")
+
+            return .success("Reader Creation", "[PASS] Created reader and read manifest (\(json.count) chars)")
+
         } catch {
-            return .failure("Reader Creation", "Failed: \(error)")
+            return .failure("Reader Creation", "Failed to read Adobe test image: \(error)")
         }
     }
 
@@ -232,22 +230,23 @@ public final class ComprehensiveTests: TestImplementation {
             let reader = try Reader(format: "image/jpeg", stream: stream)
             let json = try reader.json()
 
-            if !json.isEmpty {
-                let jsonData = Data(json.utf8)
-                let manifest = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
-                if manifest?["manifests"] != nil {
-                    return .success("Reader With Test Image", "[PASS] Read manifest from test image")
-                }
-                return .success("Reader With Test Image", "[WARN] Empty manifests")
+            // Adobe test image SHOULD have manifest - fail if empty
+            guard !json.isEmpty else {
+                return .failure("Reader With Test Image", "Adobe test image returned empty JSON")
             }
-            return .success("Reader With Test Image", "[WARN] Empty JSON")
-        } catch let error as C2PAError {
-            if case .api(let message) = error, message.contains("No manifest") {
-                return .success("Reader With Test Image", "[WARN] No manifest")
+
+            let jsonData = Data(json.utf8)
+            let manifest = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
+
+            // Adobe test image SHOULD have manifests field
+            guard manifest?["manifests"] != nil else {
+                return .failure("Reader With Test Image", "Adobe test image manifest has no 'manifests' field")
             }
-            return .failure("Reader With Test Image", "Failed: \(error)")
+
+            return .success("Reader With Test Image", "[PASS] Read manifest from Adobe test image via Reader API")
+
         } catch {
-            return .failure("Reader With Test Image", "Failed: \(error)")
+            return .failure("Reader With Test Image", "Failed to read Adobe test image: \(error)")
         }
     }
 
@@ -346,10 +345,12 @@ public final class ComprehensiveTests: TestImplementation {
     }
 
     public func testReadIngredient() -> TestResult {
+        // Use Adobe test image which HAS a manifest (unlike Pexels which doesn't)
+        // This properly tests ingredient reading on a file with C2PA data
         let testFile = FileManager.default.temporaryDirectory.appendingPathComponent(
             "ingredient_\(UUID().uuidString).jpg")
-        guard let imageData = TestUtilities.loadPexelsTestImage() else {
-            return .failure("Read Ingredient", "Could not load test image")
+        guard let imageData = TestUtilities.loadAdobeTestImage() else {
+            return .failure("Read Ingredient", "Could not load Adobe test image")
         }
 
         do {
@@ -360,32 +361,41 @@ public final class ComprehensiveTests: TestImplementation {
 
             let manifestJSON = try C2PA.readFile(at: testFile)
 
-            if !manifestJSON.isEmpty {
-                let jsonData = Data(manifestJSON.utf8)
-                let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any]
-
-                var hasIngredients = false
-                if let manifests = json?["manifests"] as? [String: Any] {
-                    for (_, manifest) in manifests {
-                        if let m = manifest as? [String: Any],
-                            let ingredients = m["ingredients"] as? [[String: Any]],
-                            !ingredients.isEmpty
-                        {
-                            hasIngredients = true
-                            break
-                        }
-                    }
-                }
-
-                if hasIngredients {
-                    return .success("Read Ingredient", "[PASS] Found ingredients")
-                }
-                return .success("Read Ingredient", "[WARN] No ingredients (normal)")
+            // Adobe image SHOULD have manifest
+            guard !manifestJSON.isEmpty else {
+                return .failure("Read Ingredient", "Adobe test image returned empty manifest")
             }
-            return .success("Read Ingredient", "[WARN] No manifest (normal)")
+
+            let jsonData = Data(manifestJSON.utf8)
+            guard let json = try JSONSerialization.jsonObject(with: jsonData) as? [String: Any] else {
+                return .failure("Read Ingredient", "Failed to parse manifest JSON")
+            }
+
+            guard let manifests = json["manifests"] as? [String: Any] else {
+                return .failure("Read Ingredient", "No manifests field in Adobe test image")
+            }
+
+            // Check if any manifest has ingredients
+            var hasIngredients = false
+            for (_, manifest) in manifests {
+                if let m = manifest as? [String: Any],
+                    let ingredients = m["ingredients"] as? [[String: Any]],
+                    !ingredients.isEmpty
+                {
+                    hasIngredients = true
+                    break
+                }
+            }
+
+            // Adobe test image may or may not have ingredients, but we successfully checked
+            if hasIngredients {
+                return .success("Read Ingredient", "[PASS] Found ingredients in Adobe test image")
+            } else {
+                return .success("Read Ingredient", "[PASS] Adobe test image has manifest but no ingredients")
+            }
 
         } catch {
-            return .success("Read Ingredient", "[WARN] Could not read manifest")
+            return .failure("Read Ingredient", "Failed to read Adobe test image: \(error)")
         }
     }
 

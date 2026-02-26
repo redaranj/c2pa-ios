@@ -87,9 +87,9 @@ public final class HardwareSigningTests: TestImplementation {
 
     public func testSecureEnclaveSignerCreation() -> TestResult {
         guard isSecureEnclaveAvailable() else {
-            return .success(
+            return .skipped(
                 "Secure Enclave Signer Creation",
-                "[WARN] Skipped - Secure Enclave not available (simulator)")
+                "Secure Enclave not available on simulator")
         }
 
         let keyTag = "org.contentauth.test.secure.\(UUID().uuidString)"
@@ -184,9 +184,9 @@ public final class HardwareSigningTests: TestImplementation {
 
     public func testSecureEnclaveCSRSigning() async -> TestResult {
         guard isSecureEnclaveAvailable() else {
-            return .success(
+            return .skipped(
                 "Secure Enclave CSR Signing",
-                "[WARN] Skipped - Secure Enclave not available (simulator)")
+                "Secure Enclave not available on simulator")
         }
 
         var testSteps: [String] = []
@@ -194,9 +194,9 @@ public final class HardwareSigningTests: TestImplementation {
         // Check signing server availability
         let serverAvailable = await isSigningServerAvailable()
         if !serverAvailable {
-            return .success(
+            return .skipped(
                 "Secure Enclave CSR Signing",
-                "[WARN] Skipped - Signing server not available (run 'make signing-server')")
+                "Signing server not available (run 'make signing-server-start')")
         }
         testSteps.append("✓ Signing server is available")
 
@@ -354,13 +354,13 @@ public final class HardwareSigningTests: TestImplementation {
             if let error = error?.takeRetainedValue() {
                 let nsError = error as Error as NSError
                 if nsError.code == -34018 {  // errSecMissingEntitlement
-                    return .success(
+                    return .skipped(
                         "Keychain Signer Creation",
-                        "[WARN] Skipped - Keychain access not available in this test environment")
+                        "Keychain access not available in this test environment")
                 }
-                testSteps.append("✗ Failed to create test key in keychain: \(error)")
+                testSteps.append("Failed to create test key in keychain: \(error)")
             } else {
-                testSteps.append("✗ Failed to create test key in keychain")
+                testSteps.append("Failed to create test key in keychain")
             }
             return .failure(
                 "Keychain Signer Creation",
