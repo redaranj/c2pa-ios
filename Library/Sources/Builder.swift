@@ -135,11 +135,7 @@ public final class Builder {
     ///
     /// - SeeAlso: ``Action``, ``PredefinedAction``
     public func addAction(_ action: Action) throws {
-        let encoder = JSONEncoder()
-        let data = try encoder.encode(action)
-        guard let actionJSON = String(data: data, encoding: .utf8) else {
-            throw C2PAError.api("Failed to encode action to JSON")
-        }
+        let actionJSON = try C2PAJson.encode(action)
         _ = try guardNonNegative(
             Int64(c2pa_builder_add_action(ptr, actionJSON))
         )

@@ -1,15 +1,20 @@
-// This file is licensed to you under the Apache License, Version 2.0 
-// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license 
+// This file is licensed to you under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license
 // (http://opensource.org/licenses/MIT), at your option.
 //
-// Unless required by applicable law or agreed to in writing, this software is 
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF 
-// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE 
+// Unless required by applicable law or agreed to in writing, this software is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF
+// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE
 // files for the specific language governing permissions and limitations under
 // each license.
+//
+//  WebServiceSigner.swift
+//
+
 import C2PAC
 import Crypto
 import Foundation
+import os
 import SwiftASN1
 import X509
 
@@ -53,6 +58,11 @@ import X509
 ///
 /// - SeeAlso: ``Signer``, ``SignerError``
 public final class WebServiceSigner: @unchecked Sendable {
+    private static let logger = Logger(
+        subsystem: "org.c2pa.sdk",
+        category: "WebServiceSigner"
+    )
+
     private let configurationURL: String
     private let bearerToken: String?
     private let customHeaders: [String: String]
@@ -95,7 +105,7 @@ public final class WebServiceSigner: @unchecked Sendable {
             certificateChainPEM: certificateChain,
             tsaURL: configuration.timestamp_url,
             asyncSigner: { [self] data in
-                print("[WebServiceSigner] AsyncSigner called with data size: \(data.count)")
+                Self.logger.debug("AsyncSigner called with data size: \(data.count)")
                 return try await self.signData(data, signingURL: configuration.signing_url)
             }
         )
@@ -151,16 +161,15 @@ public final class WebServiceSigner: @unchecked Sendable {
             throw SignerError.httpError(statusCode: httpResponse.statusCode)
         }
 
-        let decoder = JSONDecoder()
-        return try decoder.decode(SignerConfiguration.self, from: data)
+        return try C2PAJson.decode(SignerConfiguration.self, from: data)
     }
 
     private func signData(_ data: Data, signingURL: String) async throws -> Data {
-        print("[WebServiceSigner] Starting signData with URL: \(signingURL)")
-        print("[WebServiceSigner] Data size to sign: \(data.count) bytes")
+        Self.logger.debug("Starting signData with URL: \(signingURL)")
+        Self.logger.debug("Data size to sign: \(data.count) bytes")
 
         guard let url = URL(string: signingURL) else {
-            print("[WebServiceSigner] ERROR: Invalid signing URL: \(signingURL)")
+            Self.logger.error("Invalid signing URL: \(signingURL)")
             throw SignerError.invalidURL
         }
 
@@ -177,42 +186,40 @@ public final class WebServiceSigner: @unchecked Sendable {
         // Bearer token can override Authorization header if provided
         if let bearerToken = bearerToken {
             request.setValue("Bearer \(bearerToken)", forHTTPHeaderField: "Authorization")
-            print("[WebServiceSigner] Added bearer token to request")
+            Self.logger.debug("Added bearer token to request")
         }
 
         let requestBody = SignRequest(claim: data.base64EncodedString())
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
-        print("[WebServiceSigner] Request body size: \(request.httpBody?.count ?? 0) bytes")
-        print("[WebServiceSigner] Making POST request to: \(url.absoluteString)")
+        request.httpBody = try C2PAJson.encoder.encode(requestBody)
+        Self.logger.debug("Request body size: \(request.httpBody?.count ?? 0) bytes")
+        Self.logger.debug("Making POST request to: \(url.absoluteString)")
 
         let (responseData, response) = try await URLSession.shared.data(for: request)
-        print("[WebServiceSigner] Received response")
+        Self.logger.debug("Received response")
 
         guard let httpResponse = response as? HTTPURLResponse else {
-            print("[WebServiceSigner] ERROR: Response is not HTTPURLResponse")
+            Self.logger.error("Response is not HTTPURLResponse")
             throw SignerError.invalidResponse
         }
 
-        print("[WebServiceSigner] Response status code: \(httpResponse.statusCode)")
+        Self.logger.debug("Response status code: \(httpResponse.statusCode)")
 
         guard httpResponse.statusCode == 200 else {
-            print("[WebServiceSigner] ERROR: HTTP error \(httpResponse.statusCode)")
+            Self.logger.error("HTTP error \(httpResponse.statusCode)")
             if let errorBody = String(data: responseData, encoding: .utf8) {
-                print("[WebServiceSigner] Error response body: \(errorBody)")
+                Self.logger.error("Error response body: \(errorBody)")
             }
             throw SignerError.httpError(statusCode: httpResponse.statusCode)
         }
 
-        let decoder = JSONDecoder()
-        let signResponse = try decoder.decode(SignResponse.self, from: responseData)
+        let signResponse = try C2PAJson.decode(SignResponse.self, from: responseData)
 
         guard let signatureData = Data(base64Encoded: signResponse.signature) else {
-            print("[WebServiceSigner] ERROR: Failed to decode signature from base64")
+            Self.logger.error("Failed to decode signature from base64")
             throw SignerError.invalidSignature
         }
 
-        print("[WebServiceSigner] Successfully decoded signature, size: \(signatureData.count) bytes")
+        Self.logger.debug("Successfully decoded signature, size: \(signatureData.count) bytes")
         return signatureData
     }
 

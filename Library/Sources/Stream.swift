@@ -1,10 +1,10 @@
-// This file is licensed to you under the Apache License, Version 2.0 
-// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license 
+// This file is licensed to you under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license
 // (http://opensource.org/licenses/MIT), at your option.
 //
-// Unless required by applicable law or agreed to in writing, this software is 
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF 
-// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE 
+// Unless required by applicable law or agreed to in writing, this software is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF
+// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE
 // files for the specific language governing permissions and limitations under
 // each license.
 //
@@ -255,43 +255,37 @@ public final class Stream {
 // MARK: - File-based stream helper ------------------------------------------
 
 public extension Stream {
-    /**
-     Fully-featured *read/write* stream backed by a file on disk.
-
-     The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
-
-     - parameter url: The file to write to. Does not need to exist. Will be overwritten.
-
-     - attention: This will overwrite existing files!
-     */
+    /// Fully-featured *read/write* stream backed by a file on disk.
+    ///
+    /// The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
+    ///
+    /// - parameter url: The file to write to. Does not need to exist. Will be overwritten.
+    ///
+    /// - attention: This will overwrite existing files!
     convenience init(writeTo url: URL) throws {
         try Data().write(to: url, options: .atomic)
 
         try self.init(.init(forUpdating: url), write: true)
     }
 
-    /**
-     Fully-featured *read/write* stream backed by a file on disk.
-
-     The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
-
-     - parameter url: The file to write to. Needs to exist.
-
-     - throws: when file does not exist.
-          */
+    /// Fully-featured *read/write* stream backed by a file on disk.
+    ///
+    /// The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
+    ///
+    /// - parameter url: The file to write to. Needs to exist.
+    ///
+    /// - throws: when file does not exist.
     convenience init(update url: URL) throws {
         try self.init(.init(forUpdating: url), write: true)
     }
 
-    /**
-     Fully-featured *read-only* stream backed by a file on disk.
-
-     The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
-
-     - parameter url: The file to write to. Needs to exist.
-
-     - throws: when file does not exist.
-      */
+    /// Fully-featured *read-only* stream backed by a file on disk.
+    ///
+    /// The wrapper owns the `FileHandle` and closes it automatically via the StreamProvider's ``FileHandleBox``.
+    ///
+    /// - parameter url: The file to write to. Needs to exist.
+    ///
+    /// - throws: when file does not exist.
     convenience init(readFrom url: URL) throws {
         try self.init(.init(forReadingFrom: url), write: false)
     }
@@ -369,9 +363,7 @@ public extension Stream {
     }
 }
 
-/**
- Box to manage FileHandle lifetime, will be stored in the ``StreamProvider``.
-  */
+/// Box to manage FileHandle lifetime, will be stored in the ``StreamProvider``.
 final class FileHandleBox {
     let fh: FileHandle
 
