@@ -32,8 +32,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "C2PAC",
-            url: "https://github.com/redaranj/c2pa-ios/releases/download/v0.9.0-beta.7/C2PAC.xcframework.zip",
-            checksum: "f9803d739d954da1410a5bc06205bbb350533f08dd1b108cc8e8b68551b776fe"
+            url: "https://github.com/redaranj/c2pa-ios/releases/download/v0.0.9-beta.7/C2PAC.xcframework.zip",
+            checksum: "968f85867d8db721329e0da13b6ac574453d2f748484069416ba331d7f40479c"
         ),
         .target(
             name: "C2PA",
