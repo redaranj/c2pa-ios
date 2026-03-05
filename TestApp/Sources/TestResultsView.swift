@@ -41,8 +41,13 @@ struct TestResultsView: View {
                         HStack {
                             Text("Results")
                             Spacer()
-                            Text("\(suite.passedCount)/\(suite.totalCount)")
-                                .foregroundColor(suite.failedCount == 0 ? .green : .orange)
+                            if suite.skippedCount > 0 {
+                                Text("\(suite.passedCount) passed, \(suite.skippedCount) skipped")
+                                    .foregroundColor(suite.failedCount == 0 ? .green : .orange)
+                            } else {
+                                Text("\(suite.passedCount)/\(suite.totalCount)")
+                                    .foregroundColor(suite.failedCount == 0 ? .green : .orange)
+                            }
                         }
 
                         ForEach(suite.results, id: \.testName) { result in
@@ -79,26 +84,30 @@ struct TestResultsView: View {
 
     private func runAllTests() {
         isRunning = true
-        Task { @MainActor in
-            let results = await testRunner.runAllTests()
-            testSuites = results
+        testSuites = []
+        Task {
+            for suite in TestSuite.allCases {
+                let results = await testRunner.runTestSuite(suite)
+                let suiteResult = TestSuiteResult(name: suite.displayName, results: results)
+                testSuites.append(suiteResult)
+            }
             isRunning = false
         }
     }
 
     private func runTestSuite(_ suite: TestSuite) {
         isRunning = true
-        Task { @MainActor in
+        let suiteName = suite.displayName
+        Task {
             let results = await testRunner.runTestSuite(suite)
-            let suiteResult = TestSuiteResult(name: suite.displayName, results: results)
+            let suiteResult = TestSuiteResult(name: suiteName, results: results)
 
             // Replace if exists, otherwise append
-            if let index = testSuites.firstIndex(where: { $0.name == suite.displayName }) {
+            if let index = testSuites.firstIndex(where: { $0.name == suiteName }) {
                 testSuites[index] = suiteResult
             } else {
                 testSuites.append(suiteResult)
             }
-
             isRunning = false
         }
     }
@@ -108,11 +117,31 @@ struct TestResultRowView: View {
     let result: TestResult
     @State private var showDetails = false
 
+    private var statusIcon: String {
+        if result.skipped {
+            return "forward.circle.fill"
+        } else if result.passed {
+            return "checkmark.circle.fill"
+        } else {
+            return "xmark.circle.fill"
+        }
+    }
+
+    private var statusColor: Color {
+        if result.skipped {
+            return .orange
+        } else if result.passed {
+            return .green
+        } else {
+            return .red
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Image(systemName: result.passed ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundColor(result.passed ? .green : .red)
+                Image(systemName: statusIcon)
+                    .foregroundColor(statusColor)
 
                 Text(result.testName)
                     .font(.system(.body, design: .monospaced))

@@ -20,35 +20,10 @@ public final class TestRunner: Sendable {
     public func runAllTests() async -> [TestSuiteResult] {
         var suites: [TestSuiteResult] = []
 
-        // Stream Tests
-        let streamTests = StreamTests()
-        let streamResults = await streamTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Stream Tests", results: streamResults))
-
-        // Builder Tests
-        let builderTests = BuilderTests()
-        let builderResults = await builderTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Builder Tests", results: builderResults))
-
-        // Reader Tests
-        let readerTests = ReaderTests()
-        let readerResults = await readerTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Reader Tests", results: readerResults))
-
-        // Signing Tests
-        let signingTests = SigningTests()
-        let signingResults = await signingTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Signing Tests", results: signingResults))
-
-        // Hardware Signing Tests
-        let hardwareSigningTests = HardwareSigningTests()
-        let hardwareSigningResults = await hardwareSigningTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Hardware Signing Tests", results: hardwareSigningResults))
-
-        // Comprehensive Tests
-        let comprehensiveTests = ComprehensiveTests()
-        let comprehensiveResults = await comprehensiveTests.runAllTests()
-        suites.append(TestSuiteResult(name: "Comprehensive Tests", results: comprehensiveResults))
+        for suite in TestSuite.allCases {
+            let results = await runTestSuite(suite)
+            suites.append(TestSuiteResult(name: suite.displayName, results: results))
+        }
 
         return suites
     }
@@ -64,8 +39,18 @@ public final class TestRunner: Sendable {
             return await ReaderTests().runAllTests()
         case .signing:
             return await SigningTests().runAllTests()
+        case .signerExtended:
+            return await SignerExtendedTests().runAllTests()
+        case .certificateManager:
+            return await CertificateManagerTests().runAllTests()
         case .hardwareSigning:
             return await HardwareSigningTests().runAllTests()
+        case .secureEnclave:
+            return await SecureEnclaveSignerTests().runAllTests()
+        case .keychainSigner:
+            return await KeychainSignerTests().runAllTests()
+        case .webServiceSigner:
+            return await WebServiceSignerTests().runAllTests()
         case .comprehensive:
             return await ComprehensiveTests().runAllTests()
         }
@@ -78,7 +63,12 @@ public enum TestSuite: String, CaseIterable {
     case builder = "Builder"
     case reader = "Reader"
     case signing = "Signing"
+    case signerExtended = "Signer Extended"
+    case certificateManager = "Certificate Manager"
     case hardwareSigning = "Hardware Signing"
+    case secureEnclave = "Secure Enclave"
+    case keychainSigner = "Keychain Signer"
+    case webServiceSigner = "Web Service Signer"
     case comprehensive = "Comprehensive"
 
     public var displayName: String {
@@ -100,8 +90,12 @@ public struct TestSuiteResult: Sendable {
         results.filter { $0.passed }.count
     }
 
+    public var skippedCount: Int {
+        results.filter { $0.skipped }.count
+    }
+
     public var failedCount: Int {
-        results.filter { !$0.passed }.count
+        results.filter { !$0.passed && !$0.skipped }.count
     }
 
     public var totalCount: Int {
