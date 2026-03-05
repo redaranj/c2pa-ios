@@ -1,18 +1,22 @@
-// This file is licensed to you under the Apache License, Version 2.0 
-// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license 
+// This file is licensed to you under the Apache License, Version 2.0
+// (http://www.apache.org/licenses/LICENSE-2.0) or the MIT license
 // (http://opensource.org/licenses/MIT), at your option.
 //
-// Unless required by applicable law or agreed to in writing, this software is 
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF 
-// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE 
+// Unless required by applicable law or agreed to in writing, this software is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR REPRESENTATIONS OF
+// ANY KIND, either express or implied. See the LICENSE-MIT and LICENSE-APACHE
 // files for the specific language governing permissions and limitations under
 // each license.
+//
+//  WebServiceSigner.swift
+//
+
 import C2PAC
 import Crypto
 import Foundation
 import SwiftASN1
 import X509
-import OSLog
+import os
 
 /// A signer that delegates cryptographic operations to a remote web service.
 ///
@@ -30,14 +34,14 @@ import OSLog
 /// ## Topics
 ///
 /// ### Creating a Web Service Signer
-/// - ``init(confEndpoint:bearerToken:headers:urlSession:)``
+/// - ``init(configurationEndpoint:bearerToken:headers:urlSession:)``
 /// - ``createSigner()``
 ///
 /// ## Example
 ///
 /// ```swift
 /// let webServiceSigner = WebServiceSigner(
-///     configuration: URL(string: "https://signing.example.com/config"),
+///     configurationEndpoint: URL(string: "https://signing.example.com/config")!,
 ///     bearerToken: "your-auth-token"
 /// )
 ///
@@ -54,23 +58,23 @@ import OSLog
 ///
 /// - SeeAlso: ``Signer``, ``SignerError``
 public final class WebServiceSigner: @unchecked Sendable {
-    private let confEndpoint: URL
+    private let configurationEndpoint: URL
     private let bearerToken: String?
     private let customHeaders: [String: String]
     private let urlSession: URLSession
     private var signingEndpoint: URL?
 
-    private lazy var log = Logger(subsystem: "C2PA", category: String(describing: type(of: self)))
+    private lazy var log = Logger(subsystem: "org.contentauth.c2pa", category: String(describing: type(of: self)))
 
     /// Creates a new web service signer client.
     ///
     /// - Parameters:
-    ///   - confEndpoint: The URL of the signing service configuration endpoint.
+    ///   - configurationEndpoint: The URL of the signing service configuration endpoint.
     ///   - bearerToken: Optional bearer token for authentication.
     ///   - headers: Additional custom HTTP headers to include in requests.
     ///   - urlSession: Optional ``URLSession`` object. If not given ``URLSession.shared`` will be used.
-    public init(confEndpoint: URL, bearerToken: String? = nil, headers: [String: String] = [:], urlSession: URLSession = .shared) {
-        self.confEndpoint = confEndpoint
+    public init(configurationEndpoint: URL, bearerToken: String? = nil, headers: [String: String] = [:], urlSession: URLSession = .shared) {
+        self.configurationEndpoint = configurationEndpoint
         self.bearerToken = bearerToken
         self.customHeaders = headers
         self.urlSession = urlSession
@@ -108,15 +112,15 @@ public final class WebServiceSigner: @unchecked Sendable {
     }
 
     private func mapAlgorithm(_ algorithmString: String) throws -> SigningAlgorithm {
-        guard let alg = SigningAlgorithm(rawValue: algorithmString.lowercased()) else {
+        guard let algorithm = SigningAlgorithm(rawValue: algorithmString.lowercased()) else {
             throw SignerError.unsupportedAlgorithm(algorithmString)
         }
 
-        return alg
+        return algorithm
     }
 
     private func fetchConfiguration() async throws -> SignerConfiguration {
-        var request = URLRequest(url: confEndpoint)
+        var request = URLRequest(url: configurationEndpoint)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
 
@@ -140,8 +144,7 @@ public final class WebServiceSigner: @unchecked Sendable {
             throw SignerError.httpError(statusCode: httpResponse.statusCode)
         }
 
-        let decoder = JSONDecoder()
-        return try decoder.decode(SignerConfiguration.self, from: data)
+        return try C2PAJson.decode(SignerConfiguration.self, from: data)
     }
 
     private func signData(_ data: Data, signing: URL) async throws -> Data {
@@ -165,8 +168,7 @@ public final class WebServiceSigner: @unchecked Sendable {
         }
 
         let requestBody = SignRequest(claim: data.base64EncodedString())
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(requestBody)
+        request.httpBody = try C2PAJson.encoder.encode(requestBody)
         log.info("Request body size: \(request.httpBody?.count ?? 0) bytes")
         log.info("Making POST request to: \(signing.absoluteString)")
 
@@ -188,15 +190,14 @@ public final class WebServiceSigner: @unchecked Sendable {
             throw SignerError.httpError(statusCode: httpResponse.statusCode)
         }
 
-        let decoder = JSONDecoder()
-        let signResponse = try decoder.decode(SignResponse.self, from: responseData)
+        let signResponse = try C2PAJson.decode(SignResponse.self, from: responseData)
 
         guard let signatureData = Data(base64Encoded: signResponse.signature) else {
             log.error("Failed to decode signature from base64")
             throw SignerError.invalidSignature
         }
 
-        log.error("Successfully decoded signature, size: \(signatureData.count) bytes")
+        log.debug("Successfully decoded signature, size: \(signatureData.count) bytes")
         return signatureData
     }
 
@@ -225,7 +226,6 @@ private struct SignerConfiguration: Codable {
         case signingEndpoint = "signing_url"
         case certificateChain = "certificate_chain"
     }
-
 
     let algorithm: String
     let timestamp: URL

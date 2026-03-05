@@ -126,7 +126,7 @@ public final class SigningTests: TestImplementation {
                 certsPEM: TestUtilities.testCertsPEM,
                 privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                 algorithm: .es256,
-                tsaURL: nil
+                tsa: nil
             )
             results.append("ES256: PASS (expected)")
         } catch {
@@ -214,7 +214,7 @@ public final class SigningTests: TestImplementation {
             let configurationURL = ProcessInfo.processInfo.environment["SIGNING_SERVER_URL"] ?? "http://127.0.0.1:8080"
             let bearerToken = ProcessInfo.processInfo.environment["SIGNING_SERVER_TOKEN"] ?? "test-bearer-token-12345"
             let webServiceSigner = WebServiceSigner(
-                confEndpoint: URL(string: "\(configurationURL)/api/v1/c2pa/configuration")!,
+                configurationEndpoint: URL(string: "\(configurationURL)/api/v1/c2pa/configuration")!,
                 bearerToken: bearerToken
             )
             testSteps.append("✓ Created WebServiceSigner with configuration URL")
@@ -662,7 +662,7 @@ public final class SigningTests: TestImplementation {
                     certsPEM: invalidCert,
                     privateKeyPEM: TestUtilities.testPrivateKeyPEM,
                     algorithm: .es256,
-                    tsaURL: nil
+                    tsa: nil
                 )
                 testSteps.append("\(description): UNEXPECTED SUCCESS")
             } catch {
@@ -700,7 +700,7 @@ public final class SigningTests: TestImplementation {
                     certsPEM: TestUtilities.testCertsPEM,
                     privateKeyPEM: invalidKey,
                     algorithm: .es256,
-                    tsaURL: nil
+                    tsa: nil
                 )
                 testSteps.append("\(description): UNEXPECTED SUCCESS")
             } catch {

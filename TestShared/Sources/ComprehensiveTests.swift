@@ -302,7 +302,7 @@ public final class ComprehensiveTests: TestImplementation {
 
     public func testErrorEnumCases() -> TestResult {
         let apiError = C2PAError.api("Test error")
-        if apiError.localizedDescription != "C2PA-API error: Test error" {
+        if apiError.localizedDescription != "C2PA API error: Test error" {
             return .failure("Error Enum Cases", "API error description mismatch")
         }
 
