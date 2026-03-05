@@ -759,3 +759,112 @@ final class AssertionDefinitionTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 }
+
+// MARK: - Settings Validator Tests
+
+final class SettingsValidatorTests: XCTestCase {
+    private let tests = TestShared.SettingsValidatorTests()
+
+    func testValidSettingsJSON() throws {
+        XCTAssertTrue(tests.testValidSettingsJSON().passed)
+    }
+    func testInvalidJSON() throws {
+        XCTAssertTrue(tests.testInvalidJSON().passed)
+    }
+    func testWrongVersion() throws {
+        XCTAssertTrue(tests.testWrongVersion().passed)
+    }
+    func testMissingVersion() throws {
+        XCTAssertTrue(tests.testMissingVersion().passed)
+    }
+    func testUnknownTopLevelKeys() throws {
+        XCTAssertTrue(tests.testUnknownTopLevelKeys().passed)
+    }
+    func testInvalidAlgorithm() throws {
+        XCTAssertTrue(tests.testInvalidAlgorithm().passed)
+    }
+    func testValidAlgorithms() throws {
+        XCTAssertTrue(tests.testValidAlgorithms().passed)
+    }
+    func testInvalidCertPEM() throws {
+        XCTAssertTrue(tests.testInvalidCertPEM().passed)
+    }
+    func testInvalidPrivateKeyPEM() throws {
+        XCTAssertTrue(tests.testInvalidPrivateKeyPEM().passed)
+    }
+    func testInvalidTsaUrl() throws {
+        XCTAssertTrue(tests.testInvalidTsaUrl().passed)
+    }
+    func testCawgSignerLocalValidation() throws {
+        XCTAssertTrue(tests.testCawgSignerLocalValidation().passed)
+    }
+    func testInvalidThumbnailFormat() throws {
+        XCTAssertTrue(tests.testInvalidThumbnailFormat().passed)
+    }
+    func testInvalidThumbnailQuality() throws {
+        XCTAssertTrue(tests.testInvalidThumbnailQuality().passed)
+    }
+    func testValidThumbnailSection() throws {
+        XCTAssertTrue(tests.testValidThumbnailSection().passed)
+    }
+    func testInvalidIntent() throws {
+        XCTAssertTrue(tests.testInvalidIntent().passed)
+    }
+    func testValidIntent() throws {
+        XCTAssertTrue(tests.testValidIntent().passed)
+    }
+}
+
+// MARK: - Validation Result Tests
+
+final class ValidationResultTests: XCTestCase {
+    private let tests = TestShared.ValidationResultTests()
+
+    func testValidResult() throws {
+        XCTAssertTrue(tests.testValidResult().passed)
+    }
+    func testResultWithErrors() throws {
+        XCTAssertTrue(tests.testResultWithErrors().passed)
+    }
+    func testResultWithWarnings() throws {
+        XCTAssertTrue(tests.testResultWithWarnings().passed)
+    }
+    func testResultWithBoth() throws {
+        XCTAssertTrue(tests.testResultWithBoth().passed)
+    }
+    func testEmptyInit() throws {
+        XCTAssertTrue(tests.testEmptyInit().passed)
+    }
+}
+
+// MARK: - C2PA JSON Tests
+
+final class C2PAJsonTests: XCTestCase {
+    private let tests = TestShared.C2PAJsonTests()
+
+    func testEncodeDecodeRoundTrip() throws {
+        XCTAssertTrue(tests.testEncodeDecodeRoundTrip().passed)
+    }
+    func testEncodePretty() throws {
+        XCTAssertTrue(tests.testEncodePretty().passed)
+    }
+    func testDecodeFromString() throws {
+        XCTAssertTrue(tests.testDecodeFromString().passed)
+    }
+    func testDecodeFromData() throws {
+        XCTAssertTrue(tests.testDecodeFromData().passed)
+    }
+    func testDecodeInvalidJSON() throws {
+        XCTAssertTrue(tests.testDecodeInvalidJSON().passed)
+    }
+}
+
+// MARK: - C2PA Error Tests
+
+final class C2PAErrorTests: XCTestCase {
+    private let tests = TestShared.C2PAErrorTests()
+
+    func testAllErrorDescriptions() throws {
+        XCTAssertTrue(tests.testAllErrorDescriptions().passed)
+    }
+}
