@@ -214,7 +214,7 @@ public final class SigningTests: TestImplementation {
             let configurationURL = ProcessInfo.processInfo.environment["SIGNING_SERVER_URL"] ?? "http://127.0.0.1:8080"
             let bearerToken = ProcessInfo.processInfo.environment["SIGNING_SERVER_TOKEN"] ?? "test-bearer-token-12345"
             let webServiceSigner = WebServiceSigner(
-                confEndpoint: URL(string: "\(configurationURL)/api/v1/c2pa/configuration")!,
+                configurationEndpoint: URL(string: "\(configurationURL)/api/v1/c2pa/configuration")!,
                 bearerToken: bearerToken
             )
             testSteps.append("✓ Created WebServiceSigner with configuration URL")
