@@ -14,7 +14,7 @@
 import Foundation
 
 /// - SeeAlso: [Relationship Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema#relationship)
-public enum Relationship: String, Codable {
+public enum Relationship: String, Codable, Sendable {
 
     case parentOf
     case componentOf

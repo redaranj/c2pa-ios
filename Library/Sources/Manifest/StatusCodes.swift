@@ -15,7 +15,7 @@ import Foundation
 
 /// Contains a set of success, informational, and failure validation status codes.
 /// - SeeAlso: [StatusCodes Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#statuscodes)
-public struct StatusCodes: Codable, Equatable {
+public struct StatusCodes: Codable, Equatable, Sendable {
 
     public var failure: [ValidationStatus] = []
 

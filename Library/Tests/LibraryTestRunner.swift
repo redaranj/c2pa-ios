@@ -422,6 +422,87 @@ final class ManifestTests: XCTestCase {
         let result = tests.testMassInit()
         XCTAssertTrue(result.passed, result.message)
     }
+    func testNewPredefinedActions() throws {
+        XCTAssertTrue(tests.testNewPredefinedActions().passed)
+    }
+    func testActionV2SoftwareAgent() throws {
+        XCTAssertTrue(tests.testActionV2SoftwareAgent().passed)
+    }
+    func testActionNewFields() throws {
+        XCTAssertTrue(tests.testActionNewFields().passed)
+    }
+    func testValidateAndLog() throws {
+        XCTAssertTrue(tests.testValidateAndLog().passed)
+    }
+    func testCustomAssertionLabelValidation() throws {
+        XCTAssertTrue(tests.testCustomAssertionLabelValidation().passed)
+    }
+    func testCreatedFactory() throws {
+        XCTAssertTrue(tests.testCreatedFactory().passed)
+    }
+    func testEditedFactory() throws {
+        XCTAssertTrue(tests.testEditedFactory().passed)
+    }
+    func testMixedAssertions() throws {
+        XCTAssertTrue(tests.testMixedAssertions().passed)
+    }
+    func testAssertionLabels() throws {
+        XCTAssertTrue(tests.testAssertionLabels().passed)
+    }
+    func testToJSON() throws {
+        XCTAssertTrue(tests.testToJSON().passed)
+    }
+    func testToPrettyJSON() throws {
+        XCTAssertTrue(tests.testToPrettyJSON().passed)
+    }
+    func testFromJSON() throws {
+        XCTAssertTrue(tests.testFromJSON().passed)
+    }
+    func testDescription() throws {
+        XCTAssertTrue(tests.testDescription().passed)
+    }
+    func testIngredientParentFactory() throws {
+        XCTAssertTrue(tests.testIngredientParentFactory().passed)
+    }
+    func testIngredientComponentFactory() throws {
+        XCTAssertTrue(tests.testIngredientComponentFactory().passed)
+    }
+    func testIngredientInputToFactory() throws {
+        XCTAssertTrue(tests.testIngredientInputToFactory().passed)
+    }
+    func testValidatorEmptyTitle() throws {
+        XCTAssertTrue(tests.testValidatorEmptyTitle().passed)
+    }
+    func testValidatorEmptyClaimGeneratorInfo() throws {
+        XCTAssertTrue(tests.testValidatorEmptyClaimGeneratorInfo().passed)
+    }
+    func testValidatorOldClaimVersion() throws {
+        XCTAssertTrue(tests.testValidatorOldClaimVersion().passed)
+    }
+    func testValidatorDeprecatedAssertionLabels() throws {
+        XCTAssertTrue(tests.testValidatorDeprecatedAssertionLabels().passed)
+    }
+    func testValidatorCawgAssertionAccepted() throws {
+        XCTAssertTrue(tests.testValidatorCawgAssertionAccepted().passed)
+    }
+    func testValidatorMultipleParents() throws {
+        XCTAssertTrue(tests.testValidatorMultipleParents().passed)
+    }
+    func testValidateJSON() throws {
+        XCTAssertTrue(tests.testValidateJSON().passed)
+    }
+    func testValidateJSONInvalid() throws {
+        XCTAssertTrue(tests.testValidateJSONInvalid().passed)
+    }
+    func testBuilderInitManifestValid() throws {
+        XCTAssertTrue(tests.testBuilderInitManifestValid().passed)
+    }
+    func testBuilderInitManifestInvalid() throws {
+        XCTAssertTrue(tests.testBuilderInitManifestInvalid().passed)
+    }
+    func testBuilderInitJSONInvalid() throws {
+        XCTAssertTrue(tests.testBuilderInitJSONInvalid().passed)
+    }
 }
 
 // MARK: - Certificate Manager Tests
@@ -757,6 +838,30 @@ final class AssertionDefinitionTests: XCTestCase {
     func testAssertionEquality() throws {
         let result = tests.testAssertionEquality()
         XCTAssertTrue(result.passed, result.message)
+    }
+    func testCustomAssertionRoundTrip() throws {
+        XCTAssertTrue(tests.testCustomAssertionRoundTrip().passed)
+    }
+    func testTrainingMiningAssertion() throws {
+        XCTAssertTrue(tests.testTrainingMiningAssertion().passed)
+    }
+    func testCawgTrainingMiningAssertion() throws {
+        XCTAssertTrue(tests.testCawgTrainingMiningAssertion().passed)
+    }
+    func testCawgIdentityAssertion() throws {
+        XCTAssertTrue(tests.testCawgIdentityAssertion().passed)
+    }
+    func testCreativeWorkAssertion() throws {
+        XCTAssertTrue(tests.testCreativeWorkAssertion().passed)
+    }
+    func testAnyCodableTypes() throws {
+        XCTAssertTrue(tests.testAnyCodableTypes().passed)
+    }
+    func testAnyCodableEquality() throws {
+        XCTAssertTrue(tests.testAnyCodableEquality().passed)
+    }
+    func testActionsV2Decoding() throws {
+        XCTAssertTrue(tests.testActionsV2Decoding().passed)
     }
 }
 

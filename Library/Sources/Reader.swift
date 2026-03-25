@@ -31,7 +31,7 @@ import Foundation
 /// ### Reading Manifest Data
 /// - ``json()``
 /// - ``detailedJSON()``
-/// - ``remoteURL()``
+/// - ``remote()``
 /// - ``isEmbedded()``
 ///
 /// ### Extracting Resources

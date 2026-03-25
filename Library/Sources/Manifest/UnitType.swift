@@ -15,7 +15,7 @@ import Foundation
 
 /// The type of unit for the range.
 /// - SeeAlso: [UnitType Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#unittype)
-public enum UnitType: String, Codable {
+public enum UnitType: String, Codable, Sendable {
 
     /// Use pixels.
     case pixel

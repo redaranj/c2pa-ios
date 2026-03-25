@@ -25,7 +25,7 @@ import Foundation
 /// let pretty = try C2PAJson.encodePretty(manifest)
 /// let decoded = try C2PAJson.decode(ManifestDefinition.self, from: jsonString)
 /// ```
-public enum C2PAJson {
+public enum C2PAJson: Sendable {
     /// Shared encoder configured for C2PA JSON conventions.
     public static let encoder: JSONEncoder = {
         let encoder = JSONEncoder()

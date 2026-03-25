@@ -15,7 +15,7 @@ import Foundation
 
 /// Selects a range of text via a fragment identifier. This is modeled after the W3C Web Annotation selector model.
 /// - SeeAlso: [TextSelector Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#textselector)
-public struct TextSelector: Codable, Equatable {
+public struct TextSelector: Codable, Equatable, Sendable {
 
     /// The end character offset or the end of the fragment if not present.
     public var end: Int32?

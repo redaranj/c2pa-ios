@@ -15,7 +15,7 @@ import Foundation
 
 /// The value of digitalSourceType is one of the URLs specified by the International Press Telecommunications Council (IPTC) NewsCodes Digital Source Type scheme of the form http://cv.iptc.org/newscodes/digitalsourcetype/<CODE>
 /// - SeeAlso: [DigitalSourceType Reference](https://opensource.contentauthenticity.org/docs/manifest/writing/assertions-actions#digital-source-type)
-public enum DigitalSourceType: String, Codable {
+public enum DigitalSourceType: String, Codable, Sendable {
 
     /// Minor augmentation or correction by algorithm.
     case algorithmicallyEnhanced = "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced"

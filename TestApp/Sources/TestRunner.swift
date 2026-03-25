@@ -53,12 +53,20 @@ public final class TestRunner: Sendable {
             return await WebServiceSignerTests().runAllTests()
         case .comprehensive:
             return await ComprehensiveTests().runAllTests()
+        case .manifest:
+            return await ManifestTests().runAllTests()
+        case .assertionDefinition:
+            return await AssertionDefinitionTests().runAllTests()
+        case .settingsDefinition:
+            return await SettingsDefinitionTests().runAllTests()
+        case .convenience:
+            return await ConvenienceTests().runAllTests()
         }
     }
 }
 
 // Available test suites
-public enum TestSuite: String, CaseIterable {
+public enum TestSuite: String, CaseIterable, Sendable {
     case stream = "Stream"
     case builder = "Builder"
     case reader = "Reader"
@@ -70,6 +78,10 @@ public enum TestSuite: String, CaseIterable {
     case keychainSigner = "Keychain Signer"
     case webServiceSigner = "Web Service Signer"
     case comprehensive = "Comprehensive"
+    case manifest = "Manifest"
+    case assertionDefinition = "Assertion Definition"
+    case settingsDefinition = "Settings Definition"
+    case convenience = "Convenience"
 
     public var displayName: String {
         return rawValue + " Tests"
