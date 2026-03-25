@@ -759,3 +759,74 @@ final class AssertionDefinitionTests: XCTestCase {
         XCTAssertTrue(result.passed, result.message)
     }
 }
+
+// MARK: - Settings Definition Tests
+
+final class SettingsDefinitionTests: XCTestCase {
+    private let tests = TestShared.SettingsDefinitionTests()
+
+    func testRoundTrip() throws {
+        XCTAssertTrue(tests.testRoundTrip().passed)
+    }
+    func testFromJSON() throws {
+        XCTAssertTrue(tests.testFromJSON().passed)
+    }
+    func testPartialSettings() throws {
+        XCTAssertTrue(tests.testPartialSettings().passed)
+    }
+    func testSignerLocalSerialization() throws {
+        XCTAssertTrue(tests.testSignerLocalSerialization().passed)
+    }
+    func testSignerRemoteSerialization() throws {
+        XCTAssertTrue(tests.testSignerRemoteSerialization().passed)
+    }
+    func testIntentSerialization() throws {
+        XCTAssertTrue(tests.testIntentSerialization().passed)
+    }
+    func testEnumValues() throws {
+        XCTAssertTrue(tests.testEnumValues().passed)
+    }
+    func testExistingSettingsJSON() throws {
+        XCTAssertTrue(tests.testExistingSettingsJSON().passed)
+    }
+    func testPrettyJSON() throws {
+        XCTAssertTrue(tests.testPrettyJSON().passed)
+    }
+    func testTrustSettings() throws {
+        XCTAssertTrue(tests.testTrustSettings().passed)
+    }
+    func testCoreSettings() throws {
+        XCTAssertTrue(tests.testCoreSettings().passed)
+    }
+    func testVerifySettings() throws {
+        XCTAssertTrue(tests.testVerifySettings().passed)
+    }
+    func testBuilderSettings() throws {
+        XCTAssertTrue(tests.testBuilderSettings().passed)
+    }
+    func testFullDefinitionRoundTrip() throws {
+        XCTAssertTrue(tests.testFullDefinitionRoundTrip().passed)
+    }
+    func testC2PASettingsFromDefinition() throws {
+        XCTAssertTrue(tests.testC2PASettingsFromDefinition().passed)
+    }
+    func testC2PASettingsLoadDefinition() throws {
+        XCTAssertTrue(tests.testC2PASettingsLoadDefinition().passed)
+    }
+    func testC2PASettingsSetValue() throws {
+        XCTAssertTrue(tests.testC2PASettingsSetValue().passed)
+    }
+    func testC2PASettingsSetValueErrors() throws {
+        XCTAssertTrue(tests.testC2PASettingsSetValueErrors().passed)
+    }
+    func testSignerWithRoles() throws {
+        XCTAssertTrue(tests.testSignerWithRoles().passed)
+    }
+    func testActionTemplateWithIndex() throws {
+        XCTAssertTrue(tests.testActionTemplateWithIndex().passed)
+    }
+    func testTimestampParentScope() throws {
+        XCTAssertTrue(tests.testTimestampParentScope().passed)
+    }
+}
+
