@@ -20,6 +20,8 @@
 		95COV0092E9700000000005 /* SignerExtendedTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00A2E9700000000005 /* SignerExtendedTests.swift */; };
 		95COV00B2E9700000000006 /* WebServiceSignerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00C2E9700000000006 /* WebServiceSignerTests.swift */; };
 		95COV00D2E9700000000007 /* AssertionDefinitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV00E2E9700000000007 /* AssertionDefinitionTests.swift */; };
+		95COV0102E9700000000008 /* SettingsDefinitionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95COV0112E9700000000008 /* SettingsDefinitionTests.swift */; };
+
 
 		95C99A3C2E68D83F00C54D0E /* C2PA.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 95C99A3B2E68D83F00C54D0E /* C2PA.framework */; };
 		95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95C99A542E695DF100C54D0E /* StreamTests.swift */; };
@@ -74,6 +76,7 @@
 		95CAWG042E6EDDF700F0BC7C /* test_settings_with_cawg_signing.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = test_settings_with_cawg_signing.json; sourceTree = "<group>"; };
 		95F271292E72CD5800A6A88D /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
 		A0B3CF4E2E96AC2C00F2F938 /* ManifestTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManifestTests.swift; sourceTree = "<group>"; };
+		95COV0112E9700000000008 /* SettingsDefinitionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsDefinitionTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +123,7 @@
 				A0B3CF4E2E96AC2C00F2F938 /* ManifestTests.swift */,
 				95C99A522E695DF100C54D0E /* ReaderTests.swift */,
 				95COV0062E9700000000003 /* SecureEnclaveSignerTests.swift */,
+				95COV0112E9700000000008 /* SettingsDefinitionTests.swift */,
 				95COV00A2E9700000000005 /* SignerExtendedTests.swift */,
 				95C99A532E695DF100C54D0E /* SigningTests.swift */,
 				95C99A542E695DF100C54D0E /* StreamTests.swift */,
@@ -257,6 +261,7 @@
 				A0B3CF4F2E96AC2C00F2F938 /* ManifestTests.swift in Sources */,
 				95C99A592E695DF100C54D0E /* ReaderTests.swift in Sources */,
 				95COV0052E9700000000003 /* SecureEnclaveSignerTests.swift in Sources */,
+				95COV0102E9700000000008 /* SettingsDefinitionTests.swift in Sources */,
 				95COV0092E9700000000005 /* SignerExtendedTests.swift in Sources */,
 				95C99A5A2E695DF100C54D0E /* SigningTests.swift in Sources */,
 				95C99A552E695DF100C54D0E /* StreamTests.swift in Sources */,
