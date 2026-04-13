@@ -15,7 +15,7 @@ import Foundation
 
 /// An x, y coordinate used for specifying vertices in polygons.
 /// - SeeAlso: [Coordinate Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#coordinate)
-public struct Coordinate: Codable, Equatable {
+public struct Coordinate: Codable, Equatable, Sendable {
 
     /// The coordinate along the x-axis.
     public var x: Double

@@ -15,7 +15,7 @@ import Foundation
 
 /// A role describing the region.
 /// - SeeAlso: [Role Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#role)
-public enum Role: String, Codable {
+public enum Role: String, Codable, Sendable {
 
     /// Arbitrary area worth identifying.
     case areaOfInterest = "c2pa.areaOfInterest"

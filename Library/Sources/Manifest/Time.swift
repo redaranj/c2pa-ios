@@ -15,7 +15,7 @@ import Foundation
 
 /// A temporal range representing a starting time to an ending time.
 /// - SeeAlso: [Time Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#time)
-public struct Time: Codable, Equatable {
+public struct Time: Codable, Equatable, Sendable {
 
     /// The end time or the end of the asset if not present.
     public var end: String?

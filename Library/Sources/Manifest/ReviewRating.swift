@@ -17,7 +17,7 @@ import Foundation
 ///
 /// - SeeAlso: [_claim_review](https://c2pa.org/specifications/specifications/1.0/specs/C2PA_Specification.html#_claim_review)
 /// - SeeAlso: [ReviewRating Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#reviewrating)
-public struct ReviewRating: Codable, Equatable {
+public struct ReviewRating: Codable, Equatable, Sendable {
 
     public var code: String?
 

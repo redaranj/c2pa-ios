@@ -15,7 +15,7 @@ import Foundation
 
 /// Represents any changes or deltas between the current and previous validation results for an ingredient’s manifest.
 /// - SeeAlso: [IngredientDeltaValidationResult Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#ingredientdeltavalidationresult)
-public struct IngredientDeltaValidationResult: Codable, Equatable {
+public struct IngredientDeltaValidationResult: Codable, Equatable, Sendable {
 
     public enum CodingKeys: String, CodingKey {
         case ingredientAssertionUri = "ingredientAssertionURI"

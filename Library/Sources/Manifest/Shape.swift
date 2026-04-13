@@ -15,7 +15,7 @@ import Foundation
 
 /// A spatial range representing rectangle, circle, or a polygon.
 /// - SeeAlso: [Shape Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#shape)
-public struct Shape: Codable, Equatable {
+public struct Shape: Codable, Equatable, Sendable {
 
     /// The type of shape.
     public var type: ShapeType

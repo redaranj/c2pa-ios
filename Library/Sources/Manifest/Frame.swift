@@ -15,7 +15,7 @@ import Foundation
 
 /// A frame range representing starting and ending frames or pages. If both ``start`` and ``end`` are missing, the frame will span the entire asset.
 /// - SeeAlso: [Frame Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#frame)
-public struct Frame: Codable, Equatable {
+public struct Frame: Codable, Equatable, Sendable {
 
     /// The end of the frame inclusive or the end of the asset if not present.
     public var end: Int32?

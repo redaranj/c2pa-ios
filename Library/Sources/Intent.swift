@@ -27,7 +27,7 @@ import Foundation
 /// - ``update``
 ///
 /// - SeeAlso: ``Builder/setIntent(_:)``
-public enum BuilderIntent {
+public enum BuilderIntent: Sendable {
     /// A new digital creation with the specified digital source type.
     ///
     /// Use this intent for assets that are being created for the first time,

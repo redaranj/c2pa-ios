@@ -15,7 +15,7 @@ import Foundation
 
 /// One or two TextSelectors identifiying the range to select.
 /// - SeeAlso: [TextSelectorRange Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#textselectorrange)
-public struct TextSelectorRange: Codable, Equatable {
+public struct TextSelectorRange: Codable, Equatable, Sendable {
 
     /// The end of the text range.
     public var end: TextSelector?

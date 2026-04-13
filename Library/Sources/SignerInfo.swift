@@ -32,7 +32,7 @@ import Foundation
 /// ```
 ///
 /// - SeeAlso: ``Signer/init(info:)``
-public struct SignerInfo {
+public struct SignerInfo: Sendable {
     /// The signing algorithm to use.
     public let algorithm: SigningAlgorithm
 

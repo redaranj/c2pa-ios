@@ -15,7 +15,7 @@ import Foundation
 
 /// The type of shape for the range.
 /// - SeeAlso: [ShapeType Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#shapetype)
-public enum ShapeType: String, Codable {
+public enum ShapeType: String, Codable, Sendable {
 
     case rectangle
     case circle

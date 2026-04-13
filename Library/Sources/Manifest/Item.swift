@@ -15,7 +15,7 @@ import Foundation
 
 /// Description of the boundaries of an identified range.
 /// - SeeAlso: [Item Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#item)
-public struct Item: Codable, Equatable {
+public struct Item: Codable, Equatable, Sendable {
 
     /// The container-specific term used to identify items, such as “track_id” for MP4 or “item_ID” for HEIF.
     public var identifier: String

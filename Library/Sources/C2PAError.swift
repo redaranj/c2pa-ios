@@ -35,6 +35,7 @@ import Foundation
 /// - ``publicKeyExtractionFailed``
 /// - ``publicKeyExportFailed(_:)``
 /// - ``asyncSigningFailed``
+/// - ``manifestValidationFailed(_:)``
 public enum C2PAError: Error, LocalizedError {
     /// An error reported by the underlying C2PA library.
     ///
@@ -85,6 +86,11 @@ public enum C2PAError: Error, LocalizedError {
 
     case asyncSigningFailed
 
+    /// Manifest validation failed before building.
+    ///
+    /// - Parameter result: The ``ManifestValidationResult`` containing errors and warnings.
+    case manifestValidationFailed(_ result: ManifestValidationResult)
+
     /// A human-readable description of the error.
     public var errorDescription: String? {
         switch self {
@@ -129,6 +135,9 @@ public enum C2PAError: Error, LocalizedError {
 
         case .asyncSigningFailed:
             return "Async signing operation failed"
+
+        case .manifestValidationFailed(let result):
+            return "Manifest validation failed: \(result.errors.joined(separator: "; "))"
         }
     }
 }

@@ -15,7 +15,7 @@ import Foundation
 
 /// A spatial, temporal, frame, or textual range describing the region of interest.
 /// - SeeAlso: [Range Reference](https://opensource.contentauthenticity.org/docs/manifest/json-ref/manifest-definition-schema/#range)
-public struct RegionRange: Codable, Equatable {
+public struct RegionRange: Codable, Equatable, Sendable {
 
     /// A frame range.
     public var frame: Frame?
