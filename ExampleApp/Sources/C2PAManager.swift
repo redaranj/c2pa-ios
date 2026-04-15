@@ -27,6 +27,13 @@ final class C2PAManager: ObservableObject {
     var defaultCertificateData: Data?
     var defaultPrivateKeyData: Data?
 
+    // Label for the custom example assertion included in every signed manifest.
+    // Registered via BuilderSettingsDefinition.createdAssertionLabels so the
+    // builder classifies it as a "created" assertion rather than "gathered".
+    static let customExampleAssertionLabel = "org.contentauth.example.capture_context"
+
+    private var customAssertionSettings: C2PASettings?
+
     private init() {
         loadDefaultCertificates()
 
@@ -336,6 +343,10 @@ final class C2PAManager: ObservableObject {
             os_log("Failed to create signer: %{public}@", log: Logger.signing, type: .error, String(describing: error))
             throw error
         }
+
+        // Register the custom assertion label before building so it is
+        // classified as a "created" assertion in the resulting manifest.
+        try applyCustomCreatedAssertionSettings()
 
         // Sign the image using the Library's Builder
         os_log("Creating Builder with manifest", log: Logger.signing, type: .info)
@@ -1174,12 +1185,47 @@ final class C2PAManager: ObservableObject {
         assertions.append(signingMethodAssertion)
         manifest["assertions"] = assertions
 
+        // Example: a vendor-specific assertion registered as a "created"
+        // assertion via BuilderSettingsDefinition.createdAssertionLabels (see
+        // applyCustomCreatedAssertionSettings). Library consumers can follow
+        // the same pattern to attach their own structured data to a manifest.
+        let customExampleAssertion: [String: Any] = [
+            "label": Self.customExampleAssertionLabel,
+            "data": [
+                "example": "custom created assertion",
+                "captured_at": ISO8601DateFormatter().string(from: Date()),
+                "purpose": "Shows how library consumers register and attach a custom created assertion."
+            ]
+        ]
+        assertions.append(customExampleAssertion)
+        manifest["assertions"] = assertions
+
         let jsonData = try JSONSerialization.data(withJSONObject: manifest)
         guard let jsonString = String(data: jsonData, encoding: .utf8) else {
             throw C2PAManagerError.manifestCreationFailed
         }
 
         return jsonString
+    }
+
+    // MARK: - Custom Created Assertion Example
+
+    // Registers a vendor-specific assertion label so the C2PA builder treats
+    // it as a "created" assertion (instead of the default "gathered"
+    // classification). The defaults from ManifestValidator are preserved so
+    // standard labels like c2pa.actions remain classified correctly.
+    private func applyCustomCreatedAssertionSettings() throws {
+        guard customAssertionSettings == nil else { return }
+
+        let builder = BuilderSettingsDefinition(
+            createdAssertionLabels: ManifestValidator.defaultCreatedAssertionLabels
+                + [Self.customExampleAssertionLabel]
+        )
+        let definition = C2PASettingsDefinition(version: 1, builder: builder)
+        customAssertionSettings = try C2PASettings(definition: definition)
+        os_log(
+            "Registered custom created assertion label: %{public}@",
+            log: Logger.signing, type: .info, Self.customExampleAssertionLabel)
     }
 
     // MARK: - Helper Methods
