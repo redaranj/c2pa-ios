@@ -1,7 +1,7 @@
 .PHONY: all clean library test-shared test-app example-app publish tests coverage help \
         run-test-app run-example-app signing-server-start signing-server-stop signing-server-status \
-        tests-with-server workspace-build test-library lint signing-server-wait signing-server-verify \
-        test-summary coverage-lcov ios-framework validate-version release-tests \
+        tests-with-server workspace-build test-library test-library-macos lint signing-server-wait signing-server-verify \
+        test-summary coverage-lcov apple-framework ios-framework validate-version release-tests \
         package-swift update-package-swift create-release-tag docs
 
 # Build configuration
@@ -9,6 +9,7 @@ CONFIGURATION := Release
 SDK := iphoneos
 # Default destination - can be overridden from command line
 DESTINATION ?= platform=iOS Simulator,name=iPhone 17 Pro
+MACOS_DESTINATION ?= platform=macOS
 
 # Default target
 all: workspace-build
@@ -64,6 +65,20 @@ test-library: library
 		-enableCodeCoverage YES
 	@echo "Library tests completed."
 
+# Run library tests on macOS
+test-library-macos:
+	@echo "Building C2PA library for macOS..."
+	@xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration $(CONFIGURATION) -destination '$(MACOS_DESTINATION)' build
+	@echo "Running library unit tests on macOS..."
+	@rm -rf TestResults.xcresult
+	@xcodebuild test \
+		-workspace C2PA.xcworkspace \
+		-scheme Library \
+		-destination '$(MACOS_DESTINATION)' \
+		-resultBundlePath TestResults.xcresult \
+		-enableCodeCoverage YES
+	@echo "macOS library tests completed."
+
 # Run all tests including unit and UI tests
 tests: test-app
 	@echo "Running all tests..."
@@ -111,9 +126,9 @@ publish: library
 	@xcodebuild -workspace C2PA.xcworkspace -scheme Library -configuration Release archive
 	@echo "Library archived. Ready for distribution."
 
-# Build iOS XCFramework for both device and simulator, then package for distribution
-ios-framework:
-	@echo "Building iOS XCFramework for device and simulator..."
+# Build multi-platform XCFramework for iOS (device + simulator) and macOS, then package for distribution
+apple-framework:
+	@echo "Building Apple XCFramework for iOS device, iOS simulator, and macOS..."
 	@# Get the build root before building
 	@SYMROOT=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -showBuildSettings 2>/dev/null | grep "^    SYMROOT = " | head -1 | sed 's/.*SYMROOT = //'); \
 	echo "Build root: $$SYMROOT"; \
@@ -124,33 +139,45 @@ ios-framework:
 	echo "Building for iOS simulator..."; \
 	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=iOS Simulator"; \
 	\
-	echo "Creating XCFramework from both builds..."; \
+	echo "Building for macOS..."; \
+	$(MAKE) library CONFIGURATION=Release DESTINATION="generic/platform=macOS"; \
+	\
+	echo "Creating XCFramework from all platform builds..."; \
 	DEVICE_DIR="$$SYMROOT/Release-iphoneos"; \
 	SIMULATOR_DIR="$$SYMROOT/Release-iphonesimulator"; \
+	MACOS_DIR="$$SYMROOT/Release"; \
 	\
-	if [ -d "$$DEVICE_DIR/C2PAC.framework" ] && [ -d "$$SIMULATOR_DIR/C2PAC.framework" ]; then \
+	if [ -d "$$DEVICE_DIR/C2PAC.framework" ] && [ -d "$$SIMULATOR_DIR/C2PAC.framework" ] && [ -d "$$MACOS_DIR/C2PAC.framework" ]; then \
 		mkdir -p Library/Frameworks; \
 		rm -rf Library/Frameworks/C2PAC.xcframework; \
 		xcodebuild -create-xcframework \
 			-framework "$$DEVICE_DIR/C2PAC.framework" \
 			-framework "$$SIMULATOR_DIR/C2PAC.framework" \
+			-framework "$$MACOS_DIR/C2PAC.framework" \
 			-output Library/Frameworks/C2PAC.xcframework; \
-		echo "✓ C2PAC.xcframework created in Library/Frameworks/"; \
+		echo "C2PAC.xcframework created in Library/Frameworks/"; \
 		\
 		echo "Packaging XCFramework for distribution..."; \
 		mkdir -p output; \
 		cp -R Library/Frameworks/C2PAC.xcframework output/; \
 		cd output && zip -r C2PAC.xcframework.zip C2PAC.xcframework; \
-		echo "✓ XCFramework packaged to output/C2PAC.xcframework.zip"; \
+		echo "XCFramework packaged to output/C2PAC.xcframework.zip"; \
 	else \
-		echo "::error::Failed to find frameworks for both architectures"; \
+		echo "::error::Failed to find frameworks for all platforms"; \
 		echo "Device framework: $$DEVICE_DIR/C2PAC.framework"; \
 		ls -la "$$DEVICE_DIR" 2>/dev/null || echo "Device directory not found"; \
 		echo "Simulator framework: $$SIMULATOR_DIR/C2PAC.framework"; \
 		ls -la "$$SIMULATOR_DIR" 2>/dev/null || echo "Simulator directory not found"; \
+		echo "macOS framework: $$MACOS_DIR/C2PAC.framework"; \
+		ls -la "$$MACOS_DIR" 2>/dev/null || echo "macOS directory not found"; \
 		exit 1; \
 	fi
-	@echo "iOS XCFramework build and packaging completed."
+	@echo "Apple XCFramework build and packaging completed."
+
+# Build iOS-only XCFramework (backward compatibility alias)
+ios-framework:
+	@echo "NOTE: ios-framework is deprecated, use apple-framework instead"
+	@$(MAKE) apple-framework
 
 # Validate version format (expects VERSION environment variable)
 validate-version:
@@ -193,9 +220,9 @@ compute-checksum:
 package-swift:
 	@echo "Packaging Swift sources..."
 	@if [ -d "Library/Sources" ]; then \
-		mkdir -p output/C2PA-iOS/Sources/C2PA; \
-		cp -R Library/Sources/*.swift output/C2PA-iOS/Sources/C2PA/; \
-		cd output && zip -r C2PA-Swift-Package.zip C2PA-iOS/; \
+		mkdir -p output/C2PA-Apple/Sources/C2PA; \
+		cp -R Library/Sources/*.swift output/C2PA-Apple/Sources/C2PA/; \
+		cd output && zip -r C2PA-Swift-Package.zip C2PA-Apple/; \
 		echo "Swift sources packaged successfully"; \
 	else \
 		echo "Swift sources packaged (skipped - no sources found)"; \
@@ -256,7 +283,7 @@ signing-server-wait:
 	attempt=0; \
 	while [ $$attempt -lt $$max_attempts ]; do \
 		if curl -s http://127.0.0.1:8080/health > /dev/null 2>&1; then \
-			echo "✓ Signing server is ready"; \
+			echo "Signing server is ready"; \
 			break; \
 		fi; \
 		echo "Waiting for server... (attempt $$((attempt + 1))/$$max_attempts)"; \
@@ -264,7 +291,7 @@ signing-server-wait:
 		attempt=$$((attempt + 1)); \
 	done; \
 	if [ $$attempt -eq $$max_attempts ]; then \
-		echo "❌ Server failed to start after $$max_attempts attempts"; \
+		echo "Server failed to start after $$max_attempts attempts"; \
 		exit 1; \
 	fi
 
@@ -330,20 +357,20 @@ coverage-lcov:
 			"$$BINARY_PATH" \
 			> coverage.lcov 2>/dev/null; \
 		if [ -s "coverage.lcov" ]; then \
-			echo "✓ LCOV coverage report generated ($$(wc -c < coverage.lcov) bytes)"; \
+			echo "LCOV coverage report generated ($$(wc -c < coverage.lcov) bytes)"; \
 		else \
-			echo "✗ LCOV generation failed"; \
+			echo "LCOV generation failed"; \
 		fi; \
 		echo "Generating JSON format..."; \
 		xcrun xccov view --report --json TestResults.xcresult > coverage.json 2>/dev/null || true; \
 		if [ -s "coverage.json" ]; then \
-			echo "✓ JSON coverage report generated ($$(wc -c < coverage.json) bytes)"; \
+			echo "JSON coverage report generated ($$(wc -c < coverage.json) bytes)"; \
 		fi; \
 	else \
-		echo "✗ Could not find profdata or binary, using xccov for JSON only..."; \
+		echo "Could not find profdata or binary, using xccov for JSON only..."; \
 		xcrun xccov view --report --json TestResults.xcresult > coverage.json 2>/dev/null || true; \
 		if [ -s "coverage.json" ]; then \
-			echo "✓ JSON coverage report generated ($$(wc -c < coverage.json) bytes)"; \
+			echo "JSON coverage report generated ($$(wc -c < coverage.json) bytes)"; \
 		fi; \
 	fi
 
@@ -387,12 +414,14 @@ help:
 	@echo "  make              - Build the library (default)"
 	@echo "  make lint         - Run SwiftLint on the codebase"
 	@echo "  make library      - Build the C2PA library framework"
-	@echo "  make ios-framework - Build iOS framework (release configuration)"
+	@echo "  make apple-framework - Build multi-platform XCFramework (iOS + macOS)"
+	@echo "  make ios-framework - (deprecated) Alias for apple-framework"
 	@echo "  make test-shared  - Build the TestShared framework"
 	@echo "  make test-app     - Build the TestApp"
 	@echo "  make example-app  - Build the ExampleApp"
 	@echo "  make workspace-build - Build entire workspace"
-	@echo "  make test-library - Run library unit tests only"
+	@echo "  make test-library - Run library unit tests only (iOS)"
+	@echo "  make test-library-macos - Run library unit tests on macOS"
 	@echo "  make tests        - Run all tests"
 	@echo "  make release-tests - Run tests for release validation"
 	@echo "  make test-summary - Generate test summary from xcresult"
@@ -402,7 +431,6 @@ help:
 	@echo "  make run-example-app - Build and run the example app in simulator"
 	@echo "  make publish      - Prepare library for publishing"
 	@echo "  make validate-version - Validate version format (VERSION=vX.Y.Z or vX.Y.Z-pre.N)"
-	@echo "  make package-xcframework - Package XCFramework for distribution"
 	@echo "  make compute-checksum - Compute checksum for XCFramework"
 	@echo "  make package-swift - Package Swift sources"
 	@echo "  make update-package-swift - Update Package.swift for release"
