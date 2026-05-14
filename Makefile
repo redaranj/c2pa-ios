@@ -1,7 +1,7 @@
 .PHONY: all clean library test-shared test-app example-app publish tests coverage help \
         run-test-app run-example-app signing-server-start signing-server-stop signing-server-status \
         tests-with-server workspace-build test-library test-library-macos lint signing-server-wait signing-server-verify \
-        test-summary coverage-lcov apple-framework ios-framework validate-version release-tests \
+        test-summary coverage-lcov swift-framework validate-version release-tests \
         package-swift update-package-swift create-release-tag docs
 
 # Build configuration
@@ -127,8 +127,8 @@ publish: library
 	@echo "Library archived. Ready for distribution."
 
 # Build multi-platform XCFramework for iOS (device + simulator) and macOS, then package for distribution
-apple-framework:
-	@echo "Building Apple XCFramework for iOS device, iOS simulator, and macOS..."
+swift-framework:
+	@echo "Building C2PA Swift XCFramework for iOS device, iOS simulator, and macOS..."
 	@# Get the build root before building
 	@SYMROOT=$$(xcodebuild -workspace C2PA.xcworkspace -scheme Library -showBuildSettings 2>/dev/null | grep "^    SYMROOT = " | head -1 | sed 's/.*SYMROOT = //'); \
 	echo "Build root: $$SYMROOT"; \
@@ -172,12 +172,7 @@ apple-framework:
 		ls -la "$$MACOS_DIR" 2>/dev/null || echo "macOS directory not found"; \
 		exit 1; \
 	fi
-	@echo "Apple XCFramework build and packaging completed."
-
-# Build iOS-only XCFramework (backward compatibility alias)
-ios-framework:
-	@echo "NOTE: ios-framework is deprecated, use apple-framework instead"
-	@$(MAKE) apple-framework
+	@echo "C2PA Swift XCFramework build and packaging completed."
 
 # Validate version format (expects VERSION environment variable)
 validate-version:
@@ -220,9 +215,9 @@ compute-checksum:
 package-swift:
 	@echo "Packaging Swift sources..."
 	@if [ -d "Library/Sources" ]; then \
-		mkdir -p output/C2PA-Apple/Sources/C2PA; \
-		cp -R Library/Sources/*.swift output/C2PA-Apple/Sources/C2PA/; \
-		cd output && zip -r C2PA-Swift-Package.zip C2PA-Apple/; \
+		mkdir -p output/C2PA-Swift/Sources/C2PA; \
+		cp -R Library/Sources/*.swift output/C2PA-Swift/Sources/C2PA/; \
+		cd output && zip -r C2PA-Swift-Package.zip C2PA-Swift/; \
 		echo "Swift sources packaged successfully"; \
 	else \
 		echo "Swift sources packaged (skipped - no sources found)"; \
@@ -414,8 +409,7 @@ help:
 	@echo "  make              - Build the library (default)"
 	@echo "  make lint         - Run SwiftLint on the codebase"
 	@echo "  make library      - Build the C2PA library framework"
-	@echo "  make apple-framework - Build multi-platform XCFramework (iOS + macOS)"
-	@echo "  make ios-framework - (deprecated) Alias for apple-framework"
+	@echo "  make swift-framework - Build multi-platform XCFramework (iOS + macOS)"
 	@echo "  make test-shared  - Build the TestShared framework"
 	@echo "  make test-app     - Build the TestApp"
 	@echo "  make example-app  - Build the ExampleApp"

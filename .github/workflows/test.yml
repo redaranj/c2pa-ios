@@ -196,10 +196,10 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: contentauth/c2pa-apple
+          slug: contentauth/c2pa-swift
           files: ./coverage.lcov,./coverage.json
           flags: unittests
-          name: c2pa-apple-${{ matrix.name }}
+          name: c2pa-swift-${{ matrix.name }}
           fail_ci_if_error: false
           verbose: true
 

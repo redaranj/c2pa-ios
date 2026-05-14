@@ -1,12 +1,12 @@
-# C2PA Apple
+# C2PA Swift
 
-[![Tests](https://github.com/contentauth/c2pa-apple/actions/workflows/test.yml/badge.svg)](https://github.com/contentauth/c2pa-apple/actions/workflows/test.yml)
+[![Tests](https://github.com/contentauth/c2pa-swift/actions/workflows/test.yml/badge.svg)](https://github.com/contentauth/c2pa-swift/actions/workflows/test.yml)
 
 This project provides Apple platform bindings to the [Content Authenticity Initiative SDK](https://opensource.contentauthenticity.org/docs/). It wraps [c2pa-rs Rust library](https://github.com/contentauth/c2pa-rs) using its C API bindings.
 
 ## Overview
 
-C2PA Apple offers:
+C2PA Swift offers:
 
 - iOS and macOS support via Swift Package/XCFramework
 - Native Swift APIs for reading, verifying, and signing content with C2PA manifests
@@ -15,12 +15,12 @@ C2PA Apple offers:
 - Comprehensive test suite with example application
 - Hardware-backed signing with Secure Enclave (iOS devices, Apple Silicon Macs)
 
-For information on contributing to the project, see [Project contributions](https://github.com/contentauth/c2pa-apple/tree/main/docs/project-contributions.md).
+For information on contributing to the project, see [Project contributions](https://github.com/contentauth/c2pa-swift/tree/main/docs/project-contributions.md).
 
 ## Repository structure
 
 ```
-c2pa-apple/
+c2pa-swift/
 ├── Library/              # Swift Package containing the C2PA library
 │   ├── Sources/         # Library source code
 │   │   └── C2PA/       # Main library implementation
@@ -68,7 +68,7 @@ c2pa-apple/
 make library
 
 # Build multi-platform XCFramework (iOS + macOS)
-make apple-framework
+make swift-framework
 
 # Run all tests
 make test
@@ -116,11 +116,11 @@ make tests-with-server
 
 ### Swift package manager
 
-You can add C2PA Apple as a Swift Package Manager dependency:
+You can add C2PA Swift as a Swift Package Manager dependency:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/contentauth/c2pa-apple.git", from: "0.0.1")
+    .package(url: "https://github.com/contentauth/c2pa-swift.git", from: "0.0.1")
 ]
 ```
 
@@ -130,7 +130,7 @@ In your target, add the dependency:
 targets: [
     .target(
         name: "YourTarget",
-        dependencies: [.product(name: "C2PA", package: "c2pa-apple")]
+        dependencies: [.product(name: "C2PA", package: "c2pa-swift")]
     )
 ]
 ```
@@ -213,7 +213,7 @@ let manifestData = try builder.sign(
 The project includes a comprehensive Makefile with various targets:
 
 - `library` - Build the C2PA library framework
-- `apple-framework` - Build multi-platform XCFramework (iOS + macOS)
+- `swift-framework` - Build multi-platform XCFramework (iOS + macOS)
 - `test` - Run all tests (alias for test-library)
 - `test-library` - Run library unit tests only (iOS)
 - `test-library-macos` - Run library unit tests on macOS
@@ -255,4 +255,4 @@ The server runs on `http://localhost:8080` and provides:
 
 ## License
 
-This project is licensed under the Apache License, Version 2.0 and MIT License. See the [LICENSE-APACHE](https://github.com/contentauth/c2pa-apple/blob/main/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/contentauth/c2pa-apple/blob/main/LICENSE-MIT) files for details.
+This project is licensed under the Apache License, Version 2.0 and MIT License. See the [LICENSE-APACHE](https://github.com/contentauth/c2pa-swift/blob/main/LICENSE-APACHE) and [LICENSE-MIT](https://github.com/contentauth/c2pa-swift/blob/main/LICENSE-MIT) files for details.
