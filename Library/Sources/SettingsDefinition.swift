@@ -177,6 +177,7 @@ public struct CoreSettings: Codable, Sendable, Equatable {
         case backingStoreMemoryThresholdInMb = "backing_store_memory_threshold_in_mb"
         case decodeIdentityAssertions = "decode_identity_assertions"
         case allowedNetworkHosts = "allowed_network_hosts"
+        case preferCompressManifests = "prefer_compress_manifests"
     }
 
     /// Chunk size for Merkle tree hashing, in kilobytes.
@@ -194,18 +195,26 @@ public struct CoreSettings: Codable, Sendable, Equatable {
     /// List of allowed network hosts for remote operations.
     public var allowedNetworkHosts: [String]?
 
+    /// Whether to prefer compressing manifests to reduce manifest size.
+    ///
+    /// Compression is not always possible; it falls back to uncompressed when
+    /// the manifest contains features incompatible with compression.
+    public var preferCompressManifests: Bool?
+
     public init(
         merkleTreeChunkSizeInKb: Int? = nil,
         merkleTreeMaxProofs: Int? = nil,
         backingStoreMemoryThresholdInMb: Int? = nil,
         decodeIdentityAssertions: Bool? = nil,
-        allowedNetworkHosts: [String]? = nil
+        allowedNetworkHosts: [String]? = nil,
+        preferCompressManifests: Bool? = nil
     ) {
         self.merkleTreeChunkSizeInKb = merkleTreeChunkSizeInKb
         self.merkleTreeMaxProofs = merkleTreeMaxProofs
         self.backingStoreMemoryThresholdInMb = backingStoreMemoryThresholdInMb
         self.decodeIdentityAssertions = decodeIdentityAssertions
         self.allowedNetworkHosts = allowedNetworkHosts
+        self.preferCompressManifests = preferCompressManifests
     }
 }
 
